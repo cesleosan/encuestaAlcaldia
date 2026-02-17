@@ -37,12 +37,13 @@ class Core {
     }
 
     public function getUrl() {
-        if (isset($_GET['url'])) {
-            $url = rtrim($_GET['url'], '/');
-            $url = filter_var($url, FILTER_SANITIZE_URL);
-            return explode('/', $url);
-        }
-
-        return ['Auth'];
+    if (isset($_GET['url'])) {
+        // 🔥 CAMBIO CRÍTICO: Usar trim para quitar la / del principio
+        $url = trim($_GET['url'], '/'); 
+        $url = filter_var($url, FILTER_SANITIZE_URL);
+        return explode('/', $url);
     }
+
+    return ['Auth'];
+}
 }

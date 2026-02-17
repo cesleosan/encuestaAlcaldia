@@ -1,7 +1,7 @@
 <?php
 // Configuración de acceso a la Base de Datos
 define('DB_HOST', 'localhost');
-define('DB_USER', 'root');      // Tu usuario de MariaDB (usualmente 'root')
+define('DB_USER', 'admin_encuesta');      // Tu usuario de MariaDB (usualmente 'root')
 define('DB_PASS', 'root');          // Tu contraseña (en XAMPP suele ser vacía, en MAMP es 'root')
 define('DB_NAME', 'censo_tlalpan'); // El nombre exacto de la base que creamos
 // Raíz real del proyecto (encuestaAlcaldia)
@@ -17,7 +17,7 @@ define('PUBLICPATH', ROOTPATH . '/public');
 define('APPROOT', APPPATH);
 
 // URL
-define('URLROOT', 'http://localhost:8000');
-
+//define('URLROOT', 'http://localhost:8000');
+define('URLROOT', 'http://189.202.180.44');
 // Nombre del sitio
 define('SITENAME', 'Encuestas Tlalpan');
