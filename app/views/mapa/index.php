@@ -10,13 +10,13 @@
 </div>
 
 <div class="card" style="height: 600px; padding:0; position:relative;">
-    <div id="map" style="width: 100%; height: 100%; border-radius:12px;"></div>
+    <div id="map" style="width: 100%; height: 100%; border-radius:25px;"></div>
     
-    <div style="position:absolute; bottom:20px; right:20px; background:white; padding:15px; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.2); z-index:999;">
+    <div style="position:absolute; bottom:20px; right:20px; background:white; padding:15px; border-radius:25px; box-shadow:0 4px 10px rgba(0,0,0,0.2); z-index:999;">
         <h5 style="margin:0 0 10px 0;">Simbología</h5>
         <div style="display:flex; align-items:center; gap:5px; margin-bottom:5px;"><span style="width:10px; height:10px; background:#2ecc71; border-radius:50%;"></span> Agrícola</div>
         <div style="display:flex; align-items:center; gap:5px; margin-bottom:5px;"><span style="width:10px; height:10px; background:#e74c3c; border-radius:50%;"></span> Pecuaria</div>
-        <div style="display:flex; align-items:center; gap:5px;"><span style="width:10px; height:10px; background:#3498db; border-radius:50%;"></span> Huerto</div>
+        <div style="display:flex; align-items:center; gap:5px;"><span style="width:10px; height:10px; background:#3498db; border-radius:25px;"></span> Huerto</div>
     </div>
 </div>
 

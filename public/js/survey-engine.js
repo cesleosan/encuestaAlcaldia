@@ -186,7 +186,6 @@ function renderSeleccion(data, form) {
             let estiloCenizo = campo.readonly ? 'style="background-color: #f4f4f4;"' : '';
 
             if (campo.name === 'folio') valorDefecto = typeof FOLIO_AUTO !== 'undefined' ? FOLIO_AUTO : '';
-            if (campo.name === 'nombre_productor') valorDefecto = typeof TECNICO_LOGUEADO !== 'undefined' ? TECNICO_LOGUEADO : '';
 
             if (['text', 'date', 'tel', 'email'].includes(campo.tipo)) {
                 let maxAttr = campo.tipo === 'tel' ? 'maxlength="10"' : '';

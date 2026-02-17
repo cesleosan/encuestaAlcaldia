@@ -20,7 +20,7 @@
             --gris-claro: #F4F6F9;
             --blanco: #ffffff;
             --sombra: 0 4px 6px rgba(0,0,0,0.05);
-            --radio: 12px;
+            --radio: 25px;
         }
 
         body {
@@ -57,7 +57,7 @@
         
         .menu-item {
             display: flex; align-items: center; padding: 12px 15px;
-            color: #64748b; text-decoration: none; border-radius: 8px;
+            color: #64748b; text-decoration: none; border-radius: 25px;
             margin-bottom: 5px; transition: 0.2s; font-weight: 500;
         }
         .menu-item:hover { background-color: #FFF5F7; color: var(--guinda); }
@@ -72,7 +72,7 @@
         }
         .avatar {
             width: 40px; height: 40px; background: var(--guinda); color: white;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;
+            border-radius: 25px; display: flex; align-items: center; justify-content: center; font-weight: bold;
         }
         .user-info h4 { margin: 0; font-size: 14px; }
         .user-info p { margin: 0; font-size: 12px; color: #888; text-transform: uppercase; }
@@ -93,7 +93,7 @@
         
         .btn-action {
             background: var(--guinda); color: white; padding: 10px 20px;
-            border-radius: 8px; text-decoration: none; font-size: 14px;
+            border-radius: 25px; text-decoration: none; font-size: 14px;
             display: inline-flex; align-items: center; gap: 8px; border: none; cursor: pointer;
         }
         .btn-action:hover { background: #821c35; }
@@ -106,7 +106,7 @@
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .card-info h3 { margin: 0; font-size: 28px; font-weight: 700; color: var(--oscuro); }
         .card-info p { margin: 0; font-size: 13px; color: #64748b; font-weight: 500; }
-        .card-icon { width: 45px; height: 45px; background: #f8f9fa; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .card-icon { width: 45px; height: 45px; background: #f8f9fa; border-radius: 25px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
         
         /* Responsive */
         @media (max-width: 900px) {

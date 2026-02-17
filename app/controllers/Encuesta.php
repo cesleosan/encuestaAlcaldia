@@ -13,23 +13,28 @@ class Encuesta extends Controller {
         $coloniasPreview = $this->encuestaModel->getColoniasTlalpan(10);
         $preguntaModel = $this->model('PreguntaModel');
 
+        // ✅ MEJORA: Folio único basado en el ID del usuario y tiempo para evitar colisiones
+        $userId = $_SESSION['user_id'];
+        $sufijoAleatorio = strtoupper(substr(md5(uniqid(rand(), true)), 0, 4));
+        $folioPro = "TLP-26-" . $userId . "-" . $sufijoAleatorio;
+
         $data = [
             'banco' => $preguntaModel->getBanco(),
             'nombre_tecnico' => $_SESSION['nombre'],
-            'folio_automatico' => "TLP-2026-" . str_pad($this->encuestaModel->obtenerUltimoId() + 1, 4, "0", STR_PAD_LEFT),
-            'colonias_iniciales' => $coloniasPreview // <-- Preview para la pantalla 5
+            'user_id' => $userId,
+            'folio_automatico' => $folioPro,
+            'colonias_iniciales' => $coloniasPreview 
         ];
         $this->view('survey/cuestionario', $data);
     }
+
     public function guardar() {
-        // Verificar sesión
         if (session_status() === PHP_SESSION_NONE) session_start();
         if (!isset($_SESSION['user_id'])) {
             echo json_encode(['status' => 'error', 'msg' => 'Sesión expirada']);
             return;
         }
 
-        // Obtener el JSON enviado por JS
         $json = file_get_contents('php://input');
         $respuestas = json_decode($json, true);
 
@@ -38,40 +43,33 @@ class Encuesta extends Controller {
             return;
         }
 
-        // --- MAPEO DE DATOS ---
-        
-        // 1. Datos Personales
-        $nombre_completo = $this->buscarValor($respuestas[2], 'nombre_productor'); 
-        $partes_nombre = explode(' ', $nombre_completo);
-        $paterno = array_pop($partes_nombre);
-        $materno = ''; 
-        $nombre = implode(' ', $partes_nombre);
-
+        // --- MAPEO DE DATOS PROFESIONAL ---
         $curp = strtoupper($this->buscarValor($respuestas[2], 'curp'));
 
-        // 2. Validar Duplicado
+        // 2. Validar Duplicado Real (CURP)
         $folioExistente = $this->encuestaModel->existeCurp($curp);
         if ($folioExistente) {
             echo json_encode(['status' => 'error', 'msg' => "El CURP ya fue registrado con folio: $folioExistente"]);
             return;
         }
 
-        // 3. Ubicación
+        // Mejora en parsing de nombre (evita errores si solo ponen un apellido)
+        $nombre_completo = $this->buscarValor($respuestas[2], 'nombre_productor'); 
+        $partes = explode(' ', trim($nombre_completo));
+        $materno = (count($partes) > 2) ? array_pop($partes) : '';
+        $paterno = (count($partes) > 1) ? array_pop($partes) : '';
+        $nombre = implode(' ', $partes);
+
         $lat = $respuestas[6]['latitud'] ?? 0;
         $lon = $respuestas[6]['longitud'] ?? 0;
         $calle = $respuestas[6]['calle_numero'] ?? '';
         
-        // 4. Actividad
         $actividad = $respuestas[18] ?? [];
-        if (is_array($actividad)) {
-            $vals = array_map(function($item) { return $item['value']; }, $actividad);
-            $actividad_str = implode(', ', $vals);
-        } else {
-            $actividad_str = 'DESCONOCIDO';
-        }
+        $actividad_str = is_array($actividad) ? implode(', ', array_map(function($item) { return $item['value']; }, $actividad)) : 'OTRO';
 
-        // 5. Preparar Array
         $datosGuardar = [
+            'folio' => $this->buscarValor($respuestas[1], 'folio'), // Tomamos el folio generado en el front
+            'usuario_id' => $_SESSION['user_id'],
             'curp' => $curp,
             'nombre' => $nombre,
             'paterno' => $paterno,
@@ -89,7 +87,6 @@ class Encuesta extends Controller {
             'respuestas_completas' => $respuestas
         ];
 
-        // 6. Guardar
         $nuevoFolio = $this->encuestaModel->agregar($datosGuardar);
 
         if ($nuevoFolio) {
@@ -99,23 +96,21 @@ class Encuesta extends Controller {
         }
     }
 
-    // --- HELPERS PRIVADOS ---
     private function buscarValor($dataStep, $campoName) {
         if (!is_array($dataStep)) return '';
         foreach ($dataStep as $item) {
-            if ($item['name'] === $campoName) return $item['value'];
+            if (isset($item['name']) && $item['name'] === $campoName) return $item['value'];
         }
         return '';
     }
 
     private function curpToSexo($curp) {
-        if(strlen($curp) < 11) return 'HOMBRE'; // Fallback
-        $letra = substr($curp, 10, 1);
-        return ($letra == 'H') ? 'HOMBRE' : 'MUJER';
+        if(strlen($curp) < 11) return 'HOMBRE';
+        return (substr($curp, 10, 1) == 'H') ? 'HOMBRE' : 'MUJER';
     }
 
     private function curpToFecha($curp) {
-        if(strlen($curp) < 10) return date('Y-m-d'); // Fallback
+        if(strlen($curp) < 10) return date('Y-m-d');
         $yy = substr($curp, 4, 2);
         $mm = substr($curp, 6, 2);
         $dd = substr($curp, 8, 2);
@@ -124,17 +119,9 @@ class Encuesta extends Controller {
     }
 
     public function buscarColonias($cp) {
-    // Limpiamos cualquier salida previa para enviar JSON puro
-    if (ob_get_length()) ob_clean();
-    header('Content-Type: application/json');
-
-    if (strlen($cp) === 5) {
-        // Llamamos al método del modelo que acabamos de arreglar
-        $resultados = $this->encuestaModel->getColoniasPorCP($cp);
-        echo json_encode($resultados);
-    } else {
-        echo json_encode([]);
+        if (ob_get_length()) ob_clean();
+        header('Content-Type: application/json');
+        echo json_encode(strlen($cp) === 5 ? $this->encuestaModel->getColoniasPorCP($cp) : []);
+        exit;
     }
-    exit; // 🔥 CRÍTICO: Detenemos la ejecución para que no cargue nada más
-}
 }

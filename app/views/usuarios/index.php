@@ -41,7 +41,7 @@
                     <?php 
                         $bg = ($u['rol']=='root') ? '#e74c3c' : (($u['rol']=='supervisor') ? '#f39c12' : '#3498db');
                     ?>
-                    <span style="background:<?php echo $bg; ?>; color:white; padding:4px 10px; border-radius:12px; font-size:11px; text-transform:uppercase;">
+                    <span style="background:<?php echo $bg; ?>; color:white; padding:4px 10px; border-radius:25px; font-size:11px; text-transform:uppercase;">
                         <?php echo $u['rol']; ?>
                     </span>
                 </td>

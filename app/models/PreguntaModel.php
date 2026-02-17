@@ -33,7 +33,7 @@ class PreguntaModel {
             ['name' => 'folio', 'label' => 'Folio', 'tipo' => 'text', 'placeholder' => 'TLP-2026-XXXX', 'readonly' => true],
                ['name' => 'curp', 'label' => 'CURP', 'tipo' => 'text', 'placeholder' => 'Clave Única de Registro de Población'],
             // 2. NOMBRE: Se auto-llena con el usuario logueado
-            ['name' => 'nombre_productor', 'label' => 'Nombre de la productora (productor)', 'tipo' => 'text', 'readonly' => true],
+            ['name' => 'nombre_productor', 'label' => 'Nombre de la productor', 'tipo' => 'text', 'placeholder' => 'Nombre completo del productor'],
             
             ['name' => 'fecha_nacimiento', 'label' => 'Fecha de nacimiento', 'tipo' => 'date', 'readonly' => true],
             
@@ -75,7 +75,7 @@ class PreguntaModel {
                     ['val' => 'NO', 'texto' => 'NO']
                 ]
             ],
-            // 🔥 AGREGAMOS LA DEPENDENCIA AQUÍ:
+            //  AGREGAMOS LA DEPENDENCIA AQUÍ:
             [
                 'name' => 'grupo_etnico_cual', 
                 'label' => '¿Cuál? (Si respondió SÍ)', 

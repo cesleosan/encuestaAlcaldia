@@ -11,7 +11,7 @@
             --guinda-dark: #5a2540;
             --gris-texto: #4A4A4A;   /* */
             --blanco: #ffffff;
-            --radio-borde: 30px;     /* Lo "redondo" que pediste */
+            --radio-borde: 25px;   
         }
 
         body {
@@ -43,7 +43,7 @@
             padding: 15px 20px;
             margin-bottom: 20px;
             border: 2px solid #f0f0f0;
-            border-radius: 50px; /* Súper redondo */
+            border-radius: var(--radio-borde); 
             font-size: 16px;
             color: var(--gris-texto);
             box-sizing: border-box; /* Para que no se salga del contenedor */
@@ -63,7 +63,7 @@
             border: none;
             width: 100%;
             padding: 15px;
-            border-radius: 50px;
+            border-radius: var(--radio-borde);
             font-size: 18px;
             font-weight: bold;
             cursor: pointer;
@@ -137,7 +137,7 @@
             height: 22px;
             width: 22px;
             background-color: #eee;
-            border-radius: 50%;
+            border-radius: var(--radio-borde);
             transition: 0.2s;
             border: 2px solid #ddd;
         }
@@ -169,7 +169,7 @@
             left: 6px;
             width: 6px;
             height: 6px;
-            border-radius: 50%;
+            border-radius: var(--radio-borde);
             background: white;
         }
         /* Contenedor de Radio Buttons */
@@ -221,7 +221,7 @@
             height: 22px;
             width: 22px;
             background-color: #eee;
-            border-radius: 6px; /* Borde suave pero CUADRADO */
+            border-radius: var(--radio-borde); /* Borde suave pero CUADRADO */
             border: 2px solid #ddd;
             transition: 0.2s;
         }
@@ -250,7 +250,7 @@
             color: white;
             padding: 12px;
             border: none;
-            border-radius: 8px;
+            border-radius: var(--radio-borde);
             font-size: 16px;
             cursor: pointer;
         }
@@ -262,7 +262,7 @@
             color: #333;
             padding: 12px;
             border: none;
-            border-radius: 8px;
+            border-radius: var(--radio-borde);
             font-size: 16px;
             cursor: pointer;
             font-weight: 600;
@@ -276,7 +276,7 @@
 
     <style>
         /* Ajuste para que el mapa se vea bien en tu tarjeta */
-        #mapa-interactivo { height: 300px; width: 100%; border-radius: 15px; z-index: 0; }
+        #mapa-interactivo { height: 300px; width: 100%; border-radius: var(--radio-borde); z-index: 0; }
         .cols-gps { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left; }
         @media (max-width: 768px) { .cols-gps { grid-template-columns: 1fr; } } /* En celular, una sola columna */
     </style>

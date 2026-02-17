@@ -9,7 +9,7 @@ class Core {
 
         $url = $this->getUrl();
 
-        // ✅ Ruta correcta al controlador
+        // Ruta correcta al controlador
         $controllerPath = APPPATH . '/controllers/' . ucwords($url[0]) . '.php';
 
         if (isset($url[0]) && file_exists($controllerPath)) {
@@ -17,7 +17,7 @@ class Core {
             unset($url[0]);
         }
 
-        // ✅ Cargar controlador
+        // Cargar controlador
         require_once APPPATH . '/controllers/' . $this->currentController . '.php';
         $this->currentController = new $this->currentController;
 
@@ -27,7 +27,7 @@ class Core {
             unset($url[1]);
         }
 
-        // ✅ Parámetros
+        // Parámetros
         $this->params = $url ? array_values($url) : [];
 
         call_user_func_array(
@@ -38,7 +38,7 @@ class Core {
 
     public function getUrl() {
     if (isset($_GET['url'])) {
-        // 🔥 CAMBIO CRÍTICO: Usar trim para quitar la / del principio
+        // Usar trim para quitar la / del principio
         $url = trim($_GET['url'], '/'); 
         $url = filter_var($url, FILTER_SANITIZE_URL);
         return explode('/', $url);

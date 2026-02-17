@@ -45,7 +45,7 @@ body {
   max-width: 800px;
   min-height: 400px;
   padding: 3rem;
-  border-radius: 4px;
+  border-radius: 25px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
 }
 

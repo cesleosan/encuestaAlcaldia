@@ -4,7 +4,6 @@ class Auth extends Controller {
     private $usuarioModel;
 
     public function __construct() {
-        // 🔥 CAMBIO: Cargamos el modelo REAL 'Usuario' (ya no MockUser)
         // Esto busca app/models/Usuario.php
         $this->usuarioModel = $this->model('Usuario'); 
     }

@@ -14,7 +14,7 @@ class EncuestaModelo {
         return $row ? $row->folio : false;
     }
     public function getColoniasTlalpan($limit = 10) {
-        // 🔥 Agregamos codigo_postal a la consulta
+        //  Agregamos codigo_postal a la consulta
         $this->db->query("SELECT id, nombre_asentamiento AS asentamiento, codigo_postal 
                         FROM cat_colonias 
                         LIMIT :limit");
@@ -23,7 +23,7 @@ class EncuestaModelo {
     }
 
     public function getColoniasPorCP($cp) {
-        // 🔥 También aquí para que al buscar por CP se mantenga la referencia
+        //  También aquí para que al buscar por CP se mantenga la referencia
         $this->db->query("SELECT id, nombre_asentamiento AS asentamiento, codigo_postal 
                         FROM cat_colonias 
                         WHERE codigo_postal = :cp 
