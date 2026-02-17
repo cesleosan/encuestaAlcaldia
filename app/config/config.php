@@ -17,7 +17,7 @@ define('PUBLICPATH', ROOTPATH . '/public');
 define('APPROOT', APPPATH);
 
 // URL
-define('URLROOT', 'http://localhost:8000');
-//define('URLROOT', 'http://189.202.180.44');
+//define('URLROOT', 'http://localhost:8000');
+define('URLROOT', 'http://189.202.180.44');
 // Nombre del sitio
 define('SITENAME', 'Encuestas Tlalpan');
