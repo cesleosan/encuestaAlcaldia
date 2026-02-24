@@ -68,7 +68,7 @@ class Encuesta extends Controller {
         $actividad_str = is_array($actividad) ? implode(', ', array_map(function($item) { return $item['value']; }, $actividad)) : 'OTRO';
 
         $datosGuardar = [
-            'folio' => $this->buscarValor($respuestas[1], 'folio'), // Tomamos el folio generado en el front
+            'folio' => $this->buscarValor($respuestas[2], 'folio'), // Tomamos el folio generado en el front
             'usuario_id' => $_SESSION['user_id'],
             'curp' => $curp,
             'nombre' => $nombre,

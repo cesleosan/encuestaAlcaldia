@@ -111,6 +111,15 @@ $bancoJson = htmlspecialchars(json_encode($banco), ENT_QUOTES, 'UTF-8');
         border-radius: var(--radio-global) !important; /* 25px */
         box-shadow: 0 15px 40px rgba(0,0,0,0.1);
     }
+    /* Hacer que los SweetAlerts también tengan radio de 25px */
+    .swal2-popup {
+        border-radius: var(--radio-global) !important;
+    }
+
+    .swal2-styled.swal2-confirm {
+        border-radius: var(--radio-global) !important;
+        padding: 10px 30px;
+    }
 </style>
 
 <img src="<?php echo URLROOT; ?>/logos/Logo AT Vertical N 100PX.png" 
@@ -163,6 +172,7 @@ $bancoJson = htmlspecialchars(json_encode($banco), ENT_QUOTES, 'UTF-8');
 <link rel="stylesheet" href="<?php echo URLROOT; ?>/css/styles.css">
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="<?php echo URLROOT; ?>/js/survey-engine.js"></script>
 
 </body>

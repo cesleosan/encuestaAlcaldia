@@ -447,21 +447,53 @@ function renderSeleccion(data, form) {
     }
 
     function finalizarEncuesta() {
-        $(".card-body").html('<div style="text-align:center; padding:40px;"><i class="fa-solid fa-circle-notch fa-spin" style="font-size:40px; color:var(--guinda);"></i><h3>Guardando...</h3></div>');
-        fetch(`${URLROOT}/Encuesta/guardar`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(respuestas)
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'success') {
-                $(".card-body").html(`<div style="text-align:center; padding:20px;"><i class="fa-solid fa-check-circle" style="font-size:50px; color:#27ae60;"></i><h2>¡Éxito!</h2><p>Folio: <b>${data.folio}</b></p><br><button onclick="location.reload()" class="btn-guinda">Nueva Encuesta</button></div>`);
-            } else {
-                alert("Error: " + data.msg); location.reload();
-            }
-        });
-    }
+    // 1. Mostramos un bloqueador visual mientras se procesa en el servidor
+    Swal.fire({
+        title: 'Guardando encuesta...',
+        text: 'Por favor, no cierres el navegador.',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    fetch(`${URLROOT}/Encuesta/guardar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(respuestas)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success') {
+            //  AQUÍ ESTÁ EL SWAL DE ÉXITO
+            Swal.fire({
+                title: '¡Guardado con éxito!',
+                html: `La respuesta ha sido satisfactoria.<br><br><b>Folio: ${data.folio}</b>`,
+                icon: 'success',
+                confirmButtonText: 'Hacer otra encuesta',
+                confirmButtonColor: '#773357', // Color guinda Tlalpan
+                allowOutsideClick: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Nos manda al inicio limpio
+                    window.location.href = `${URLROOT}/Encuesta`;
+                }
+            });
+        } else {
+            // SWAL DE ERROR
+            Swal.fire({
+                title: 'Error al guardar',
+                text: data.msg || 'No se pudo registrar la información.',
+                icon: 'error',
+                confirmButtonColor: '#773357'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire('Error crítico', 'No hay conexión con el servidor.', 'error');
+    });
+}
 
     renderPregunta(preguntaActual);
 });
