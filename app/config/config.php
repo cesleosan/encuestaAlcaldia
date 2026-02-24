@@ -19,6 +19,7 @@ define('APPROOT', APPPATH);
 
 // URL
 //define('URLROOT', 'http://localhost:8000');
-define('URLROOT', 'http://189.202.180.44');
+//define('URLROOT', 'http://189.202.180.44');
+define('URLROOT', 'https://tierraconcorazon.tlalpan.gob.mx');
 // Nombre del sitio
-define('SITENAME', 'Encuestas Tlalpan');
+define('SITENAME', 'Tierra con Corazón');
