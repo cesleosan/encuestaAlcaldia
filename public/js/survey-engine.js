@@ -7,26 +7,31 @@ dbLocal.version(1).stores({
 
 // 2. Precarga de colonias
 async function precargarColonias() {
-    if (!navigator.onLine) {
-        console.warn("Sin conexión: Se usará el catálogo local existente.");
-        return;
-    }
+    if (navigator.onLine) {
+        try {
+            const res = await fetch(`${URLROOT}/Encuesta/getTodasLasColonias`);
+            
+            // 1. Verificar si la respuesta fue exitosa
+            if (!res.ok) {
+                console.error(`Error HTTP: ${res.status}. Revisa la ruta: ${URLROOT}`);
+                return;
+            }
 
-    try {
-        const res = await fetch(`${URLROOT}/Encuesta/getTodasLasColonias`);
-        
-        // Validar si la respuesta HTTP es exitosa (status 200-299)
-        if (!res.ok) throw new Error(`Error servidor: ${res.status}`);
+            // 2. Verificar el tipo de contenido antes de parsear
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                const textoError = await res.text(); // Leemos el HTML para saber qué dice
+                console.error("El servidor no envió JSON. Envió esto:", textoError.substring(0, 100));
+                return;
+            }
 
-        const data = await res.json();
-        
-        // Guardar en Dexie (usamos put para que si ya existe 'colonias', se actualice)
-        await dbLocal.catalogos.put({ id: 'colonias', data: data });
-        console.log("Catálogo de colonias actualizado exitosamente.");
-        
-    } catch(e) { 
-        console.error("Error crítico en precarga de colonias:", e.message);
-        // Aquí podrías disparar una alerta visual para el encuestador
+            const data = await res.json();
+            await dbLocal.catalogos.put({ id: 'colonias', data: data });
+            console.log("Catálogo guardado correctamente.");
+
+        } catch(e) { 
+            console.log("Error en la petición fetch:", e); 
+        }
     }
 }
 precargarColonias();
