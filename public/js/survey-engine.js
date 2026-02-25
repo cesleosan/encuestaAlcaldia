@@ -1,18 +1,19 @@
+// 1. Única declaración de base de datos
 const dbLocal = new Dexie("TierraCorazonDB");
 dbLocal.version(1).stores({
     encuestas: '++id, folio, fecha',
     catalogos: 'id' 
 });
 
-// DESCARGAR COLONIAS PARA MODO OFFLINE (Solo si hay red)
+// 2. Precarga de colonias
 async function precargarColonias() {
     if (navigator.onLine) {
         try {
             const res = await fetch(`${URLROOT}/Encuesta/getTodasLasColonias`);
             const data = await res.json();
             await dbLocal.catalogos.put({ id: 'colonias', data: data });
-            console.log("Catálogo de colonias guardado para modo offline.");
-        } catch(e) { console.log("Error precargando colonias."); }
+            console.log("Catálogo guardado.");
+        } catch(e) { console.log("Error precargando."); }
     }
 }
 precargarColonias();
@@ -367,25 +368,24 @@ function renderSeleccion(data, form) {
     });
 
     // 2. CP y Colonias
-    $(document).on('keyup', 'input[name="cp"]', function() {
-        let cp = $(this).val();
-        const container = $('[data-name="pueblo_colonia"]'); // Usando el data-name que definimos
-
-        // Si borran el CP, regresamos a la PREVIEW de 10
-        if (cp.length === 0) {
-            renderListaColonias(typeof COLONIAS_PREVIEW !== 'undefined' ? COLONIAS_PREVIEW : [], container);
-            return;
-        }
-
-        // Al llegar a 5 dígitos, filtramos
-        if (cp.length === 5) {
-            container.html('<p style="color:var(--guinda); font-size:12px;"><i class="fas fa-spinner fa-spin"></i> Filtrando catálogo...</p>');
+   $(document).on('keyup', 'input[name="cp"]', async function() {
+    let cp = $(this).val();
+    const container = $('[data-name="pueblo_colonia"]');
+    if (cp.length === 5) {
+        try {
+            const cat = await dbLocal.catalogos.get('colonias');
+            if (cat && cat.data) {
+                const filtradas = cat.data.filter(c => c.codigo_postal == cp);
+                renderListaColonias(filtradas, container, cp);
+            } else { throw new Error(); }
+        } catch(e) {
+            // Si falla lo local, hace tu fetch de siempre
             fetch(`${URLROOT}/Encuesta/buscarColonias/${cp}`)
                 .then(res => res.json())
                 .then(data => renderListaColonias(data, container, cp));
         }
-    });
-
+    }
+});
     function renderListaColonias(data, container, cpInput = "") {
         if (!container || container.length === 0) return;
         container.empty();
@@ -465,28 +465,39 @@ function renderSeleccion(data, form) {
         $("#progress-bar").css("width", (id / total * 100) + "%");
     }
 
-    function finalizarEncuesta() {
-    // Mostramos mensaje de proceso
-    Swal.fire({
-        title: 'Procesando encuesta...',
-        allowOutsideClick: false,
-        didOpen: () => { Swal.showLoading(); }
-    });
-
-    const payload = {
-        folio: FOLIO_AUTO,
-        datos: respuestas, // 'respuestas' es tu objeto global
-        fecha: new Date().toISOString(),
-        usuario_id: "<?php echo $_SESSION['user_id']; ?>"
+async function finalizarEncuesta() {
+    const payload = { 
+        folio: FOLIO_AUTO, 
+        datos: respuestas, 
+        fecha: new Date().toISOString() 
     };
-
+    
     if (navigator.onLine) {
-        // SI HAY RED: Intentamos mandar a AWS
         enviarAlServidor(payload);
     } else {
-        // NO HAY RED: Guardar inmediatamente en el celular
-        guardarEnLocal(payload);
+        await dbLocal.encuestas.add(payload);
+        Swal.fire('Modo Offline', 'Sin internet. Encuesta guardada en el celular.', 'info')
+            .then(() => location.reload());
     }
+}
+
+function enviarAlServidor(payload) {
+    fetch(`${URLROOT}/Encuesta/guardar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload.datos)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success') {
+            Swal.fire('¡Éxito!', `Folio: ${data.folio}`, 'success').then(() => location.reload());
+        }
+    })
+    .catch(() => {
+        // Si el internet parpadea y falla el envío, lo guardamos en local de emergencia
+        dbLocal.encuestas.add(payload);
+        Swal.fire('Red Inestable', 'Se guardó en el dispositivo para no perder datos.', 'warning').then(() => location.reload());
+    });
 }
 
 function guardarEnLocal(payload) {
@@ -528,4 +539,25 @@ function enviarAlServidor(payload) {
 }
 
     renderPregunta(preguntaActual);
+
+    // CAMBIO 4: Sincronización automática al detectar red
+window.addEventListener('online', async () => {
+    const pendientes = await dbLocal.encuestas.toArray();
+    if (pendientes.length === 0) return;
+
+    for (const item of pendientes) {
+        try {
+            const res = await fetch(`${URLROOT}/Encuesta/guardar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(item.datos)
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                await dbLocal.encuestas.delete(item.id);
+                console.log("Sincronizado: " + item.folio);
+            }
+        } catch(e) { break; } 
+    }
+});
 });
