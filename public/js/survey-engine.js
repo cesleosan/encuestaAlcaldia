@@ -1,3 +1,22 @@
+const dbLocal = new Dexie("TierraCorazonDB");
+dbLocal.version(1).stores({
+    encuestas: '++id, folio, fecha',
+    catalogos: 'id' 
+});
+
+// DESCARGAR COLONIAS PARA MODO OFFLINE (Solo si hay red)
+async function precargarColonias() {
+    if (navigator.onLine) {
+        try {
+            const res = await fetch(`${URLROOT}/Encuesta/getTodasLasColonias`);
+            const data = await res.json();
+            await dbLocal.catalogos.put({ id: 'colonias', data: data });
+            console.log("Catálogo de colonias guardado para modo offline.");
+        } catch(e) { console.log("Error precargando colonias."); }
+    }
+}
+precargarColonias();
+
 $(document).ready(function () {
     const element = document.getElementById('survey-app');
     if (!element) return;
@@ -447,51 +466,64 @@ function renderSeleccion(data, form) {
     }
 
     function finalizarEncuesta() {
-    // 1. Mostramos un bloqueador visual mientras se procesa en el servidor
+    // Mostramos mensaje de proceso
     Swal.fire({
-        title: 'Guardando encuesta...',
-        text: 'Por favor, no cierres el navegador.',
+        title: 'Procesando encuesta...',
         allowOutsideClick: false,
-        didOpen: () => {
-            Swal.showLoading();
-        }
+        didOpen: () => { Swal.showLoading(); }
     });
 
+    const payload = {
+        folio: FOLIO_AUTO,
+        datos: respuestas, // 'respuestas' es tu objeto global
+        fecha: new Date().toISOString(),
+        usuario_id: "<?php echo $_SESSION['user_id']; ?>"
+    };
+
+    if (navigator.onLine) {
+        // SI HAY RED: Intentamos mandar a AWS
+        enviarAlServidor(payload);
+    } else {
+        // NO HAY RED: Guardar inmediatamente en el celular
+        guardarEnLocal(payload);
+    }
+}
+
+function guardarEnLocal(payload) {
+    dbLocal.encuestas.add(payload).then(() => {
+        Swal.fire({
+            title: 'Guardado en el Dispositivo',
+            html: `Estás en una zona sin internet.<br>La encuesta con folio <b>${payload.folio}</b> se ha guardado en la memoria del celular y se subirá sola al detectar red.`,
+            icon: 'info',
+            confirmButtonColor: '#773357'
+        }).then(() => {
+            window.location.href = "<?php echo URLROOT; ?>/Encuesta";
+        });
+    });
+}
+
+function enviarAlServidor(payload) {
     fetch(`${URLROOT}/Encuesta/guardar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(respuestas)
+        body: JSON.stringify(payload.datos)
     })
     .then(res => res.json())
     .then(data => {
         if (data.status === 'success') {
-            //  AQUÍ ESTÁ EL SWAL DE ÉXITO
             Swal.fire({
-                title: '¡Guardado con éxito!',
-                html: `La respuesta ha sido satisfactoria.<br><br><b>Folio: ${data.folio}</b>`,
+                title: '¡Guardado Exitoso!',
+                text: `Folio: ${data.folio}`,
                 icon: 'success',
-                confirmButtonText: 'Hacer otra encuesta',
-                confirmButtonColor: '#773357', // Color guinda Tlalpan
-                allowOutsideClick: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Nos manda al inicio limpio
-                    window.location.href = `${URLROOT}/Encuesta`;
-                }
-            });
-        } else {
-            // SWAL DE ERROR
-            Swal.fire({
-                title: 'Error al guardar',
-                text: data.msg || 'No se pudo registrar la información.',
-                icon: 'error',
                 confirmButtonColor: '#773357'
+            }).then(() => {
+                window.location.href = "<?php echo URLROOT; ?>/Encuesta";
             });
         }
     })
-    .catch(error => {
-        console.error('Error:', error);
-        Swal.fire('Error crítico', 'No hay conexión con el servidor.', 'error');
+    .catch(() => {
+        // Si el fetch falla (red inestable), aplicamos persistencia local
+        guardarEnLocal(payload);
     });
 }
 

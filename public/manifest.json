@@ -1,0 +1,22 @@
+{
+  "name": "Tierra con Corazon Tlalpan",
+  "short_name": "TierraCorazon",
+  "start_url": "../Encuesta",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#773357",
+  "icons": [
+    {
+      "src": "logos/Logo%20AT%20Vertical%20guinda%20100%20PX.png",
+      "sizes": "100x100",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "logos/Logo%20AT%20Vertical%20guinda%20100%20PX.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -174,6 +174,36 @@ $bancoJson = htmlspecialchars(json_encode($banco), ENT_QUOTES, 'UTF-8');
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="<?php echo URLROOT; ?>/js/survey-engine.js"></script>
+<script src="https://unpkg.com/dexie/dist/dexie.js"></script>
 
+<script>
+    // 2. Registro del Service Worker (El que guarda los ARCHIVOS)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('<?php echo URLROOT; ?>/sw.js')
+                .then(reg => console.log('Tierra con Corazón preparada para offline.'))
+                .catch(err => console.log('Fallo al preparar offline:', err));
+        });
+    }
+
+    // 3. Inicialización de la Base de Datos (La que guarda las ENCUESTAS)
+    const dbLocal = new Dexie("TierraCorazonDB");
+    dbLocal.version(1).stores({
+        encuestas: '++id, folio, curp, fecha, sincronizado'
+    });
+
+    // 4. Detector de red visual para el técnico
+    window.addEventListener('online', () => {
+        const indicator = document.querySelector('.status-indicator');
+        if(indicator) indicator.style.backgroundColor = '#28a745';
+        console.log('Señal recuperada. Listos para sincronizar.');
+    });
+
+    window.addEventListener('offline', () => {
+        const indicator = document.querySelector('.status-indicator');
+        if(indicator) indicator.style.backgroundColor = '#dc3545'; // Rojo si pierde red
+        console.log('Sin señal. Iniciando modo persistencia local.');
+    });
+</script>
 </body>
 </html>
