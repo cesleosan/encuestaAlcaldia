@@ -1,6 +1,6 @@
 // 1. Única declaración de base de datos
 const dbLocal = new Dexie("TierraCorazonDB");
-dbLocal.version(1).stores({
+dbLocal.version(2).stores({
     encuestas: '++id, folio, fecha',
     catalogos: 'id' 
 });
@@ -24,7 +24,32 @@ async function precargarColonias() {
         console.error("Fallo la precarga: Probablemente la ruta " + URLROOT + " no es alcanzable."); 
     }
 }
-precargarColonias();
+
+async function buscarColoniasLocal(cp) {
+    try {
+        // 1. Obtener el catálogo completo de Dexie
+        const registro = await dbLocal.catalogos.get('colonias');
+        
+        if (!registro || !registro.data) {
+            console.warn("Catálogo no encontrado en IndexedDB.");
+            return [];
+        }
+
+        // 2. Filtrar el array 'data' por el código postal
+        // Usamos filter porque un CP puede tener varias colonias (asentamientos)
+        const resultados = registro.data.filter(colonia => {
+            // Aseguramos que ambos sean strings para comparar bien
+            return String(colonia.codigo_postal).trim() === String(cp).trim();
+        });
+
+        console.log(`Búsqueda local para CP ${cp}: ${resultados.length} encontradas.`);
+        return resultados;
+
+    } catch (error) {
+        console.error("Error consultando Dexie:", error);
+        return [];
+    }
+}
 
 $(document).ready(function () {
     const element = document.getElementById('survey-app');
@@ -33,7 +58,7 @@ $(document).ready(function () {
     const rawBanco = element.getAttribute('data-banco');
     const bancoParsed = JSON.parse(rawBanco);
     const banco = {};
-    
+    precargarColonias();
     // Mapeo seguro de claves
     Object.keys(bancoParsed).forEach(key => {
         banco[parseInt(key)] = bancoParsed[key];
@@ -449,19 +474,28 @@ function renderSeleccion(data, form) {
         }
     });
     // --- FUNCIONES DE NAVEGACIÓN ---
-    function validarYSiguiente(idActual, idSiguiente) {
-        const form = document.getElementById('form-encuesta');
-        if (form && !form.checkValidity()) { form.reportValidity(); return; }
-        
-        if (form) respuestas[idActual] = $(form).serializeArray();
-        if ($("#lat").length > 0) {
-            respuestas[idActual] = { latitud: $("#lat").val(), longitud: $("#lon").val(), calle_numero: $("#calle").val() };
-        }
-
-        historial.push(idActual);
-        preguntaActual = idSiguiente;
-        renderPregunta(idSiguiente);
+function validarYSiguiente(idActual, idSiguiente) {
+    const form = document.getElementById('form-encuesta');
+    if (form && !form.checkValidity()) { form.reportValidity(); return; }
+    
+    // Captura normal de formulario
+    if (form) {
+        respuestas[idActual] = $(form).serializeArray();
     }
+
+    // Si es la pantalla de mapa, añadimos las coordenadas al objeto de ese ID
+    if ($("#lat").length > 0) {
+        respuestas[idActual] = { 
+            latitud: $("#lat").val(), 
+            longitud: $("#lon").val(), 
+            calle_numero: $("#calle").val() 
+        };
+    }
+
+    historial.push(idActual);
+    preguntaActual = idSiguiente;
+    renderPregunta(idSiguiente);
+}
 
     function regresar() {
         if (historial.length === 0) return;
@@ -489,24 +523,7 @@ async function finalizarEncuesta() {
     }
 }
 
-function enviarAlServidor(payload) {
-    fetch(`${URLROOT}/Encuesta/guardar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload.datos)
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.status === 'success') {
-            Swal.fire('¡Éxito!', `Folio: ${data.folio}`, 'success').then(() => location.reload());
-        }
-    })
-    .catch(() => {
-        // Si el internet parpadea y falla el envío, lo guardamos en local de emergencia
-        dbLocal.encuestas.add(payload);
-        Swal.fire('Red Inestable', 'Se guardó en el dispositivo para no perder datos.', 'warning').then(() => location.reload());
-    });
-}
+
 
 function guardarEnLocal(payload) {
     dbLocal.encuestas.add(payload).then(() => {
@@ -536,12 +553,15 @@ function enviarAlServidor(payload) {
                 icon: 'success',
                 confirmButtonColor: '#773357'
             }).then(() => {
-                window.location.href = "<?php echo URLROOT; ?>/Encuesta";
+                window.location.reload(); // Recarga para nueva encuesta
             });
+        } else {
+            // Si el servidor responde error (ej. CURP duplicado)
+            Swal.fire('Atención', data.msg, 'warning');
         }
     })
     .catch(() => {
-        // Si el fetch falla (red inestable), aplicamos persistencia local
+        // Error de red: Guardar en local automáticamente
         guardarEnLocal(payload);
     });
 }
@@ -553,6 +573,14 @@ window.addEventListener('online', async () => {
     const pendientes = await dbLocal.encuestas.toArray();
     if (pendientes.length === 0) return;
 
+    // Toast de aviso
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000
+    });
+
     for (const item of pendientes) {
         try {
             const res = await fetch(`${URLROOT}/Encuesta/guardar`, {
@@ -563,9 +591,12 @@ window.addEventListener('online', async () => {
             const data = await res.json();
             if (data.status === 'success') {
                 await dbLocal.encuestas.delete(item.id);
-                console.log("Sincronizado: " + item.folio);
+                Toast.fire({ icon: 'success', title: `Sincronizado: ${item.folio}` });
             }
-        } catch(e) { break; } 
+        } catch(e) { 
+            console.error("Fallo intento de sincronización", e);
+            break; 
+        } 
     }
 });
 });
