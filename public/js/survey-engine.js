@@ -7,13 +7,26 @@ dbLocal.version(1).stores({
 
 // 2. Precarga de colonias
 async function precargarColonias() {
-    if (navigator.onLine) {
-        try {
-            const res = await fetch(`${URLROOT}/Encuesta/getTodasLasColonias`);
-            const data = await res.json();
-            await dbLocal.catalogos.put({ id: 'colonias', data: data });
-            console.log("Catálogo guardado.");
-        } catch(e) { console.log("Error precargando."); }
+    if (!navigator.onLine) {
+        console.warn("Sin conexión: Se usará el catálogo local existente.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${URLROOT}/Encuesta/getTodasLasColonias`);
+        
+        // Validar si la respuesta HTTP es exitosa (status 200-299)
+        if (!res.ok) throw new Error(`Error servidor: ${res.status}`);
+
+        const data = await res.json();
+        
+        // Guardar en Dexie (usamos put para que si ya existe 'colonias', se actualice)
+        await dbLocal.catalogos.put({ id: 'colonias', data: data });
+        console.log("Catálogo de colonias actualizado exitosamente.");
+        
+    } catch(e) { 
+        console.error("Error crítico en precarga de colonias:", e.message);
+        // Aquí podrías disparar una alerta visual para el encuestador
     }
 }
 precargarColonias();
