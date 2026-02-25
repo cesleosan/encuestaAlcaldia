@@ -7,32 +7,21 @@ dbLocal.version(1).stores({
 
 // 2. Precarga de colonias
 async function precargarColonias() {
-    if (navigator.onLine) {
-        try {
-            console.log("Intentando conectar a:", `${URLROOT}/Encuesta/getTodasLasColonias`);
-            const res = await fetch(`${URLROOT}/Encuesta/getTodasLasColonias`);
-            
-            // 1. Verificar si la respuesta fue exitosa
-            if (!res.ok) {
-                console.error(`Error HTTP: ${res.status}. Revisa la ruta: ${URLROOT}`);
-                return;
-            }
+    if (!navigator.onLine) return;
 
-            // 2. Verificar el tipo de contenido antes de parsear
-            const contentType = res.headers.get("content-type");
-            if (!contentType || !contentType.includes("application/json")) {
-                const textoError = await res.text(); // Leemos el HTML para saber qué dice
-                console.error("El servidor no envió JSON. Envió esto:", textoError.substring(0, 100));
-                return;
-            }
+    try {
+        const res = await fetch(`${URLROOT}/Encuesta/getTodasLasColonias`);
+        
+        if (!res.ok) throw new Error("Error en la red");
 
-            const data = await res.json();
-            await dbLocal.catalogos.put({ id: 'colonias', data: data });
-            console.log("Catálogo guardado correctamente.");
-
-        } catch(e) { 
-            console.log("Error en la petición fetch:", e); 
-        }
+        const data = await res.json();
+        
+        // Guardamos el array completo bajo la llave 'colonias'
+        await dbLocal.catalogos.put({ id: 'colonias', data: data });
+        
+        console.log(`✅ Catálogo sincronizado: ${data.length} colonias guardadas localmente.`);
+    } catch(e) { 
+        console.error("Fallo la precarga: Probablemente la ruta " + URLROOT + " no es alcanzable."); 
     }
 }
 precargarColonias();

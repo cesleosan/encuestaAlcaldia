@@ -124,4 +124,20 @@ class Encuesta extends Controller {
         echo json_encode(strlen($cp) === 5 ? $this->encuestaModel->getColoniasPorCP($cp) : []);
         exit;
     }
+    // Dentro de class Encuesta ...
+
+public function getTodasLasColonias() {
+    // 1. Limpiar cualquier eco previo
+    if (ob_get_length()) ob_clean();
+    
+    // 2. Establecer cabecera JSON
+    header('Content-Type: application/json');
+    
+    // 3. Consultar TODAS (ajustamos el límite para precarga completa)
+    // Tlalpan tiene aproximadamente 200-300 asentamientos/colonias
+    $colonias = $this->encuestaModel->getColoniasTlalpan(2000); 
+    
+    echo json_encode($colonias, JSON_UNESCAPED_UNICODE);
+    exit;
+}
 }
