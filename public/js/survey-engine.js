@@ -9,6 +9,7 @@ dbLocal.version(1).stores({
 async function precargarColonias() {
     if (navigator.onLine) {
         try {
+            console.log("Intentando conectar a:", `${URLROOT}/Encuesta/getTodasLasColonias`);
             const res = await fetch(`${URLROOT}/Encuesta/getTodasLasColonias`);
             
             // 1. Verificar si la respuesta fue exitosa
