@@ -204,10 +204,16 @@ _seedTiles: function(tiles) {
                     }
 
                     var timestamp = Date.now();
-                    this._db.put({
-                        dataUrl: base64Data,
-                        timestamp: timestamp
-                    }, url, timestamp);
+this._db.put({
+    _id: url,           // El ID DEBE ir dentro del objeto
+    dataUrl: data,
+    timestamp: timestamp
+}).catch(function(err) {
+    // Si el error es solo que ya existe (409), lo ignoramos
+    if (err.status !== 409) {
+        console.error("Error al guardar en PouchDB:", err);
+    }
+});
 
                     accountedFor += 1;
                     downloadSize += Math.round((base64Data.length - head.length) * 3 / 4);
