@@ -175,45 +175,61 @@ L.TileLayer.include({
 
 	},
 
-	_seedTiles: function(tiles) {
-		var baseURL = this._url;
-		var accountedFor = 0;
+_seedTiles: function(tiles) {
+    var baseURL = this._url;
+    var accountedFor = 0;
     var downloadSize = 0;
     var head = 'data:image/png;base64,';
+    
+    // Lista de subdominios estándar de OpenStreetMap
+    var subdomains = this.options.subdomains || ['a', 'b', 'c'];
 
-		asyncEach(tiles, function(item, callback) {
-			var url = baseURL.replace('{x}', item[0]).replace('{y}', item[1]).replace('{z}', item[2]);
+    asyncEach(tiles, function(item, callback) {
+        // CORRECCIÓN: Reemplazamos {s}, {x}, {y} y {z} correctamente
+        var s = subdomains[Math.abs(item[0] + item[1]) % subdomains.length];
+        var url = baseURL
+            .replace('{s}', s)
+            .replace('{x}', item[0])
+            .replace('{y}', item[1])
+            .replace('{z}', item[2]);
 
-			this._db.get(url, function(error, data) {
-				if (!data) {
-					this.URI2Base64(url, function(data) {
-						var timestamp = Date.now();
+        this._db.get(url, function(error, data) {
+            if (!data) {
+                this.URI2Base64(url, function(base64Data) {
+                    // Si la descarga falló por red, saltamos este tile
+                    if(!base64Data || base64Data === "data:,") {
+                        accountedFor += 1;
+                        callback(null);
+                        return;
+                    }
 
-						this._db.put({
-							dataUrl: data,
-							timestamp: timestamp
-						}, url, timestamp);
+                    var timestamp = Date.now();
+                    this._db.put({
+                        dataUrl: base64Data,
+                        timestamp: timestamp
+                    }, url, timestamp);
 
-						accountedFor += 1;
-            downloadSize += Math.round((data.length - head.length)*3/4)
+                    accountedFor += 1;
+                    downloadSize += Math.round((base64Data.length - head.length) * 3 / 4);
 
-						this.fire('tilecache-load-progress', {
-							done: accountedFor,
-							total: tiles.length
-						});
+                    this.fire('tilecache-load-progress', {
+                        done: accountedFor,
+                        total: tiles.length
+                    });
 
-						callback(null);
-					}.bind(this));
-				} else {
-					callback(null);
-				}
-			}.bind(this));
-		}.bind(this), function() {
-		  this.fire('tilecache-load-done', {
-        downloadSize: (downloadSize/1000000).toFixed(2)
-      });
-		}.bind(this));
-	},
+                    callback(null);
+                }.bind(this));
+            } else {
+                accountedFor += 1;
+                callback(null);
+            }
+        }.bind(this));
+    }.bind(this), function() {
+        this.fire('tilecache-load-done', {
+            downloadSize: (downloadSize / 1048576).toFixed(2)
+        });
+    }.bind(this));
+},
 
   // Clears the cache for a given bounding box and zoom range
   clear: function(bbox, minZoom, maxZoom) {
