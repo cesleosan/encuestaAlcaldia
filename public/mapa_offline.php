@@ -46,25 +46,44 @@
 
 <script src="js/leaflet.js"></script>
 <script src="js/pouchdb.min.js"></script>
-
-<script src="https://bundle.run/@mapbox/tile-cover@3.0.2"></script>
-
 <script src="js/L.TileLayer.PouchDB.js"></script>
 
 <script>
-    // --- PARCHE DE SEGURIDAD PARA BUNDLE.RUN ---
-    // Intentamos encontrar la función en las diferentes rutas donde se pudo guardar
-    window.tileCover = window['@mapbox/tile-cover'] || 
-                       (window.tilecover ? window.tilecover.default : null) || 
-                       window.tilecover;
+    // --- FUNCIÓN NATIVA PARA REEMPLAZAR TILE-COVER ---
+    // Esto hace que el plugin funcione sin cargar scripts externos
+    window.tileCover = function(geom, limits) {
+        var minZoom = limits.min_zoom;
+        var maxZoom = limits.max_zoom;
+        var tiles = [];
+        var coords = geom.coordinates[0];
 
-    if (typeof window.tileCover !== 'function') {
-        console.error("⚠️ La librería tile-cover sigue sin ser reconocida como función.");
-    } else {
-        console.log("✅ Librería tile-cover cargada correctamente.");
-    }
-    // ------------------------------------------
+        // Función matemática para convertir Lat/Lng a coordenadas de cuadritos (tiles)
+        function getTile(lng, lat, zoom) {
+            var x = Math.floor((lng + 180) / 360 * Math.pow(2, zoom));
+            var y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
+            return [x, y, zoom];
+        }
 
+        // Simplificación: Obtenemos los bordes del área (Bounding Box)
+        var lats = coords.map(c => c[1]), lngs = coords.map(c => c[0]);
+        var minLat = Math.min(...lats), maxLat = Math.max(...lats);
+        var minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+
+        for (var z = minZoom; z <= maxZoom; z++) {
+            var nw = getTile(minLng, maxLat, z);
+            var se = getTile(maxLng, minLat, z);
+            for (var x = nw[0]; x <= se[0]; x++) {
+                for (var y = nw[1]; y <= se[1]; y++) {
+                    tiles.push([x, y, z]);
+                }
+            }
+        }
+        return tiles;
+    };
+    
+    console.log("✅ Motor de mapas inyectado localmente.");
+
+    // 3. TU INICIALIZACIÓN DE SIEMPRE
     var map = L.map('map').setView([19.289, -99.167], 15);
     var marker;
 
