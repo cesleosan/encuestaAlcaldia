@@ -8,109 +8,124 @@
     <link rel="stylesheet" href="css/leaflet.css" />
     
     <style>
-        body { margin: 0; font-family: sans-serif; }
-        #map { height: calc(100 vh - 100px); width: 100%; background: #eee; }
+        body { margin: 0; font-family: sans-serif; background: #f4f4f4; }
+        #map { height: calc(100vh - 120px); width: 100%; background: #eee; }
         .controls { 
             padding: 15px; 
-            background: #773357; /* Color guinda Alcaldía */
+            background: #773357; 
             color: white; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
+        .btn-group { display: flex; gap: 10px; margin-bottom: 10px; }
         .btn-accion {
-            padding: 10px;
+            flex: 1;
+            padding: 12px;
             cursor: pointer;
             border: none;
             border-radius: 5px;
             font-weight: bold;
             background: white;
             color: #773357;
+            font-size: 14px;
         }
-        #status { font-size: 0.9rem; margin: 0; font-style: italic; }
-        .indicador-gps { color: #2ecc71; font-weight: bold; }
+        .btn-offline { background: #2c3e50; color: white; }
+        #status { font-size: 0.85rem; margin: 0; background: rgba(0,0,0,0.1); padding: 5px; border-radius: 3px; }
     </style>
 </head>
 <body>
 
 <div class="controls">
-    <div style="display: flex; gap: 10px;">
-        <button class="btn-accion" onclick="descargarZona()">1. Descargar Tlalpan (Oficina)</button>
-        <button class="btn-accion" style="background: #2c3e50; color: white;" onclick="simularOffline()">2. Probar Offline</button>
+    <div class="btn-group">
+        <button class="btn-accion" onclick="descargarZona()">1. Descargar Tlalpan</button>
+        <button class="btn-accion btn-offline" onclick="simularOffline()">2. Probar sin Red</button>
     </div>
-    <p id="status">Estado: Listo. Conecta internet para descargar capas.</p>
+    <p id="status">Estado: Listo para trabajar.</p>
 </div>
 
 <div id="map"></div>
 
 <script src="js/leaflet.js"></script>
 <script src="js/pouchdb.min.js"></script>
-<script src="js/tile-cover.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@mapbox/tile-cover@3.0.2/index.js"></script>
+
 <script src="js/L.TileLayer.PouchDB.js"></script>
 
 <script>
-    // 1. Inicialización del mapa centrando en Tlalpan
+    // --- PARCHE DE SEGURIDAD ---
+    // Si la librería se cargó como 'tilecover', se la pasamos a 'tileCover'
+    if (typeof window.tilecover !== 'undefined') {
+        window.tileCover = window.tilecover;
+    } else {
+        console.error("La librería tile-cover no cargó. Revisa tu conexión o el link.");
+    }
+    // 1. PARCHE DE COMPATIBILIDAD
+    // El plugin busca 'tileCover' pero la librería se registra como 'tilecover'
+    window.tileCover = window.tilecover;
+
+    // 2. INICIALIZACIÓN
     var map = L.map('map').setView([19.289, -99.167], 15); 
     var marker;
 
-    // 2. Configuración de Capa con PouchDB
-    // Nota: El navegador guardará los "tiles" en IndexedDB bajo el nombre 'mapa-tlalpan-v1'
+    // 3. CONFIGURACIÓN DE CAPA (Ajustada al plugin que pegaste)
     var offlineLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18,
         minZoom: 12,
-        useCache: true,
-        crossOrigin: true, 
-        cacheName: 'mapa-tlalpan-v1',
-        attribution: '© OpenStreetMap'
+        useCache: true,      // Activa PouchDB
+        crossOrigin: true,
+        cacheMaxAge: 24*3600*1000 * 7 // 7 días de vida
     });
 
     offlineLayer.addTo(map);
 
-    // 3. Función de Descarga Automática (SEED)
+    // 4. FUNCIÓN SEED (Descarga masiva)
     function descargarZona() {
         const status = document.getElementById('status');
         
         if (!navigator.onLine) {
-            alert("Necesitas internet para descargar el mapa primero.");
+            alert("Necesitas conexión a internet para descargar la zona.");
             return;
         }
 
-        // Definimos el rectángulo de Tlalpan Centro / Zonas críticas
+        // Definimos el área de Tlalpan Centro
         var bbox = L.latLngBounds(
-            [19.250, -99.200], // Suroeste
-            [19.320, -99.130]  // Noreste
+            [19.250, -99.200], // Sur-Oeste
+            [19.320, -99.130]  // Norte-Este
         );
 
-        status.innerHTML = "<b>Iniciando descarga masiva...</b> No cierres la ventana.";
-
-        // Descargamos zooms del 13 al 16 (equilibrio entre detalle y peso)
-        offlineLayer.seed(bbox, 13, 16);
+        status.innerHTML = "<b>Calculando cuadros...</b>";
+        
+        // El plugin usa .seed(bbox, minZoom, maxZoom)
+        // Zoom 14 al 16 es ideal para ver calles sin pesar gigabytes
+        offlineLayer.seed(bbox, 14, 16);
     }
 
-    // Eventos de Progreso del SEED
-    offlineLayer.on('seedprogress', function(p) {
-        var porcentaje = ((p.downloaded / p.remainingData) * 100).toFixed(0);
-        document.getElementById('status').innerText = `Descargando: ${porcentaje}% (${p.downloaded} de ${p.remainingData} cuadros)`;
+    // 5. EVENTOS DEL PLUGIN (Nombres corregidos según tu código fuente)
+    
+    // Al iniciar
+    offlineLayer.on('tilecache-load-start', function(res) {
+        document.getElementById('status').innerHTML = "<b>Iniciando descarga masiva...</b>";
     });
 
-    offlineLayer.on('seedend', function() {
-        document.getElementById('status').innerHTML = "✅ <b>Tlalpan descargado.</b> Ya puedes desconectar el Wi-Fi.";
-        alert("Mapa guardado en la memoria del celular.");
+    // Durante el progreso
+    offlineLayer.on('tilecache-load-progress', function(p) {
+        var porcentaje = ((p.done / p.total) * 100).toFixed(0);
+        document.getElementById('status').innerText = `Descargando: ${porcentaje}% (${p.done} de ${p.total} fotos)`;
     });
 
-    offlineLayer.on('seederror', function(err) {
-        document.getElementById('status').innerText = "❌ Error en descarga: " + err.error;
+    // Al terminar
+    offlineLayer.on('tilecache-load-done', function(res) {
+        document.getElementById('status').innerHTML = "✅ <b>Tlalpan guardado (" + res.downloadSize + " MB).</b>";
+        alert("¡Éxito! El mapa ya funciona sin internet.");
     });
 
-    // 4. Lógica de Simulación
+    // 6. LÓGICA DE SIMULACIÓN Y GPS
     function simularOffline() {
-        alert("Simulando... Apaga tu Wi-Fi manualmente y refresca la página para la prueba real.");
-        document.getElementById('status').innerText = "Modo: TRABAJO EN CAMPO (Offline)";
+        alert("Ahora puedes desconectar tu internet o poner modo avión. El mapa seguirá ahí.");
+        document.getElementById('status').innerText = "Modo: TRABAJO EN CAMPO (Sin Conexión)";
     }
 
-    // 5. Lógica del GPS (Punto Azul Dinámico)
     function rastrearGPS() {
-        // watch: true mantiene el seguimiento mientras el técnico camina
         map.locate({
             setView: true, 
             maxZoom: 16, 
@@ -119,9 +134,7 @@
         });
         
         map.on('locationfound', function(e) {
-            console.log("GPS Localizado: ", e.latlng);
             if (!marker) {
-                // Icono circular tipo Google Maps
                 marker = L.circleMarker(e.latlng, {
                     radius: 8,
                     fillColor: "#3498db",
@@ -129,19 +142,16 @@
                     weight: 3,
                     opacity: 1,
                     fillOpacity: 0.8
-                }).addTo(map).bindPopup("Tu ubicación actual");
+                }).addTo(map).bindPopup("Ubicación del Técnico");
             } else {
                 marker.setLatLng(e.latlng);
             }
         });
-
-        map.on('locationerror', function(e) {
-            console.warn("No se pudo obtener GPS: " + e.message);
-        });
     }
 
-    // Iniciar GPS al cargar
+    // Ejecutar GPS
     rastrearGPS();
 </script>
+
 </body>
 </html>
