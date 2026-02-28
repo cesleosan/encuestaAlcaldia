@@ -47,24 +47,25 @@
 <script src="js/leaflet.js"></script>
 <script src="js/pouchdb.min.js"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/@mapbox/tile-cover@3.0.2/index.js"></script>
+<script src="https://bundle.run/@mapbox/tile-cover@3.0.2"></script>
 
 <script src="js/L.TileLayer.PouchDB.js"></script>
 
 <script>
-    // --- PARCHE DE SEGURIDAD ---
-    // Si la librería se cargó como 'tilecover', se la pasamos a 'tileCover'
-    if (typeof window.tilecover !== 'undefined') {
-        window.tileCover = window.tilecover;
-    } else {
-        console.error("La librería tile-cover no cargó. Revisa tu conexión o el link.");
-    }
-    // 1. PARCHE DE COMPATIBILIDAD
-    // El plugin busca 'tileCover' pero la librería se registra como 'tilecover'
-    window.tileCover = window.tilecover;
+    // --- PARCHE DE SEGURIDAD PARA BUNDLE.RUN ---
+    // Intentamos encontrar la función en las diferentes rutas donde se pudo guardar
+    window.tileCover = window['@mapbox/tile-cover'] || 
+                       (window.tilecover ? window.tilecover.default : null) || 
+                       window.tilecover;
 
-    // 2. INICIALIZACIÓN
-    var map = L.map('map').setView([19.289, -99.167], 15); 
+    if (typeof window.tileCover !== 'function') {
+        console.error("⚠️ La librería tile-cover sigue sin ser reconocida como función.");
+    } else {
+        console.log("✅ Librería tile-cover cargada correctamente.");
+    }
+    // ------------------------------------------
+
+    var map = L.map('map').setView([19.289, -99.167], 15);
     var marker;
 
     // 3. CONFIGURACIÓN DE CAPA (Ajustada al plugin que pegaste)
