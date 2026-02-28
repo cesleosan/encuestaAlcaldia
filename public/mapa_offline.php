@@ -45,6 +45,7 @@
 
 <script src="js/leaflet.js"></script>
 <script src="js/pouchdb.min.js"></script>
+<script src="https://unpkg.com/@mapbox/tile-cover@3.0.2/index.js"></script>
 <script src="js/L.TileLayer.PouchDB.js"></script>
 
 <script>
