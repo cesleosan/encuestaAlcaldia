@@ -1,6 +1,6 @@
 <?php
 // Configuración de acceso a la Base de Datos
-define('DB_HOST', 'localhost');
+//define('DB_HOST', 'localhost');
 define('DB_USER', 'admin_encuesta');      // Tu usuario de MariaDB (usualmente 'root')
 //define('DB_USER', 'root');
 define('DB_PASS', 'root');          // Tu contraseña (en XAMPP suele ser vacía, en MAMP es 'root')
