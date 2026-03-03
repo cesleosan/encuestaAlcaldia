@@ -478,18 +478,15 @@ function validarYSiguiente(idActual, idSiguiente) {
     const form = document.getElementById('form-encuesta');
     if (form && !form.checkValidity()) { form.reportValidity(); return; }
     
-    // Captura normal de formulario
-    if (form) {
-        respuestas[idActual] = $(form).serializeArray();
-    }
-
-    // Si es la pantalla de mapa, añadimos las coordenadas al objeto de ese ID
+    // Si estamos en la pantalla de coordenadas, capturamos los inputs manuales
     if ($("#lat").length > 0) {
-        respuestas[idActual] = { 
-            latitud: $("#lat").val(), 
-            longitud: $("#lon").val(), 
-            calle_numero: $("#calle").val() 
+        respuestas[idActual] = {
+            latitud: $("#lat").val(),
+            longitud: $("#lon").val(),
+            calle_numero: $("#calle").val()
         };
+    } else {
+        respuestas[idActual] = $(form).serializeArray();
     }
 
     historial.push(idActual);
