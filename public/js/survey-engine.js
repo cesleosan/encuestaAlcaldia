@@ -550,15 +550,21 @@ function enviarAlServidor(payload) {
                 icon: 'success',
                 confirmButtonColor: '#773357'
             }).then(() => {
-                window.location.reload(); // Recarga para nueva encuesta
+                window.location.reload();
             });
         } else {
-            // Si el servidor responde error (ej. CURP duplicado)
-            Swal.fire('Atención', data.msg, 'warning');
+            // 🔥 MODIFICACIÓN QUIRÚRGICA: Mostramos el error real de MariaDB
+            console.error("Detalle técnico del servidor:", data.detalles); // Ver en F12
+            Swal.fire({
+                title: 'Error de Inserción',
+                html: `<p>${data.msg}</p><small style="color:red;">${data.detalles || 'Sin detalles'}</small>`,
+                icon: 'error',
+                confirmButtonColor: '#773357'
+            });
         }
     })
-    .catch(() => {
-        // Error de red: Guardar en local automáticamente
+    .catch(err => {
+        console.error("Error de conexión:", err);
         guardarEnLocal(payload);
     });
 }
