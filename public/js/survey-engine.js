@@ -283,133 +283,108 @@ function renderSeleccion(data, form) {
         evaluarDependenciasInternas();
     }
 
- function renderMapaGPS(data, contenedor) {
+function renderMapaGPS(data, contenedor) {
+
     let layout = $(`
         <div class="map-container-fluid">
+
             <div class="coords-header" style="display: flex; gap: 15px; margin-bottom: 20px;">
                 <div style="flex: 1;">
                     <label class="label-input" style="color: var(--guinda); font-weight: bold;">Latitud</label>
                     <input type="text" id="lat" name="latitud" class="input-redondo" readonly 
-                        style="background:#f8f9fa; border: 1px solid #ddd; cursor:not-allowed; font-weight: 600;">
+                        style="background:#f8f9fa; border: 1px solid #ddd; font-weight: 600;">
                 </div>
                 <div style="flex: 1;">
                     <label class="label-input" style="color: var(--guinda); font-weight: bold;">Longitud</label>
                     <input type="text" id="lon" name="longitud" class="input-redondo" readonly 
-                        style="background:#f8f9fa; border: 1px solid #ddd; cursor:not-allowed; font-weight: 600;">
+                        style="background:#f8f9fa; border: 1px solid #ddd; font-weight: 600;">
                 </div>
             </div>
 
-            <div class="mapa-wrapper" style="border: 2px solid var(--guinda); border-radius:15px; overflow:hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                <div id="mapa-interactivo" style="width:100%; height:450px; background: #eee;"></div>
+            <div style="background:#f4f4f4; padding:20px; border-radius:15px; text-align:center;">
+                <div id="gps-status" style="font-weight:bold; margin-bottom:10px;">
+                    🔎 Esperando señal GPS...
+                </div>
+
+                <div style="font-size:13px; color:#666;">
+                    Precisión: <span id="gps-accuracy">--</span> metros
+                </div>
             </div>
-            
-            <p style="font-size:12px; color:#666; margin-top:10px; font-style: italic;">
-                <i class="fa-solid fa-location-crosshairs"></i> Sensor GPS activo. Mueve el marcador para ajustar la precisión.
-            </p>
+
         </div>
 
         <div style="margin-top:25px; padding-top: 15px; border-top: 1px solid #eee;">
-            <label class="label-input" style="font-weight: bold;">Dirección Detectada (Calle y Número)</label>
+            <label class="label-input" style="font-weight: bold;">Dirección (Captura Manual)</label>
             <input type="text" id="calle" name="calle_numero" class="input-redondo" 
-                placeholder="Esperando señal de red para dirección..." style="background: #fff8f8; border-color: var(--guinda);" required>
+                placeholder="Escriba calle y número..." 
+                style="background: #fff; border-color: var(--guinda);" required>
         </div>
     `);
-    
+
     contenedor.append(layout);
 
     setTimeout(() => {
-        // Inicialización de Leaflet (Si hay red cargará el mapa, si no, el contenedor se queda gris pero los inputs funcionan)
-        if (window.currentMap) { window.currentMap.remove(); }
-        
-        // Coordenadas base de Tlalpan por si el GPS falla totalmente
-        window.currentMap = L.map('mapa-interactivo').setView([19.289, -99.167], 13);
-        
-        // Capa de mapa (Requiere internet)
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            timeout: 3000 // Si no carga en 3 segundos, no bloqueamos el flujo
-        }).addTo(window.currentMap);
 
-        let marker;
-
-        // --- FUNCIÓN NÚCLEO: GEOCODIFICACIÓN INVERSA (DEPENDE DE RED) ---
-        function reverseGeocode(lat, lon) {
-            // Solo intentamos geocodificar si el dispositivo dice que está online
-            if (!navigator.onLine) {
-                $("#calle").val("Sin conexión (Dirección manual requerida)");
-                return;
-            }
-
-            $("#calle").val("Buscando dirección...");
-            fetch(`https://photon.komoot.io/reverse?lon=${lon}&lat=${lat}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.features && data.features.length > 0) {
-                        const f = data.features[0].properties;
-                        const calle = f.name || f.street || "Calle no identificada";
-                        const numero = f.housenumber || "S/N";
-                        const colonia = f.district || f.locality || "";
-                        $("#calle").val(`${calle} ${numero}, ${colonia}`);
-                    }
-                })
-                .catch(() => $("#calle").val("Error de red al buscar dirección"));
+        if (!("geolocation" in navigator)) {
+            $("#gps-status").text("❌ Este dispositivo no soporta GPS.");
+            return;
         }
 
-        // --- CAPTURA DE HARDWARE GPS (FUNCIONA OFFLINE) ---
-        if ("geolocation" in navigator) {
-            const gpsOptions = {
-                enableHighAccuracy: true, // 🔥 FUERZA EL USO DEL CHIP GPS FÍSICO
-                timeout: 15000,          // Espera hasta 15 segundos la señal de satélite
-                maximumAge: 0            // No usar caché, queremos la posición real actual
-            };
+        const gpsOptions = {
+            enableHighAccuracy: true,   // 🔥 Usa chip GPS real
+            timeout: 20000,
+            maximumAge: 0
+        };
 
-            navigator.geolocation.getCurrentPosition(pos => {
-                const { latitude, longitude } = pos.coords;
-                
-                // 1. Inyectar inmediatamente en los inputs (esto se guarda en Dexie)
-                $("#lat").val(latitude.toFixed(7));
-                $("#lon").val(longitude.toFixed(7));
+        // 🔥 USAMOS watchPosition PARA MEJOR PRECISIÓN EN CAMPO
+        let watchID = navigator.geolocation.watchPosition(
 
-                // 2. Actualizar el mapa visual
-                window.currentMap.setView([latitude, longitude], 18);
-                marker = L.marker([latitude, longitude], { draggable: true }).addTo(window.currentMap);
-                
-                // 3. Intentar obtener dirección
-                reverseGeocode(latitude, longitude);
+            function(pos) {
 
-                // Disparo al terminar de arrastrar el marcador manual
-                marker.on('dragend', function() {
-                    const position = marker.getLatLng();
-                    $("#lat").val(position.lat.toFixed(7));
-                    $("#lon").val(position.lng.toFixed(7));
-                    reverseGeocode(position.lat, position.lng);
-                });
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                const accuracy = pos.coords.accuracy;
 
-            }, (error) => {
-                const msgs = {
-                    1: "Permiso de GPS denegado por el usuario.",
-                    2: "Señal de GPS no disponible.",
-                    3: "El sensor GPS tardó demasiado en responder."
+                $("#lat").val(lat.toFixed(7));
+                $("#lon").val(lon.toFixed(7));
+                $("#gps-accuracy").text(accuracy.toFixed(1));
+
+                if (accuracy <= 15) {
+                    $("#gps-status").text("✅ GPS preciso detectado");
+                } else {
+                    $("#gps-status").text("📡 Mejorando precisión...");
+                }
+
+                // Guardamos precisión y timestamp en variable global temporal
+                window._gpsExtraData = {
+                    precision_metros: accuracy,
+                    fecha_gps: new Date().toISOString()
                 };
-                console.warn("GPS Hardware Error:", msgs[error.code] || "Error desconocido");
-                // Si falla el sensor, permitimos que el técnico use el mapa manualmente
-            }, gpsOptions);
-        }
 
-        // Click en el mapa para posicionamiento manual de emergencia
-        window.currentMap.on('click', function(e) {
-            const { lat, lng } = e.latlng;
-            $("#lat").val(lat.toFixed(7));
-            $("#lon").val(lng.toFixed(7));
-            
-            if (marker) {
-                marker.setLatLng([lat, lng]);
-            } else {
-                marker = L.marker([lat, lng], { draggable: true }).addTo(window.currentMap);
+            },
+
+            function(error) {
+
+                const msgs = {
+                    1: "Permiso de GPS denegado.",
+                    2: "Señal GPS no disponible.",
+                    3: "Tiempo de espera agotado."
+                };
+
+                $("#gps-status").text("❌ " + (msgs[error.code] || "Error desconocido"));
+            },
+
+            gpsOptions
+        );
+
+        // 🔥 Limpiar GPS si el usuario cambia de pantalla
+        window._clearGPSWatcher = function() {
+            if (watchID) {
+                navigator.geolocation.clearWatch(watchID);
             }
-            reverseGeocode(lat, lng);
-        });
+        };
 
-    }, 500);
+    }, 400);
 }
     // --- MOTORES DE EVENTOS GLOBALES ---
 
@@ -504,12 +479,21 @@ function validarYSiguiente(idActual, idSiguiente) {
     if (form && !form.checkValidity()) { form.reportValidity(); return; }
     
     // Si estamos en la pantalla de coordenadas, capturamos los inputs manuales
-    if ($("#lat").length > 0) {
-        respuestas[idActual] = {
-            latitud: $("#lat").val(),
-            longitud: $("#lon").val(),
-            calle_numero: $("#calle").val()
-        };
+if ($("#lat").length > 0) {
+
+    // 🔥 Limpia el watcher GPS
+    if (window._clearGPSWatcher) {
+        window._clearGPSWatcher();
+    }
+
+    respuestas[idActual] = {
+        latitud: $("#lat").val(),
+        longitud: $("#lon").val(),
+        calle_numero: $("#calle").val(),
+        precision_metros: window._gpsExtraData?.precision_metros || null,
+        fecha_gps: window._gpsExtraData?.fecha_gps || null
+    };
+
     } else {
         respuestas[idActual] = $(form).serializeArray();
     }
