@@ -94,7 +94,13 @@ class Encuesta extends Controller {
         if ($nuevoFolio) {
             echo json_encode(['status' => 'success', 'folio' => $nuevoFolio]);
         } else {
-            echo json_encode(['status' => 'error', 'msg' => 'Error al insertar en base de datos']);
+            // Esto es lo que te dirá la verdad técnica
+            $errorReal = $this->encuestaModel->getError();
+            echo json_encode([
+                'status' => 'error', 
+                'msg' => 'Error al insertar en base de datos',
+                'detalles' => $errorReal 
+            ]);
         }
     }
 
