@@ -283,113 +283,101 @@ function renderSeleccion(data, form) {
         evaluarDependenciasInternas();
     }
 
+// --- LOGICA DE PROTECCIÓN INICIAL ---
 function renderMapaGPS(data, form) {
+    // Definimos el HTML con campos obligatorios y habilitados
     let layout = $(`
         <div class="map-container-fluid">
             <div class="coords-header" style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <div style="flex: 1;">
                     <label class="label-input">Latitud <span style="color:red">*</span></label>
-                    <input type="text" id="lat" name="latitud" class="input-redondo" readonly required style="background:#eee; font-weight:bold;">
+                    <input type="text" id="lat" name="latitud" class="input-redondo" readonly required style="background:#f4f4f4; border: 2px solid #773357;">
                 </div>
                 <div style="flex: 1;">
                     <label class="label-input">Longitud <span style="color:red">*</span></label>
-                    <input type="text" id="lon" name="longitud" class="input-redondo" readonly required style="background:#eee; font-weight:bold;">
+                    <input type="text" id="lon" name="longitud" class="input-redondo" readonly required style="background:#f4f4f4; border: 2px solid #773357;">
                 </div>
             </div>
 
-            <button type="button" id="btn-obtener-gps" class="btn-guinda" style="width:100%; margin-bottom:15px; background:#773357; height:50px; font-size:16px;">
-                <i class="fa-solid fa-location-dot"></i> CAPTURAR COORDENADAS GPS
+            <button type="button" id="btn-gps-manual" class="btn-guinda" style="width:100%; margin-bottom:15px; background:#773357; height:50px;">
+                <i class="fa-solid fa-location-crosshairs"></i> FORZAR CAPTURA GPS (HARDWARE)
             </button>
 
-            <div id="mapa-interactivo" style="width:100%; height:400px; border-radius:15px; border:2px solid #773357; background:#d5d5d5;"></div>
+            <div id="mapa-interactivo" style="width:100%; height:350px; border-radius:15px; background: #ddd; position:relative;">
+                <div id="fallback-msg" style="display:none; position:absolute; top:40%; width:100%; text-align:center; color:#666;">
+                   <b>Mapa en modo offline</b><br>Las coordenadas se capturan por sensor.
+                </div>
+            </div>
             
             <div style="margin-top:20px;">
-                <label class="label-input">Dirección / Calle y Número <span style="color:red">*</span></label>
-                <input type="text" id="calle" name="calle_numero" class="input-redondo" placeholder="Escriba la dirección aquí..." required>
-                <small id="msg-offline" style="color:#e67e22; display:none;">⚠️ Modo Offline: Por favor escriba la dirección manualmente.</small>
+                <label class="label-input">Dirección Completa <span style="color:red">*</span></label>
+                <input type="text" id="calle" name="calle_numero" class="input-redondo" 
+                       placeholder="Escriba la dirección manualmente..." 
+                       style="border: 2px solid #773357;" required>
             </div>
         </div>
     `);
     
     form.append(layout);
 
-    setTimeout(() => {
-        if (window.currentMap) { window.currentMap.remove(); }
+    // Intentamos inicializar Leaflet SOLO si la librería cargó
+    let mapLoaded = false;
+    if (typeof L !== 'undefined') {
+        try {
+            window.currentMap = L.map('mapa-interactivo').setView([19.289, -99.167], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { useCache: true }).addTo(window.currentMap);
+            mapLoaded = true;
+        } catch(e) { console.error("Error al iniciar mapa visual:", e); }
+    }
 
-        // Inicializar mapa (Iniciamos en CDMX por defecto)
-        window.currentMap = L.map('mapa-interactivo').setView([19.289, -99.167], 13);
+    if(!mapLoaded) $("#fallback-msg").show();
 
-        // Capa de Mapa con Soporte Offline PouchDB
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            useCache: true,
-            crossOrigin: true,
-            cacheMaxAge: 1000 * 60 * 60 * 24 * 30 // 30 días
-        }).addTo(window.currentMap);
+    // --- FUNCIÓN NÚCLEO: ACCESO AL CHIP GPS (NO REQUIERE INTERNET) ---
+    function obtenerUbicacionHardware() {
+        $("#btn-gps-manual").html("Buscando satélites...").prop('disabled', true);
 
-        let marker = null;
+        const geoOptions = {
+            enableHighAccuracy: true, // FUERZA AL CHIP GPS
+            timeout: 20000,           // 20 segundos máximo
+            maximumAge: 0             // No usar caché
+        };
 
-        // --- FUNCIÓN DE CAPTURA DE HARDWARE ---
-        function forzarCapturaGPS() {
-            $("#btn-obtener-gps").html('<i class="fa-solid fa-satellite fa-spin"></i> BUSCANDO SATÉLITES...').prop('disabled', true);
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const { latitude, longitude } = pos.coords;
+                
+                // Llenamos los campos de la DB inmediatamente
+                $("#lat").val(latitude.toFixed(7));
+                $("#lon").val(longitude.toFixed(7));
 
-            const geoOptions = {
-                enableHighAccuracy: true, // ESTO FUERZA AL CHIP GPS (NO REQUIERE INTERNET)
-                timeout: 15000,           // 15 segundos para fijar posición
-                maximumAge: 0             // No usar posiciones viejas
-            };
+                // Si el mapa existe, ponemos el pin
+                if (mapLoaded) {
+                    if (window.currentMarker) window.currentMap.removeLayer(window.currentMarker);
+                    window.currentMarker = L.marker([latitude, longitude]).addTo(window.currentMap);
+                    window.currentMap.setView([latitude, longitude], 18);
+                }
 
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    const lat = pos.coords.latitude;
-                    const lon = pos.coords.longitude;
+                // Lógica de Dirección
+                if (navigator.onLine) {
+                    reverseGeocode(latitude, longitude);
+                } else {
+                    // Si estamos offline, el campo calle queda libre para el usuario
+                    $("#calle").attr("placeholder", "Sin internet: Ingrese dirección manualmente").focus();
+                }
 
-                    // 1. Llenar inputs para la DB (SÍ O SÍ)
-                    $("#lat").val(lat.toFixed(7));
-                    $("#lon").val(lon.toFixed(7));
+                $("#btn-gps-manual").html("¡Ubicación Capturada!").css('background', '#27ae60').prop('disabled', false);
+            },
+            (err) => {
+                $("#btn-gps-manual").html("Reintentar GPS").prop('disabled', false);
+                Swal.fire('Error de Sensor', 'Asegúrate de estar en exterior y tener el GPS encendido.', 'warning');
+            },
+            geoOptions
+        );
+    }
 
-                    // 2. Colocar o mover marcador en el mapa
-                    if (marker) {
-                        marker.setLatLng([lat, lon]);
-                    } else {
-                        marker = L.marker([lat, lon], { draggable: true }).addTo(window.currentMap);
-                        // Si el usuario mueve el marcador manualmente
-                        marker.on('dragend', function() {
-                            const p = marker.getLatLng();
-                            $("#lat").val(p.lat.toFixed(7));
-                            $("#lon").val(p.lng.toFixed(7));
-                            if(navigator.onLine) reverseGeocode(p.lat, p.lng);
-                        });
-                    }
-                    window.currentMap.setView([lat, lon], 18);
-                    
-                    // 3. Obtener dirección por texto
-                    if (navigator.onLine) {
-                        $("#msg-offline").hide();
-                        reverseGeocode(lat, lon);
-                    } else {
-                        $("#msg-offline").show();
-                        $("#calle").val(""); // Limpiar para que el usuario escriba
-                        $("#calle").focus();
-                    }
-
-                    $("#btn-obtener-gps").html('<i class="fa-solid fa-check"></i> UBICACIÓN LISTA').css('background','#27ae60').prop('disabled', false);
-                },
-                (err) => {
-                    console.error(err);
-                    $("#btn-obtener-gps").html('<i class="fa-solid fa-location-dot"></i> REINTENTAR CAPTURA').prop('disabled', false);
-                    Swal.fire('Error GPS', 'No se pudo obtener la señal. Asegúrate de tener el GPS encendido y estar en un lugar con vista al cielo.', 'error');
-                },
-                geoOptions
-            );
-        }
-
-        // Ejecutar captura inicial
-        forzarCapturaGPS();
-
-        // Botón de reintento
-        $("#btn-obtener-gps").on('click', forzarCapturaGPS);
-
-    }, 500);
+    // Disparamos la captura al entrar a la pantalla
+    obtenerUbicacionHardware();
+    $("#btn-gps-manual").on('click', obtenerUbicacionHardware);
 }
 
 function reverseGeocode(lat, lon) {
