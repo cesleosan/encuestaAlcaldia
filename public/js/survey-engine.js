@@ -567,100 +567,38 @@ function enviarAlServidor(payload) {
 
     // CAMBIO 4: Sincronización automática al detectar red
 window.addEventListener('online', async () => {
+    // 1. Indicador visual
+    $('.status-indicator').css({'background-color': '#28a745'});
+
     const pendientes = await dbLocal.encuestas.toArray();
     if (pendientes.length === 0) return;
 
-    // Toast de aviso
-    const Toast = Swal.mixin({
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 3000
-    });
+    console.log(`Iniciando sincronización de ${pendientes.length} encuestas...`);
 
     for (const item of pendientes) {
         try {
-            const res = await fetch(`${URLROOT}/Encuesta/guardar`, {
+            // USAR LA RUTA COMPLETA PARA EVITAR FALLOS DE REDIRECCIÓN
+            const res = await fetch(`${URLROOT}/index.php?url=Encuesta/guardar`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(item.datos)
             });
+
+            // Si el servidor devuelve error de texto en lugar de JSON, esto fallará
             const data = await res.json();
+
             if (data.status === 'success') {
                 await dbLocal.encuestas.delete(item.id);
-                Toast.fire({ icon: 'success', title: `Sincronizado: ${item.folio}` });
+                console.log(`✅ Folio ${item.folio} sincronizado.`);
+            } else {
+                console.error(`❌ Error del servidor para folio ${item.folio}: ${data.msg}`);
             }
         } catch(e) { 
-            console.error("Fallo intento de sincronización", e);
-            break; 
+            console.error("Fallo de red o error de ruta. La sincronización se pausó.", e);
+            break; // Detenemos el ciclo si hay un error de conexión real
         } 
     }
 });
-window.addEventListener('online', async () => {
-        // 1. Cambiamos el color del indicador visual (bolita)
-        $('.status-indicator').css({
-            'background-color': '#28a745', 
-            'box-shadow': '0 0 5px rgba(40, 167, 69, 0.5)'
-        });
-
-        // 2. Iniciamos la sincronización de encuestas en Dexie
-        const pendientes = await dbLocal.encuestas.toArray();
-        if (pendientes.length === 0) return;
-
-        let subidasConExito = 0;
-        let foliosSincronizados = [];
-
-        // Aviso tipo Toast de que inició la subida
-        const Toast = Swal.mixin({
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 2000,
-            timerProgressBar: true
-        });
-
-        Toast.fire({
-            icon: 'info',
-            title: `Se detectó red. Sincronizando ${pendientes.length} encuestas...`
-        });
-
-        for (const item of pendientes) {
-            try {
-                const res = await fetch(`${URLROOT}/Encuesta/guardar`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(item.datos)
-                });
-                const data = await res.json();
-
-                if (data.status === 'success') {
-                    await dbLocal.encuestas.delete(item.id);
-                    subidasConExito++;
-                    foliosSincronizados.push(item.folio);
-                }
-            } catch(e) { 
-                console.error("Error al sincronizar folio: " + item.folio);
-                break; // Si falla la red, detenemos el ciclo
-            } 
-        }
-
-        // 3. REPORTE FINAL DE ÉXITO
-        if (subidasConExito > 0) {
-            Swal.fire({
-                title: '¡Sincronización Exitosa!',
-                html: `
-                    <div style="text-align: left; font-size: 0.9rem;">
-                        <p>Se subieron <b>${subidasConExito}</b> encuestas capturadas en campo:</p>
-                        <ul style="max-height: 150px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 10px; list-style: none;">
-                            ${foliosSincronizados.map(f => `<li>✅ Folio: <b>${f}</b></li>`).join('')}
-                        </ul>
-                    </div>
-                `,
-                icon: 'success',
-                confirmButtonColor: '#773357'
-            });
-        }
-    });
 
     // También actualizamos el de offline para que sea consistente
     window.addEventListener('offline', () => {
