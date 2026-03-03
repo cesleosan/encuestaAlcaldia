@@ -335,59 +335,43 @@ function renderMapaGPS(data, form) {
 
         // --- LA FUNCIÓN QUE ACCEDE AL HARDWARE ---
         function capturarUbicacion() {
-            if (!navigator.geolocation) {
-                return Swal.fire('Error', 'Tu navegador no soporta GPS.', 'error');
-            }
+    if (!navigator.geolocation) return;
 
-            // Mostrar estado de carga
-            $("#btn-forzar-gps").html('<i class="fa-solid fa-spinner fa-spin"></i> BUSCANDO SATÉLITES...').prop('disabled', true);
+    const opcionesGps = { enableHighAccuracy: true, timeout: 10000 };
 
-            const opcionesGps = {
-                enableHighAccuracy: true, // ¡CRÍTICO! Fuerza el uso del chip GPS físico
-                timeout: 15000,           // Espera 15 segundos máximo
-                maximumAge: 0             // No usar ubicaciones guardadas en caché del sistema
-            };
+    navigator.geolocation.getCurrentPosition((pos) => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
 
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    const lat = pos.coords.latitude;
-                    const lon = pos.coords.longitude;
+        $("#lat").val(lat.toFixed(7));
+        $("#lon").val(lon.toFixed(7));
 
-                    // Llenar inputs sí o sí
-                    $("#lat").val(lat.toFixed(7));
-                    $("#lon").val(lon.toFixed(7));
-
-                    // Actualizar Mapa visualmente
-                    if (marker) {
-                        marker.setLatLng([lat, lon]);
-                    } else {
-                        marker = L.marker([lat, lon], { draggable: true }).addTo(window.currentMap);
-                    }
-                    window.currentMap.setView([lat, lon], 18);
-
-                    // Revertir botón
-                    $("#btn-forzar-gps").html('<i class="fa-solid fa-check"></i> UBICACIÓN CAPTURADA').css('background','#27ae60').prop('disabled', false);
-
-                    // Si hay internet, intentar dirección. Si no, dejar que escriban.
-                    if (navigator.onLine) {
-                        reverseGeocode(lat, lon);
-                    } else {
-                        $("#map-offline-alert").fadeIn();
-                        if($("#calle").val() === "") $("#calle").focus();
-                    }
-                },
-                (error) => {
-                    $("#btn-forzar-gps").html('<i class="fa-solid fa-location-crosshairs"></i> REINTENTAR CAPTURA').prop('disabled', false);
-                    let mensaje = "Error desconocido";
-                    if(error.code === 1) mensaje = "Debes permitir el acceso al GPS en el navegador.";
-                    if(error.code === 2) mensaje = "No se pudo detectar la ubicación (¿Estás bajo techo?).";
-                    if(error.code === 3) mensaje = "El GPS tardó demasiado en responder.";
-                    
-                    Swal.fire('Atención', mensaje, 'warning');
-                },
-                opcionesGps
-            );
+        // ASEGURAR QUE EL MARCADOR EXISTA
+        if (window.currentMarker) {
+            window.currentMarker.setLatLng([lat, lon]);
+        } else {
+            // Creamos el marcador globalmente para manipularlo
+            window.currentMarker = L.marker([lat, lon], { draggable: true }).addTo(window.currentMap);
+            
+            // Si lo mueven a mano, que actualice la calle también
+            window.currentMarker.on('dragend', function() {
+                const p = window.currentMarker.getLatLng();
+                $("#lat").val(p.lat.toFixed(7));
+                $("#lon").val(p.lng.toFixed(7));
+                reverseGeocode(p.lat, p.lng);
+            });
         }
+        
+        window.currentMap.setView([lat, lon], 18);
+
+        // LLENADO AUTOMÁTICO DE CALLE (ONLINE)
+        if (navigator.onLine) {
+            reverseGeocode(lat, lon);
+        }
+    }, (err) => {
+        console.error("Error GPS:", err);
+    }, opcionesGps);
+}
 
         // Ejecutar al cargar la pantalla
         capturarUbicacion();

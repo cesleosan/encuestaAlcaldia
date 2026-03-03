@@ -120,6 +120,13 @@ $bancoJson = htmlspecialchars(json_encode($banco), ENT_QUOTES, 'UTF-8');
         border-radius: var(--radio-global) !important;
         padding: 10px 30px;
     }
+    /* Fix para el marcador invisible de Leaflet */
+.leaflet-marker-icon {
+    content: url('https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png');
+}
+.leaflet-marker-shadow {
+    content: url('https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png');
+}
 </style>
 
 <img src="<?php echo URLROOT; ?>/logos/Logo AT Vertical N 100PX.png" 
