@@ -284,80 +284,82 @@ function renderSeleccion(data, form) {
     }
 
 function renderMapaGPS(data, form) {
+    // 1. EL LAYOUT 100% COMPLETO (La dirección no se quita nunca)
     let layout = $(`
         <div class="map-container-fluid">
             <div class="coords-header" style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <div style="flex: 1;">
                     <label class="label-input">Latitud <span style="color:red">*</span></label>
-                    <input type="text" id="lat" name="latitud" class="input-redondo" readonly required 
-                           style="background:#f4f4f4; border: 2px solid #773357; font-weight: bold;">
+                    <input type="text" id="lat" name="latitud" class="input-redondo" required 
+                           style="background:#f4f4f4; border: 2px solid #773357; font-weight: bold;" readonly>
                 </div>
                 <div style="flex: 1;">
                     <label class="label-input">Longitud <span style="color:red">*</span></label>
-                    <input type="text" id="lon" name="longitud" class="input-redondo" readonly required 
-                           style="background:#f4f4f4; border: 2px solid #773357; font-weight: bold;">
+                    <input type="text" id="lon" name="longitud" class="input-redondo" required 
+                           style="background:#f4f4f4; border: 2px solid #773357; font-weight: bold;" readonly>
                 </div>
             </div>
 
-            <button type="button" id="btn-gps-manual" class="btn-guinda" style="width:100%; margin-bottom:15px; background:#773357; height:50px;">
-                <i class="fa-solid fa-location-crosshairs"></i> FORZAR CAPTURA GPS (HARDWARE)
+            <button type="button" id="btn-gps-manual" class="btn-guinda" style="width:100%; margin-bottom:15px; background:#773357; height:50px; font-weight:bold; color:white; border-radius: 8px;">
+                <i class="fa-solid fa-location-crosshairs"></i> OBTENER GPS AHORA
             </button>
 
-            <div id="mapa-interactivo" style="width:100%; height:350px; border-radius:15px; background: #ddd; position:relative; overflow:hidden;">
-                <div id="fallback-msg" style="display:none; position:absolute; top:40%; width:100%; text-align:center; color:#666; z-index:10;">
-                   <b>Mapa en modo offline</b><br>Capturando por satélite...
+            <div id="mapa-interactivo" style="width:100%; height:350px; border-radius:15px; background: #ddd; position:relative; overflow:hidden; border: 2px solid #773357;">
+                <div id="fallback-msg" style="display:none; position:absolute; top:40%; width:100%; text-align:center; color:#333; z-index:1000; font-weight:bold; background: rgba(255,255,255,0.8); padding: 10px;">
+                   🌍 Mapa visual no disponible offline.<br>Pero el GPS sigue funcionando.
                 </div>
             </div>
             
             <div style="margin-top:20px;">
-                <label class="label-input">Dirección Completa <span style="color:red">*</span></label>
+                <label class="label-input">Dirección Completa (Calle, Núm, Colonia) <span style="color:red">*</span></label>
                 <input type="text" id="calle" name="calle_numero" class="input-redondo" 
-                       placeholder="Cargando o escriba manualmente..." 
-                       style="border: 2px solid #773357;" required>
+                       placeholder="Escriba la dirección manualmente..." 
+                       style="border: 2px solid #773357; background: #fff;" required>
             </div>
         </div>
     `);
     
     form.append(layout);
 
+    // 2. INICIAR MAPA VISUAL (Protegido con Try/Catch para que no rompa el offline)
     let mapLoaded = false;
-    // Solo iniciamos Leaflet si la librería está disponible
-    if (typeof L !== 'undefined') {
-        try {
+    try {
+        if (typeof L !== 'undefined') {
             window.currentMap = L.map('mapa-interactivo').setView([19.289, -99.167], 13);
-            // El plugin PouchDB debe estar cargado antes que esto
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 useCache: true,
                 crossOrigin: true
             }).addTo(window.currentMap);
             mapLoaded = true;
-        } catch(e) { console.error("Fallo visual del mapa:", e); }
+        } else {
+            $("#fallback-msg").show();
+        }
+    } catch(e) {
+        console.error("Leaflet offline error:", e);
+        $("#fallback-msg").show();
     }
 
-    if(!mapLoaded) $("#fallback-msg").show();
-
-    // --- CAPTURA DE HARDWARE AGRESIVA ---
+    // 3. NÚCLEO DURO: OBTENER GPS CON DOBLE INTENTO (A prueba de fallos)
     function obtenerUbicacionHardware() {
-        $("#btn-gps-manual").html('<i class="fa-solid fa-satellite fa-spin"></i> BUSCANDO SATÉLITES...').prop('disabled', true);
+        if (!navigator.geolocation) {
+            Swal.fire('Error', 'Este dispositivo no soporta GPS.', 'error');
+            return;
+        }
 
-        // Opciones críticas para que funcione OFFLINE
-        const geoOptions = {
-            enableHighAccuracy: true, // ESTO DESPIERTA EL CHIP GPS (Satélite)
-            timeout: 15000,           // 15 segundos máximo para encontrar señal
-            maximumAge: 0             // No aceptar coordenadas viejas/cacheadas
-        };
+        $("#btn-gps-manual").html('⏳ BUSCANDO SATÉLITES...').prop('disabled', true).css('background', '#e67e22');
 
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                const lat = pos.coords.latitude.toFixed(7);
-                const lon = pos.coords.longitude.toFixed(7);
-                
-                // Llenado obligatorio para la DB
-                $("#lat").val(lat);
-                $("#lon").val(lon);
+        // Función de ÉXITO (Llena la latitud, longitud y avisa a la dirección)
+        function exitoGPS(pos) {
+            const lat = pos.coords.latitude.toFixed(7);
+            const lon = pos.coords.longitude.toFixed(7);
+            
+            // LLENADO GARANTIZADO DE INPUTS
+            $("#lat").val(lat);
+            $("#lon").val(lon);
 
-                // Actualización visual si el mapa cargó
-                if (mapLoaded) {
+            // Intentar mover el marcador visual si el mapa existe
+            if (mapLoaded) {
+                try {
                     if (window.currentMarker) window.currentMap.removeLayer(window.currentMarker);
                     window.currentMarker = L.marker([lat, lon], {draggable: true}).addTo(window.currentMap);
                     window.currentMap.setView([lat, lon], 18);
@@ -366,38 +368,61 @@ function renderMapaGPS(data, form) {
                         const p = window.currentMarker.getLatLng();
                         $("#lat").val(p.lat.toFixed(7));
                         $("#lon").val(p.lng.toFixed(7));
-                        if(navigator.onLine) reverseGeocode(p.lat, p.lng);
+                        if(navigator.onLine && typeof reverseGeocode === 'function') reverseGeocode(p.lat, p.lng);
                     });
-                }
+                } catch(e) { console.error("Error visual marcador:", e); }
+            }
 
-                // Lógica de Dirección (Online vs Offline)
-                if (navigator.onLine) {
-                    reverseGeocode(lat, lon);
-                } else {
-                    $("#calle").attr("placeholder", "Offline: Ingrese calle y número a mano").focus();
-                }
+            // GESTIÓN DE LA DIRECCIÓN COMPLETA
+            if (navigator.onLine && typeof reverseGeocode === 'function') {
+                reverseGeocode(lat, lon); // Intenta autollenar si hay red
+            } else {
+                // Mantiene el campo libre y pone el foco para que el técnico escriba
+                $("#calle").attr("placeholder", "Escriba la dirección aquí (Sin internet)").focus();
+            }
 
-                $("#btn-gps-manual").html('<i class="fa-solid fa-check"></i> LISTO').css('background', '#27ae60').prop('disabled', false);
-            },
-            (err) => {
-                $("#btn-gps-manual").html('<i class="fa-solid fa-rotate"></i> REINTENTAR CAPTURA').prop('disabled', false);
-                let msg = (err.code === 1) ? "Permisos GPS denegados." : "Señal débil. Sal al exterior.";
-                Swal.fire('GPS Offline', msg, 'warning');
-            },
-            geoOptions
-        );
+            $("#btn-gps-manual").html('✅ UBICACIÓN OBTENIDA').css('background', '#27ae60').prop('disabled', false);
+        }
+
+        // Función de ERROR (Si falla el satélite puro, hace un segundo intento menos exigente)
+        function errorGPS(err) {
+            console.warn("Fallo GPS Alta Precisión, intentando recuperar caché de ubicación...");
+            
+            const opcionesBaja = { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 };
+            
+            navigator.geolocation.getCurrentPosition(exitoGPS, (errFinal) => {
+                $("#btn-gps-manual").html('⚠️ REINTENTAR GPS').css('background', '#c0392b').prop('disabled', false);
+                Swal.fire('GPS Falló', 'No se pudo obtener la latitud y longitud. Asegúrate de tener la ubicación encendida en el teléfono y sal al exterior.', 'warning');
+            }, opcionesBaja);
+        }
+
+        // Intento 1: Alta precisión estricta
+        const opcionesAlta = { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 };
+        navigator.geolocation.getCurrentPosition(exitoGPS, errorGPS, opcionesAlta);
     }
 
-    // Disparo automático al renderizar
-    obtenerUbicacionHardware();
-    $("#btn-gps-manual").on('click', obtenerUbicacionHardware);
+    // 4. DISPARAR GPS AUTOMÁTICAMENTE AL ENTRAR A LA PREGUNTA
+    setTimeout(obtenerUbicacionHardware, 500); // Pequeña pausa para que el HTML cargue bien
+    
+    // Asignar evento al botón de forzar captura
+    $("#btn-gps-manual").off('click').on('click', obtenerUbicacionHardware);
 }
 
 function reverseGeocode(lat, lon) {
-    if (!navigator.onLine) return;
+    if (!navigator.onLine) {
+        $("#calle").attr("placeholder", "Modo offline: Escriba la dirección a mano");
+        return;
+    }
 
-    fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lon}`)
-        .then(res => res.json())
+    // 1. AVISO VISUAL: Le decimos al técnico que el sistema está trabajando
+    $("#calle").attr("placeholder", "Buscando dirección por satélite...");
+
+    // Nota: Photon prefiere el orden lon, lat en su URL oficial
+    fetch(`https://photon.komoot.io/reverse?lon=${lon}&lat=${lat}`)
+        .then(res => {
+            if (!res.ok) throw new Error("Saturación del servidor Photon");
+            return res.json();
+        })
         .then(data => {
             if (data.features && data.features.length > 0) {
                 const p = data.features[0].properties;
@@ -405,14 +430,28 @@ function reverseGeocode(lat, lon) {
                 const num = p.housenumber || "";
                 const colonia = p.district || p.locality || "";
                 
-                // Solo auto-llenamos si el campo está vacío
+                // 2. LIMPIEZA: Evitamos que queden comas sueltas si falta algún dato
+                let direccionFormateada = `${calle} ${num}, ${colonia}`.trim();
+                direccionFormateada = direccionFormateada.replace(/^[,\s]+|[,\s]+$/g, '').replace(/,\s*,/g, ',');
+
+                // 3. LLENADO SEGURO
                 if($("#calle").val() === "") {
-                    $("#calle").val(`${calle} ${num}, ${colonia}`.trim());
+                    // Si encontró algo válido (más de 3 letras) lo pone, si no, avisa.
+                    if (direccionFormateada.length > 3) {
+                        $("#calle").val(direccionFormateada);
+                    } else {
+                        $("#calle").attr("placeholder", "Dirección no detallada. Escríbala a mano.");
+                    }
                 }
+            } else {
+                // Si la API no sabe qué hay en esas coordenadas
+                $("#calle").attr("placeholder", "Zona sin registros. Escriba la dirección a mano.");
             }
         })
-        .catch(() => {
-            console.warn("Fallo Photon, use entrada manual.");
+        .catch((e) => {
+            console.warn("Fallo Photon:", e);
+            // 4. PLAN B VISUAL: Si el internet es súper lento o Photon bloquea, el técnico sabe qué hacer.
+            $("#calle").attr("placeholder", "Fallo de conexión. Escriba la dirección manualmente.");
         });
 }
     // --- MOTORES DE EVENTOS GLOBALES ---
