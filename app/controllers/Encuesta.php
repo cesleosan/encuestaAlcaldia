@@ -68,23 +68,25 @@ class Encuesta extends Controller {
         $actividad_str = is_array($actividad) ? implode(', ', array_map(function($item) { return $item['value']; }, $actividad)) : 'OTRO';
 
         $datosGuardar = [
-            'folio' => $this->buscarValor($respuestas[2], 'folio'), // Tomamos el folio generado en el front
-            'usuario_id' => $_SESSION['user_id'],
-            'curp' => $curp,
-            'nombre' => $nombre,
-            'paterno' => $paterno,
-            'materno' => $materno,
-            'fecha_nacimiento' => $this->curpToFecha($curp),
-            'sexo' => $this->curpToSexo($curp),
-            'tiempo_tlalpan' => $this->buscarValor($respuestas[2], 'tiempo_residencia'),
-            'tiempo_cdmx' => $this->buscarValor($respuestas[4], 'tiempo_residencia_cdmx'),
-            'calle' => $calle,
-            'num_ext' => 'S/N',
-            'colonia_id' => null,
-            'latitud' => $lat,
-            'longitud' => $lon,
-            'actividad_principal' => $actividad_str,
-            'respuestas_completas' => $respuestas
+            'folio'                => $this->buscarValor($respuestas[2], 'folio'),
+            'usuario_id'           => $_SESSION['user_id'],
+            'curp'                 => $curp,
+            'nombre'               => $nombre,
+            'paterno'              => $paterno,
+            'materno'              => $materno,
+            'fecha_nacimiento'     => $this->curpToFecha($curp),
+            'sexo'                 => $this->curpToSexo($curp),
+            'tiempo_tlalpan'       => $this->buscarValor($respuestas[2], 'tiempo_residencia'),
+            'tiempo_cdmx'          => $this->buscarValor($respuestas[4], 'tiempo_residencia_cdmx'),
+            'calle'                => $calle,
+            'num_ext'              => 'S/N',
+            'colonia_id'           => null,
+            'latitud'              => $lat,
+            'longitud'             => $lon,
+            'actividad_principal'  => $actividad_str,
+            
+            // 🔥 EL FIX: Convertir el array a una cadena JSON antes de guardar
+            'respuestas_completas' => json_encode($respuestas, JSON_UNESCAPED_UNICODE) 
         ];
 
         $nuevoFolio = $this->encuestaModel->agregar($datosGuardar);
