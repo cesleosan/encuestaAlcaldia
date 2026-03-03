@@ -287,37 +287,24 @@ function renderMapaGPS(data, contenedor) {
 
     let layout = $(`
         <div class="map-container-fluid">
-
-            <div class="coords-header" style="display: flex; gap: 15px; margin-bottom: 20px;">
-                <div style="flex: 1;">
-                    <label class="label-input" style="color: var(--guinda); font-weight: bold;">Latitud</label>
-                    <input type="text" id="lat" name="latitud" class="input-redondo" readonly 
-                        style="background:#f8f9fa; border: 1px solid #ddd; font-weight: 600;">
+            <div class="coords-header" style="display:flex; gap:15px; margin-bottom:20px;">
+                <div style="flex:1;">
+                    <label>Latitud</label>
+                    <input type="text" id="lat" readonly class="input-redondo">
                 </div>
-                <div style="flex: 1;">
-                    <label class="label-input" style="color: var(--guinda); font-weight: bold;">Longitud</label>
-                    <input type="text" id="lon" name="longitud" class="input-redondo" readonly 
-                        style="background:#f8f9fa; border: 1px solid #ddd; font-weight: 600;">
+                <div style="flex:1;">
+                    <label>Longitud</label>
+                    <input type="text" id="lon" readonly class="input-redondo">
                 </div>
             </div>
 
-            <div style="background:#f4f4f4; padding:20px; border-radius:15px; text-align:center;">
-                <div id="gps-status" style="font-weight:bold; margin-bottom:10px;">
-                    🔎 Esperando señal GPS...
-                </div>
-
-                <div style="font-size:13px; color:#666;">
-                    Precisión: <span id="gps-accuracy">--</span> metros
-                </div>
+            <div style="border-radius:15px; overflow:hidden;">
+                <div id="mapa-interactivo" style="width:100%; height:450px;"></div>
             </div>
 
-        </div>
-
-        <div style="margin-top:25px; padding-top: 15px; border-top: 1px solid #eee;">
-            <label class="label-input" style="font-weight: bold;">Dirección (Captura Manual)</label>
-            <input type="text" id="calle" name="calle_numero" class="input-redondo" 
-                placeholder="Escriba calle y número..." 
-                style="background: #fff; border-color: var(--guinda);" required>
+            <div style="margin-top:10px; font-size:13px;">
+                Precisión: <span id="gps-accuracy">--</span> metros
+            </div>
         </div>
     `);
 
@@ -325,19 +312,27 @@ function renderMapaGPS(data, contenedor) {
 
     setTimeout(() => {
 
-        if (!("geolocation" in navigator)) {
-            $("#gps-status").text("❌ Este dispositivo no soporta GPS.");
-            return;
+        if (window.currentMap) {
+            window.currentMap.remove();
         }
 
-        const gpsOptions = {
-            enableHighAccuracy: true,   // 🔥 Usa chip GPS real
-            timeout: 20000,
-            maximumAge: 0
-        };
+        window.currentMap = L.map('mapa-interactivo').setView([19.289, -99.167], 13);
 
-        // 🔥 USAMOS watchPosition PARA MEJOR PRECISIÓN EN CAMPO
-        let watchID = navigator.geolocation.watchPosition(
+var tileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19
+});
+
+var pouchLayer = new L.TileLayer.PouchDB(tileLayer, {
+    useCache: true,
+    saveToCache: true,
+    useOnlyCache: false
+});
+
+pouchLayer.addTo(window.currentMap);
+
+        let marker;
+
+        navigator.geolocation.watchPosition(
 
             function(pos) {
 
@@ -349,42 +344,35 @@ function renderMapaGPS(data, contenedor) {
                 $("#lon").val(lon.toFixed(7));
                 $("#gps-accuracy").text(accuracy.toFixed(1));
 
-                if (accuracy <= 15) {
-                    $("#gps-status").text("✅ GPS preciso detectado");
+                window.currentMap.setView([lat, lon], 18);
+
+                if (!marker) {
+                    marker = L.marker([lat, lon], { draggable:true }).addTo(window.currentMap);
                 } else {
-                    $("#gps-status").text("📡 Mejorando precisión...");
+                    marker.setLatLng([lat, lon]);
                 }
 
-                // Guardamos precisión y timestamp en variable global temporal
-                window._gpsExtraData = {
-                    precision_metros: accuracy,
-                    fecha_gps: new Date().toISOString()
-                };
+                marker.on('dragend', function() {
+                    const p = marker.getLatLng();
+                    $("#lat").val(p.lat.toFixed(7));
+                    $("#lon").val(p.lng.toFixed(7));
+                });
 
             },
 
             function(error) {
-
-                const msgs = {
-                    1: "Permiso de GPS denegado.",
-                    2: "Señal GPS no disponible.",
-                    3: "Tiempo de espera agotado."
-                };
-
-                $("#gps-status").text("❌ " + (msgs[error.code] || "Error desconocido"));
+                console.warn("GPS error:", error.message);
             },
 
-            gpsOptions
+            {
+                enableHighAccuracy:true,
+                maximumAge:0,
+                timeout:20000
+            }
+
         );
 
-        // 🔥 Limpiar GPS si el usuario cambia de pantalla
-        window._clearGPSWatcher = function() {
-            if (watchID) {
-                navigator.geolocation.clearWatch(watchID);
-            }
-        };
-
-    }, 400);
+    }, 300);
 }
     // --- MOTORES DE EVENTOS GLOBALES ---
 
