@@ -406,6 +406,24 @@ function renderMapaGPS(data, form) {
 
     }, 500);
 }
+
+function reverseGeocode(lat, lon) {
+    if (!navigator.onLine) return; // Salir de inmediato si no hay red
+
+    fetch(`https://photon.komoot.io/reverse?lon=${lon}&lat=${lat}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.features && data.features.length > 0) {
+                const f = data.features[0].properties;
+                const calle = f.name || f.street || "";
+                const num = f.housenumber || "";
+                // Solo llenamos si el usuario no ha escrito nada
+                if($("#calle").val() === "" || $("#calle").val().includes("Buscando")) {
+                    $("#calle").val(`${calle} ${num}`.trim());
+                }
+            }
+        }).catch(e => console.log("Offline: No se pudo obtener dirección por texto."));
+}
     // --- MOTORES DE EVENTOS GLOBALES ---
 
     // 1. CURP Automático
