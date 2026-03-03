@@ -176,7 +176,6 @@ $bancoJson = htmlspecialchars(json_encode($banco), ENT_QUOTES, 'UTF-8');
 <script src="<?php echo URLROOT; ?>/js/leaflet.js"></script>
 <script src="<?php echo URLROOT; ?>/js/pouchdb.min.js"></script>
 <script src="<?php echo URLROOT; ?>/js/L.TileLayer.PouchDB.js"></script>
-<script src="<?php echo URLROOT; ?>/js/tile-cover.js"></script>
 
 <script>
     const URLROOT = "<?php echo URLROOT; ?>"; 
