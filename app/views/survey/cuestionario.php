@@ -127,6 +127,56 @@ $bancoJson = htmlspecialchars(json_encode($banco), ENT_QUOTES, 'UTF-8');
 .leaflet-marker-shadow {
     content: url('https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png');
 }
+/* Marcador personalizado estilo Guinda Tlalpan */
+.custom-pin {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.pin-bola {
+    width: 30px;
+    height: 30px;
+    border-radius: 50% 50% 50% 0;
+    background: var(--guinda);
+    position: absolute;
+    transform: rotate(-45deg);
+    left: 50%;
+    top: 50%;
+    margin: -15px 0 0 -15px;
+    border: 2px solid #ffffff;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.pin-bola::after {
+    content: "";
+    width: 10px;
+    height: 10px;
+    margin: 8px 0 0 8px;
+    background: #ffffff;
+    position: absolute;
+    border-radius: 50%;
+}
+
+/* Efecto de pulso para cuando el GPS está buscando (opcional) */
+.pin-pulsante::before {
+    content: "";
+    background: rgba(119, 51, 87, 0.4);
+    border-radius: 50%;
+    height: 40px;
+    width: 40px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    margin: -20px 0 0 -20px;
+    animation: pulsate 1.5s ease-out infinite;
+}
+
+@keyframes pulsate {
+    0% { transform: scale(0.1, 0.1); opacity: 0.0; }
+    50% { opacity: 1.0; }
+    100% { transform: scale(1.2, 1.2); opacity: 0.0; }
+}
 </style>
 
 <img src="<?php echo URLROOT; ?>/logos/Logo AT Vertical N 100PX.png" 
