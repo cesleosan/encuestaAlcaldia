@@ -284,7 +284,6 @@ function renderSeleccion(data, form) {
     }
 
 function renderMapaGPS(data, contenedor) {
-    // 1. LAYOUT: Mantenemos el botón manual porque es el que "despierta" al chip en móviles
     let layout = $(`
         <div class="map-container-fluid">
             <div class="coords-header" style="display: flex; gap: 15px; margin-bottom: 20px;">
@@ -316,35 +315,26 @@ function renderMapaGPS(data, contenedor) {
     contenedor.append(layout);
 
     setTimeout(() => {
-        // --- 1. INICIALIZACIÓN DEL MOTOR DE MAPAS ---
+        // --- 1. INICIALIZACIÓN DEL MAPA ---
         if (window.currentMap) { window.currentMap.remove(); }
-        
-        // Coordenadas iniciales (Tlalpan Centro)
         window.currentMap = L.map('mapa-interactivo').setView([19.289, -99.167], 13);
         
-        // Intentamos cargar las imágenes del mapa (SOLO ONLINE)
         if (navigator.onLine) {
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(window.currentMap);
         }
-        // Definimos el ícono guinda
+
+        // --- 2. DEFINICIÓN DEL PIN GUINDA ---
         const iconGuinda = L.divIcon({
             className: 'custom-pin pin-pulsante',
             html: '<div class="pin-bola"></div>',
             iconSize: [30, 30],
-            iconAnchor: [15, 30] // Punto de anclaje en la punta de la gota
+            iconAnchor: [15, 30]
         });
 
-        // Cuando creas el marcador por primera vez:
-        marker = L.marker([latitude, longitude], { 
-            draggable: true,
-            icon: iconGuinda // 🔥 USAMOS NUESTRO ICONO
-        }).addTo(window.currentMap);
-        let marker;
+        let marker; // Una sola declaración limpia
 
-        // --- 2. FUNCIÓN DE DIRECCIÓN (SOLO SI HAY RED) ---
         function buscarDireccion(lat, lon) {
-            if (!navigator.onLine) return; // Si no hay red, no perdemos tiempo intentando el fetch
-
+            if (!navigator.onLine) return;
             fetch(`https://photon.komoot.io/reverse?lon=${lon}&lat=${lat}`)
                 .then(res => res.json())
                 .then(resData => {
@@ -352,30 +342,33 @@ function renderMapaGPS(data, contenedor) {
                         const f = resData.features[0].properties;
                         $("#calle").val(`${f.name || f.street || ""} ${f.housenumber || ""}`.trim());
                     }
-                }).catch(e => console.warn("Modo Offline: Photon no alcanzable"));
+                }).catch(e => console.warn("Offline: Photon no disponible"));
         }
 
-        // --- 3. LÓGICA DE CAPTURA (HARDWARE GPS) ---
+        // --- 3. LÓGICA DE CAPTURA GPS (AUTOMÁTICA Y MANUAL) ---
         function capturarGPS() {
             const btn = $("#btn-forzar-gps");
             btn.html('<i class="fa-solid fa-spinner fa-spin"></i> SINCRONIZANDO SATÉLITES...').prop('disabled', true);
 
             navigator.geolocation.getCurrentPosition(pos => {
-                const { latitude, longitude } = pos.coords;
+                // Aquí es donde nacen las variables latitude y longitude
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
 
-                // ESCRIBIR EN INPUTS (Fundamental para Dexie y la base de datos)
-                $("#lat").val(latitude.toFixed(7));
-                $("#lon").val(longitude.toFixed(7));
+                $("#lat").val(lat.toFixed(7));
+                $("#lon").val(lon.toFixed(7));
 
-                // ACTUALIZAR MAPA Y MARCADOR
-                window.currentMap.setView([latitude, longitude], 18);
+                window.currentMap.setView([lat, lon], 18);
                 
+                // Si el marcador ya existe, lo movemos; si no, lo creamos con el Icono Guinda
                 if (marker) {
-                    marker.setLatLng([latitude, longitude]);
+                    marker.setLatLng([lat, lon]);
                 } else {
-                    marker = L.marker([latitude, longitude], { draggable: true }).addTo(window.currentMap);
+                    marker = L.marker([lat, lon], { 
+                        draggable: true,
+                        icon: iconGuinda 
+                    }).addTo(window.currentMap);
                     
-                    // Si el usuario arrastra el marcador manualmente
                     marker.on('dragend', function() {
                         const p = marker.getLatLng();
                         $("#lat").val(p.lat.toFixed(7));
@@ -384,33 +377,32 @@ function renderMapaGPS(data, contenedor) {
                     });
                 }
 
-                // Intentar geocodificar solo si hay internet
-                buscarDireccion(latitude, longitude);
-
+                buscarDireccion(lat, lon);
                 btn.html('<i class="fa-solid fa-check"></i> UBICACIÓN CAPTURADA').css('background', '#28a745').prop('disabled', false);
 
             }, (err) => {
                 btn.html('<i class="fa-solid fa-location-dot"></i> REINTENTAR GPS').prop('disabled', false);
-                console.error("Error de hardware GPS:", err);
+                console.error("Error GPS:", err);
             }, { enableHighAccuracy: true, timeout: 15000 });
         }
 
-        // --- 4. EVENTOS ---
+        // --- 4. ASIGNACIÓN DE EVENTOS ---
         $(document).off('click', '#btn-forzar-gps').on('click', '#btn-forzar-gps', capturarGPS);
 
-        // Click en mapa (Posicionamiento manual si falla el chip o internet)
         window.currentMap.on('click', function(e) {
             const { lat, lng } = e.latlng;
             $("#lat").val(lat.toFixed(7));
             $("#lon").val(lng.toFixed(7));
             
-            if (marker) marker.setLatLng([lat, lng]);
-            else marker = L.marker([lat, lng], { draggable: true }).addTo(window.currentMap);
-            
+            if (marker) {
+                marker.setLatLng([lat, lng]);
+            } else {
+                marker = L.marker([lat, lng], { draggable: true, icon: iconGuinda }).addTo(window.currentMap);
+            }
             buscarDireccion(lat, lng);
         });
 
-        // Disparo automático inicial (Si el navegador lo permite)
+        // EJECUCIÓN AUTOMÁTICA (MODO ONLINE/CARGA INICIAL)
         capturarGPS();
 
     }, 500);
