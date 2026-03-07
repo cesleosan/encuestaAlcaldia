@@ -284,6 +284,7 @@ function renderSeleccion(data, form) {
     }
 
 function renderMapaGPS(data, contenedor) {
+    // 1. LAYOUT ACTUALIZADO CON BOTÓN DE HARDWARE
     let layout = $(`
         <div class="map-container-fluid">
             <div class="coords-header" style="display: flex; gap: 15px; margin-bottom: 20px;">
@@ -299,41 +300,41 @@ function renderMapaGPS(data, contenedor) {
                 </div>
             </div>
 
+            <button type="button" id="btn-forzar-gps" class="btn-guinda" style="width:100%; margin-bottom:20px; background:#4a1e36; display:flex; align-items:center; justify-content:center; gap:10px;">
+                <i class="fa-solid fa-location-crosshairs"></i> OBTENER UBICACIÓN POR GPS
+            </button>
+
             <div class="mapa-wrapper" style="border: 2px solid var(--guinda); border-radius:15px; overflow:hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                 <div id="mapa-interactivo" style="width:100%; height:450px; background: #eee;"></div>
             </div>
             
             <p style="font-size:12px; color:#666; margin-top:10px; font-style: italic;">
-                <i class="fa-solid fa-microchip"></i> Coordenadas obtenidas directamente del sensor del dispositivo.
+                <i class="fa-solid fa-microchip"></i> Si el mapa no carga, los números se guardarán directamente del sensor.
             </p>
         </div>
 
         <div style="margin-top:25px; padding-top: 15px; border-top: 1px solid #eee;">
             <label class="label-input" style="font-weight: bold;">Dirección Detectada (Calle y Número)</label>
             <input type="text" id="calle" name="calle_numero" class="input-redondo" 
-                placeholder="Escriba la dirección si no hay internet..." style="background: #fff8f8; border-color: var(--guinda);" required>
+                placeholder="Escriba la dirección manualmente si no hay red..." style="background: #fff8f8; border-color: var(--guinda);" required>
         </div>
     `);
     
     contenedor.append(layout);
 
     setTimeout(() => {
-        // 1. INICIALIZACIÓN DEL MAPA (Incluso si no hay red, el objeto se crea)
         if (window.currentMap) { window.currentMap.remove(); }
         window.currentMap = L.map('mapa-interactivo').setView([19.289, -99.167], 13);
         
-        // Solo cargamos capas si hay internet para evitar errores visuales
         if(navigator.onLine) {
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(window.currentMap);
         }
 
         let marker;
 
-        // 2. FUNCIÓN DE DIRECCIÓN (OPCIONAL/ONLINE)
-        // Solo busca la calle, NO toca las coordenadas del chip a menos que movamos el marcador
+        // --- FUNCIÓN DE DIRECCIÓN ---
         function buscarDireccionPhoton(lat, lon) {
             if (!navigator.onLine) return; 
-
             fetch(`https://photon.komoot.io/reverse?lon=${lon}&lat=${lat}`)
                 .then(res => res.json())
                 .then(data => {
@@ -342,33 +343,41 @@ function renderMapaGPS(data, contenedor) {
                         const calleStr = `${f.name || f.street || "Calle no identificada"} ${f.housenumber || "S/N"}`;
                         $("#calle").val(calleStr);
                     }
-                })
-                .catch(e => console.warn("Photon no disponible"));
+                }).catch(e => console.warn("Photon offline"));
         }
 
-        // 3. CAPTURA DEL CHIP FÍSICO (OBLIGATORIA/OFFLINE)
-        if ("geolocation" in navigator) {
+        // --- LÓGICA DE CAPTURA DEL HARDWARE (ENCAPSULADA) ---
+        function capturarUbicacionHardware() {
+            const btn = $("#btn-forzar-gps");
+            btn.html('<i class="fa-solid fa-spinner fa-spin"></i> BUSCANDO SATÉLITES...').prop('disabled', true);
+
+            if (!("geolocation" in navigator)) {
+                Swal.fire('Error', 'Tu dispositivo no soporta GPS.', 'error');
+                return;
+            }
+
             const gpsConfig = {
-                enableHighAccuracy: true, // Fuerza el uso del chip GPS
-                timeout: 30000,           // 30 segundos de espera para el sensor
+                enableHighAccuracy: true,
+                timeout: 20000, // 20 segundos para despertar el chip
                 maximumAge: 0
             };
 
             navigator.geolocation.getCurrentPosition(pos => {
                 const { latitude, longitude } = pos.coords;
 
-                // 🔥 PASO MAESTRO: Llenar inputs de inmediato con el hardware
+                // ESCRIBIMOS EN INPUTS (Esto es lo que Dexie leerá al dar 'Siguiente')
                 $("#lat").val(latitude.toFixed(7));
                 $("#lon").val(longitude.toFixed(7));
 
-                // Actualizar visualmente el mapa
+                // ACTUALIZAMOS MAPA
                 window.currentMap.setView([latitude, longitude], 18);
-                marker = L.marker([latitude, longitude], { draggable: true }).addTo(window.currentMap);
+                if (marker) marker.setLatLng([latitude, longitude]);
+                else marker = L.marker([latitude, longitude], { draggable: true }).addTo(window.currentMap);
                 
-                // Intentar buscar dirección por red
                 buscarDireccionPhoton(latitude, longitude);
 
-                // Sincronizar inputs si el técnico ajusta el marcador manualmente
+                btn.html('<i class="fa-solid fa-check"></i> UBICACIÓN OBTENIDA').css('background', '#28a745').prop('disabled', false);
+
                 marker.on('dragend', function() {
                     const p = marker.getLatLng();
                     $("#lat").val(p.lat.toFixed(7));
@@ -377,19 +386,26 @@ function renderMapaGPS(data, contenedor) {
                 });
 
             }, (error) => {
-                Swal.fire('GPS Lento', 'El sensor físico no respondió. Por favor, ubique el marcador manualmente.', 'info');
+                btn.html('<i class="fa-solid fa-location-crosshairs"></i> REINTENTAR CAPTURA').prop('disabled', false);
+                Swal.fire('Sensor Lento', 'El GPS tardó en responder. Asegúrate de estar en un lugar abierto o mueve el marcador manualmente.', 'warning');
             }, gpsConfig);
         }
 
-        // 4. POSICIONAMIENTO MANUAL DE EMERGENCIA
+        // 2. DISPARADOR MANUAL (EL QUE DESPIERTA EL CHIP)
+        $(document).off('click', '#btn-forzar-gps').on('click', '#btn-forzar-gps', function() {
+            capturarUbicacionHardware();
+        });
+
+        // 3. INTENTO AUTOMÁTICO AL CARGAR (Opcional, puede fallar en algunos móviles)
+        capturarUbicacionHardware();
+
+        // 4. POSICIONAMIENTO MANUAL (CLICK EN MAPA)
         window.currentMap.on('click', function(e) {
             const { lat, lng } = e.latlng;
             $("#lat").val(lat.toFixed(7));
             $("#lon").val(lng.toFixed(7));
-            
             if (marker) marker.setLatLng([lat, lng]);
             else marker = L.marker([lat, lng], { draggable: true }).addTo(window.currentMap);
-            
             buscarDireccionPhoton(lat, lng);
         });
 
