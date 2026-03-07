@@ -573,36 +573,53 @@ function enviarAlServidor(payload) {
 
     // CAMBIO 4: Sincronización automática al detectar red
 window.addEventListener('online', async () => {
-    // 1. Indicador visual
+    // 1. Indicador visual de red
     $('.status-indicator').css({'background-color': '#28a745'});
 
     const pendientes = await dbLocal.encuestas.toArray();
     if (pendientes.length === 0) return;
 
+    // 🔥 ACUMULADOR PARA EL REPORTE FINAL
+    let foliosSincronizados = [];
+
     console.log(`Iniciando sincronización de ${pendientes.length} encuestas...`);
 
     for (const item of pendientes) {
         try {
-            // USAR LA RUTA COMPLETA PARA EVITAR FALLOS DE REDIRECCIÓN
             const res = await fetch(`${URLROOT}/index.php?url=Encuesta/guardar`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(item.datos)
             });
 
-            // Si el servidor devuelve error de texto en lugar de JSON, esto fallará
             const data = await res.json();
 
             if (data.status === 'success') {
                 await dbLocal.encuestas.delete(item.id);
+                foliosSincronizados.push(item.folio); // Guardamos para el reporte
                 console.log(`✅ Folio ${item.folio} sincronizado.`);
-            } else {
-                console.error(`❌ Error del servidor para folio ${item.folio}: ${data.msg}`);
             }
         } catch(e) { 
-            console.error("Fallo de red o error de ruta. La sincronización se pausó.", e);
-            break; // Detenemos el ciclo si hay un error de conexión real
+            console.error("Fallo de red en medio de la sincronización.", e);
+            break; 
         } 
+    }
+
+    // 🔥 MOSTRAR REPORTE FINAL AL TÉCNICO
+    if (foliosSincronizados.length > 0) {
+        Swal.fire({
+            title: '¡Sincronización Exitosa!',
+            html: `
+                <div style="text-align: left;">
+                    <p>Se subieron <b>${foliosSincronizados.length}</b> encuestas pendientes:</p>
+                    <ul style="max-height: 150px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 10px; list-style: none;">
+                        ${foliosSincronizados.map(f => `<li>✅ Folio: <b>${f}</b></li>`).join('')}
+                    </ul>
+                </div>
+            `,
+            icon: 'success',
+            confirmButtonColor: '#773357'
+        });
     }
 });
 
