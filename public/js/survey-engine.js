@@ -474,7 +474,7 @@ function renderMapaGPS(data, contenedor) {
             this.value = this.value.slice(0, max);
         }
     });
-    // 🔥 BLINDAJE 5: Sugerencias automáticas de correo
+    //  Sugerencias automáticas de correo
     $(document).on('input', 'input[type="email"]', function() {
         const input = $(this);
         const val = input.val();
@@ -495,7 +495,49 @@ function renderMapaGPS(data, contenedor) {
             datalist.empty(); // Limpiamos si ya puso el @ para no estorbar
         }
     });
+    $(document).on('input', 'input[type="text"], textarea', function () {
+        // Si el input no es de tipo email, lo convertimos a mayúsculas
+        if ($(this).attr('type') !== 'email') {
+            this.value = this.value.toUpperCase();
+        }
+    });
 
+    // Forzamos minúsculas solo en el correo por estándar de internet
+    $(document).on('input', 'input[type="email"]', function () {
+        this.value = this.value.toLowerCase();
+    });
+
+    $(document).on('click', '.btn-exit-modern', function (e) {
+    e.preventDefault(); // Evitamos que el navegador cierre la sesión de golpe
+    const rutaLogout = $(this).attr('href');
+
+    Swal.fire({
+        title: '¿Cerrar Sesión?',
+        text: "Verifica que no tengas encuestas pendientes por sincronizar.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#773357', // Tu color Guinda
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="fa-solid fa-power-off"></i> SÍ, SALIR',
+        cancelButtonText: 'CANCELAR',
+        reverseButtons: true,
+        backdrop: `rgba(119, 51, 87, 0.2)` // Un ligero tinte guinda al fondo
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Animación de salida para que no se vea el brinco brusco
+            Swal.fire({
+                title: 'Finalizando jornada...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Redirección definitiva al controlador Auth/logout
+            window.location.href = rutaLogout;
+        }
+    });
+});
     //  Números y Decimales para Producción
     $(document).on('input', 'input[name="superficie_prod"], input[name="volumen_prod"]', function() {
         // 1. Solo permite números y el punto decimal

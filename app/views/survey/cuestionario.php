@@ -177,6 +177,17 @@ $bancoJson = htmlspecialchars(json_encode($banco), ENT_QUOTES, 'UTF-8');
     50% { opacity: 1.0; }
     100% { transform: scale(1.2, 1.2); opacity: 0.0; }
 }
+/* Forzamos visualmente las mayúsculas en inputs de texto y áreas de texto */
+input[type="text"], 
+textarea, 
+.input-redondo {
+    text-transform: uppercase;
+}
+
+/*  Exceptuamos el email porque ese DEBE ser minúscula */
+input[type="email"] {
+    text-transform: lowercase !important;
+}
 </style>
 
 <img src="<?php echo URLROOT; ?>/logos/Logo AT Vertical N 100PX.png" 
@@ -198,10 +209,8 @@ $bancoJson = htmlspecialchars(json_encode($banco), ENT_QUOTES, 'UTF-8');
                 <span class="user-name-text"><?php echo $data['nombre_tecnico']; ?></span>
             </div>
 
-            <a href="<?php echo URLROOT; ?>/Auth/logout" 
-               class="btn-exit-modern"
-               onclick="return confirm('¿Seguro que quieres cerrar sesión?')">
-               <span>SALIR</span> <i>⏻</i>
+            <a href="<?php echo URLROOT; ?>/Auth/logout" class="btn-exit-modern" id="logout-trigger">
+                <span>SALIR</span> <i>⏻</i>
             </a>
         </div>
     </div>
