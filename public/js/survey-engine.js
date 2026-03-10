@@ -227,61 +227,95 @@ function renderSeleccion(data, form) {
     // 4. Inyectamos los botones en el formulario
     form.append(divOpciones);
 }
-    function renderFormulario(data, form) {
-        data.campos.forEach(campo => {
-            let depData = campo.dependencia ? `data-depende-de="${campo.dependencia.padre}" data-valor-req="${campo.dependencia.valor}"` : '';
-            let divCampo = $(`<div class="campo-wrapper" ${depData} style="margin-bottom:20px;"></div>`);
+function renderFormulario(data, form) {
+    data.campos.forEach(campo => {
+        // 1. GESTIÓN DE DEPENDENCIAS
+        let depData = campo.dependencia ? `data-depende-de="${campo.dependencia.padre}" data-valor-req="${campo.dependencia.valor}"` : '';
+        let divCampo = $(`<div class="campo-wrapper" ${depData} style="margin-bottom:20px;"></div>`);
+        
+        let label = `<label class="label-input">${campo.label}</label>`;
+        let input = "";
+        let valorDefecto = "";
+        
+        // 2. ATRIBUTOS DE ESTADO (Readonly)
+        let readonlyAttr = campo.readonly ? "readonly" : "";
+        let estiloCenizo = campo.readonly ? 'style="background-color: #f4f4f4;"' : '';
+
+        // 3. AUTO-LLENADO DE FOLIO
+        if (campo.name === 'folio') valorDefecto = typeof FOLIO_AUTO !== 'undefined' ? FOLIO_AUTO : '';
+
+        // 4. RENDERIZADO DE INPUTS BÁSICOS (text, date, tel, email)
+        if (['text', 'date', 'tel', 'email'].includes(campo.tipo)) {
             
-            let label = `<label class="label-input">${campo.label}</label>`;
-            let input = "";
-            let valorDefecto = "";
-            let readonlyAttr = campo.readonly ? "readonly" : "";
-            let estiloCenizo = campo.readonly ? 'style="background-color: #f4f4f4;"' : '';
-
-            if (campo.name === 'folio') valorDefecto = typeof FOLIO_AUTO !== 'undefined' ? FOLIO_AUTO : '';
-
-            if (['text', 'date', 'tel', 'email'].includes(campo.tipo)) {
-                let maxAttr = campo.tipo === 'tel' ? 'maxlength="10"' : '';
-                input = `<input type="${campo.tipo}" name="${campo.name}" value="${valorDefecto}" class="input-redondo" placeholder="${campo.placeholder || ''}" ${readonlyAttr} ${estiloCenizo} ${maxAttr} required>`;
-            } 
-            else if (campo.tipo === 'select') {
-                input = `<select name="${campo.name}" class="input-redondo" required><option value="">Seleccione...</option>`;
-                if(campo.opciones) campo.opciones.forEach(opt => { input += `<option value="${opt.val}">${opt.texto}</option>`; });
-                input += `</select>`;
+            // 🔥 CORRECCIÓN QUIRÚRGICA: Maxlength dinámico (10 para Tel, 5 para CP, 18 para CURP)
+            let maxAttr = campo.maxlength ? `maxlength="${campo.maxlength}"` : (campo.tipo === 'tel' ? 'maxlength="10"' : '');
+            
+            // 🔥 AÑADIDO: Inputmode para abrir el teclado correcto en móviles (Decimal/Numérico)
+            let modeAttr = campo.inputmode ? `inputmode="${campo.inputmode}"` : '';
+            
+            // GESTIÓN DE SUGERENCIAS DE CORREO
+            let listAttr = (campo.tipo === 'email' && campo.sugerencias) ? `list="list-${campo.name}"` : '';
+            
+            input = `<input type="${campo.tipo}" name="${campo.name}" value="${valorDefecto}" class="input-redondo" placeholder="${campo.placeholder || ''}" ${readonlyAttr} ${estiloCenizo} ${maxAttr} ${modeAttr} ${listAttr} required>`;
+            
+            // Si el campo es email, inyectamos el datalist para las sugerencias automáticas
+            if (campo.tipo === 'email' && campo.sugerencias) {
+                input += `<datalist id="list-${campo.name}"></datalist>`;
             }
-            else if (campo.tipo === 'radio') {
-                // Creamos el contenedor con una clase específica para encontrarlo fácil
-                let radioGroup = $(`<div class="radio-group-container" data-name="${campo.name}"></div>`);
-                
-                if (campo.opciones && campo.opciones.length > 0) {
-                    campo.opciones.forEach(opt => {
-                        radioGroup.append(`
-                            <label class="radio-custom">
-                                <input type="radio" name="${campo.name}" value="${opt.val}" required>
-                                <span class="radio-checkmark"></span> ${opt.texto}
-                            </label>`);
-                    });
-                }
-                input = radioGroup;
-            }
-            else if (campo.tipo === 'checkbox') {
-                let checkGroup = $('<div class="radio-group-container" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">');
-                if(campo.opciones) campo.opciones.forEach(opt => {
-                    checkGroup.append(`<label class="checkbox-custom"><input type="checkbox" name="${campo.name}[]" value="${opt.val}"><span class="checkbox-checkmark"></span> ${opt.texto}</label>`);
+        } 
+        
+        // 5. RENDERIZADO DE SELECT (Combos)
+        else if (campo.tipo === 'select') {
+            input = `<select name="${campo.name}" class="input-redondo" required><option value="">Seleccione...</option>`;
+            if(campo.opciones) campo.opciones.forEach(opt => { 
+                input += `<option value="${opt.val}">${opt.texto}</option>`; 
+            });
+            input += `</select>`;
+        }
+
+        // 6. RENDERIZADO DE RADIOS (Opción única)
+        else if (campo.tipo === 'radio') {
+            let radioGroup = $(`<div class="radio-group-container" data-name="${campo.name}"></div>`);
+            if (campo.opciones && campo.opciones.length > 0) {
+                campo.opciones.forEach(opt => {
+                    radioGroup.append(`
+                        <label class="radio-custom">
+                            <input type="radio" name="${campo.name}" value="${opt.val}" required>
+                            <span class="radio-checkmark"></span> ${opt.texto}
+                        </label>`);
                 });
-                input = checkGroup;
             }
-            else if (campo.tipo === 'html') {
-                divCampo.html(campo.label);
-                form.append(divCampo);
-                return;
-            }
+            input = radioGroup;
+        }
 
-            divCampo.append(label).append(input);
+        // 7. RENDERIZADO DE CHECKBOX (Opción múltiple)
+        else if (campo.tipo === 'checkbox') {
+            let checkGroup = $('<div class="radio-group-container" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">');
+            if(campo.opciones) campo.opciones.forEach(opt => {
+                checkGroup.append(`
+                    <label class="checkbox-custom">
+                        <input type="checkbox" name="${campo.name}[]" value="${opt.val}">
+                        <span class="checkbox-checkmark"></span> ${opt.texto}
+                    </label>`);
+            });
+            input = checkGroup;
+        }
+
+        // 8. INYECCIÓN DE HTML PURO (Separadores o Títulos)
+        else if (campo.tipo === 'html') {
+            divCampo.html(campo.label);
             form.append(divCampo);
-        });
-        evaluarDependenciasInternas();
-    }
+            return; // Saltamos el append normal para este tipo
+        }
+
+        // 9. ENSAMBLAJE FINAL DEL CAMPO
+        divCampo.append(label).append(input);
+        form.append(divCampo);
+    });
+
+    // 10. RE-EVALUACIÓN DE DEPENDENCIAS AL TERMINAR EL RENDER
+    evaluarDependenciasInternas();
+}
 
 function renderMapaGPS(data, contenedor) {
     let layout = $(`
@@ -420,6 +454,59 @@ function renderMapaGPS(data, contenedor) {
             $(`input[name="sexo"][value="${letraSexo === 'H' ? 'HOMBRE' : 'MUJER'}"]`).prop('checked', true);
         }
     });
+    // BLINDAJE 3: CURP en Mayúsculas y sin caracteres especiales
+    $(document).on('input', 'input[name="curp"]', function () {
+        // Convierte a mayúsculas y quita espacios/especiales
+        this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        
+        // Recortar si por alguna razón pega un texto más largo de 18
+        if (this.value.length > 18) {
+            this.value = this.value.slice(0, 18);
+        }
+    });
+    $(document).on('input', 'input[type="tel"]', function () {
+        // Borra cualquier cosa que no sea número al instante
+        this.value = this.value.replace(/[^0-9]/g, '');
+        
+        // Doble check de seguridad para el largo máximo definido en el Model
+        const max = $(this).attr('maxlength');
+        if (max && this.value.length > max) {
+            this.value = this.value.slice(0, max);
+        }
+    });
+    // 🔥 BLINDAJE 5: Sugerencias automáticas de correo
+    $(document).on('input', 'input[type="email"]', function() {
+        const input = $(this);
+        const val = input.val();
+        const name = input.attr('name');
+        const datalist = $(`#list-${name}`);
+        
+        // Solo actuamos si el usuario NO ha puesto un '@' todavía
+        if (val && !val.includes('@')) {
+            // Obtenemos las sugerencias desde el banco de preguntas (si están disponibles)
+            // Para este ejemplo usamos las estándar de tu modelo
+            const sugerencias = ['gmail.com', 'outlook.com', 'hotmail.com', 'yahoo.com', 'icloud.com'];
+            let options = '';
+            sugerencias.forEach(dom => {
+                options += `<option value="${val}@${dom}">`;
+            });
+            datalist.html(options);
+        } else {
+            datalist.empty(); // Limpiamos si ya puso el @ para no estorbar
+        }
+    });
+
+    //  Números y Decimales para Producción
+    $(document).on('input', 'input[name="superficie_prod"], input[name="volumen_prod"]', function() {
+        // 1. Solo permite números y el punto decimal
+        this.value = this.value.replace(/[^0-9.]/g, '');
+
+        // 2. Evita que pongan más de un punto decimal
+        const puntos = this.value.split('.').length - 1;
+        if (puntos > 1) {
+            this.value = this.value.replace(/\.+$/, "");
+        }
+    });
 
     // 2. CP y Colonias
    $(document).on('keyup', 'input[name="cp"]', async function() {
@@ -495,25 +582,66 @@ function renderMapaGPS(data, contenedor) {
         }
     });
     // --- FUNCIONES DE NAVEGACIÓN ---
-function validarYSiguiente(idActual, idSiguiente) {
+    function validarYSiguiente(idActual, idSiguiente) {
     const form = document.getElementById('form-encuesta');
     if (form && !form.checkValidity()) { form.reportValidity(); return; }
-    
-    // Si estamos en la pantalla de coordenadas, capturamos los inputs manuales
-    if ($("#lat").length > 0) {
-        respuestas[idActual] = {
-            latitud: $("#lat").val(),
-            longitud: $("#lon").val(),
-            calle_numero: $("#calle").val()
-        };
-    } else {
-        respuestas[idActual] = $(form).serializeArray();
+
+    let errorValidacion = false;
+
+    // --- VALIDACIÓN DE TELÉFONOS (10 DÍGITOS) ---
+    $(form).find('input[type="tel"]').each(function() {
+        const val = $(this).val();
+        if ($(this).attr('maxlength') == "10" && val.length > 0 && val.length < 10) {
+            Swal.fire('Teléfono Inválido', 'El número debe ser de exactamente 10 dígitos.', 'warning');
+            errorValidacion = true;
+            return false; 
+        }
+    });
+
+    // --- VALIDACIÓN DE CURP (18 CARACTERES) ---
+    const inputCurp = $(form).find('input[name="curp"]');
+    if (inputCurp.length > 0) {
+        const curpVal = inputCurp.val().trim();
+        if (curpVal.length > 0 && curpVal.length < 18) {
+            Swal.fire('CURP Incompleta', 'La CURP debe tener exactamente 18 caracteres.', 'warning');
+            errorValidacion = true;
+        }
+    }
+    // --- VALIDACIÓN DE CORREO (FORMATO) ---
+    const inputEmail = $(form).find('input[type="email"]');
+    if (inputEmail.length > 0) {
+        const emailVal = inputEmail.val().trim();
+        // Expresión regular estándar para correos válidos
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        
+        if (emailVal.length > 0 && !emailRegex.test(emailVal)) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Correo Inválido',
+                text: 'Por favor ingrese un correo válido (ejemplo@dominio.com).',
+                confirmButtonColor: 'var(--guinda)'
+            });
+            errorValidacion = true;
+        }
     }
 
-    historial.push(idActual);
-    preguntaActual = idSiguiente;
-    renderPregunta(idSiguiente);
-}
+    if (errorValidacion) return; // Si hay error en Tel o CURP, no avanzamos
+        
+        // Si estamos en la pantalla de coordenadas, capturamos los inputs manuales
+        if ($("#lat").length > 0) {
+            respuestas[idActual] = {
+                latitud: $("#lat").val(),
+                longitud: $("#lon").val(),
+                calle_numero: $("#calle").val()
+            };
+        } else {
+            respuestas[idActual] = $(form).serializeArray();
+        }
+
+        historial.push(idActual);
+        preguntaActual = idSiguiente;
+        renderPregunta(idSiguiente);
+    }
 
     function regresar() {
         if (historial.length === 0) return;

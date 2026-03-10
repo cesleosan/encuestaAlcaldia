@@ -31,7 +31,8 @@ class PreguntaModel {
         'campos' => [
             // 1. FOLIO: Ahora es de solo lectura
             ['name' => 'folio', 'label' => 'Folio', 'tipo' => 'text', 'placeholder' => 'TLP-2026-XXXX', 'readonly' => true],
-               ['name' => 'curp', 'label' => 'CURP', 'tipo' => 'text', 'placeholder' => 'Clave Única de Registro de Población'],
+               // Pantalla 2: Datos Generales
+            ['name' => 'curp', 'label' => 'CURP', 'tipo' => 'text', 'maxlength' => 18, 'placeholder' => '18 caracteres'],
             // 2. NOMBRE: Se auto-llena con el usuario logueado
             ['name' => 'nombre_productor', 'label' => 'Nombre de la productor', 'tipo' => 'text', 'placeholder' => 'Nombre completo del productor'],
             
@@ -137,14 +138,16 @@ class PreguntaModel {
                 'label' => 'Teléfono Particular', 
                 'tipo' => 'tel', // Usamos tel para teclado numérico en móvil
                 'maxlength' => 10, 
-                'placeholder' => '10 dígitos (solo números)'
+                'placeholder' => '10 dígitos (solo números)',
+                'required' => true
             ],
             [
                 'name' => 'tel_recados', 
                 'label' => 'Teléfono para Recados', 
                 'tipo' => 'tel', 
                 'maxlength' => 10, 
-                'placeholder' => '10 dígitos'
+                'placeholder' => '10 dígitos',
+                'required' => true
             ],
             [
                 'name' => 'email', 
@@ -1506,24 +1509,36 @@ class PreguntaModel {
 
     // --- PANTALLA 47: DATOS DE PRODUCCIÓN (Imagen image_2aad36.png) ---
     // Esta pantalla le sale a TODOS (ya no tiene 'condicion')
-    47 => [
-        'id' => 47,
-        'tipo' => 'formulario',
-        'pregunta' => 'Métricas de Producción',
-        'subtitulo' => 'Superficie y volumen total',
-        'campos' => [
-            // Superficie
-            ['name' => 'superficie_prod', 'label' => '¿Cuál es la superficie destinada a la producción? (Hectáreas)', 'tipo' => 'text', 'placeholder' => 'Ej. 2.5'],
-            
-            // Separador
-            ['name' => 'sep_volumen', 'label' => '<hr style="margin: 25px 0; border-top: 1px solid #eee;">', 'tipo' => 'html'],
-
-            // Volumen (Cantidad numérica)
-            ['name' => 'volumen_prod', 'label' => '¿Cuál es el volumen total de producción obtenida?', 'tipo' => 'text', 'placeholder' => 'Ingrese cantidad (Ej. 500)']
+   // --- PANTALLA 47: DATOS DE PRODUCCIÓN ---
+47 => [
+    'id' => 47,
+    'tipo' => 'formulario',
+    'pregunta' => 'Métricas de Producción',
+    'subtitulo' => 'Superficie y volumen total',
+    'campos' => [
+        // Superficie: Permitimos decimales (2.5)
+        [
+            'name' => 'superficie_prod', 
+            'label' => '¿Cuál es la superficie destinada a la producción? (Hectáreas)', 
+            'tipo' => 'text', 
+            'placeholder' => 'Ej. 2.5',
+            'inputmode' => 'decimal' // Sugiere teclado numérico con punto en móvil
         ],
-        'boton_texto' => 'Siguiente',
-        'saltaA' => 48
+        
+        ['name' => 'sep_volumen', 'label' => '<hr style="margin: 25px 0; border-top: 1px solid #eee;">', 'tipo' => 'html'],
+
+        // Volumen: Permitimos números
+        [
+            'name' => 'volumen_prod', 
+            'label' => '¿Cuál es el volumen total de producción obtenida?', 
+            'tipo' => 'text', 
+            'placeholder' => 'Ingrese cantidad (Ej. 500)',
+            'inputmode' => 'numeric'
+        ]
     ],
+    'boton_texto' => 'Siguiente',
+    'saltaA' => 48
+],
 
     // --- PANTALLA 48: UNIDAD DE MEDIDA (Imagen image_2aad36.png) ---
     48 => [
