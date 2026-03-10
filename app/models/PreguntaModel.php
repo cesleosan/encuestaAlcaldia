@@ -124,6 +124,8 @@ class PreguntaModel {
                     ['val' => 'CUENTA_PROPIA', 'texto' => 'Trabajador por cuenta propia'],
                     ['val' => 'HOGAR', 'texto' => 'Realiza quehaceres del hogar'],
                     ['val' => 'PENSIONADA', 'texto' => 'Pensionada (o)'],
+                    ['val' => 'AGRICULTOR', 'texto' => 'Agricultor'],
+                    ['val' => 'GANADERO', 'texto' => 'Ganadero'],
                     ['val' => 'OTRO', 'texto' => 'Otro'],
                     ['val' => 'NA', 'texto' => 'NA']
                 ]

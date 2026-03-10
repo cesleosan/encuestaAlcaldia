@@ -53,37 +53,7 @@ async function buscarColoniasLocal(cp) {
 
 $(document).ready(function () {
 
-     $(document).on('click', '.btn-exit-modern', function (e) {
-    e.preventDefault(); // Evitamos que el navegador cierre la sesión de golpe
-    const rutaLogout = $(this).attr('href');
-
-    Swal.fire({
-        title: '¿Cerrar Sesión?',
-        text: "Verifica que no tengas encuestas pendientes por sincronizar.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#773357', // Tu color Guinda
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: '<i class="fa-solid fa-power-off"></i> SÍ, SALIR',
-        cancelButtonText: 'CANCELAR',
-        reverseButtons: true,
-        backdrop: `rgba(119, 51, 87, 0.2)` // Un ligero tinte guinda al fondo
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Animación de salida para que no se vea el brinco brusco
-            Swal.fire({
-                title: 'Finalizando jornada...',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-            
-            // Redirección definitiva al controlador Auth/logout
-            window.location.href = rutaLogout;
-        }
-    });
-});
+    
     const element = document.getElementById('survey-app');
     if (!element) return;
 
@@ -815,7 +785,37 @@ window.addEventListener('online', async () => {
         });
     }
 });
+ $(document).on('click', '.btn-exit-modern', function (e) {
+    e.preventDefault(); // Evitamos que el navegador cierre la sesión de golpe
+    const rutaLogout = $(this).attr('href');
 
+    Swal.fire({
+        title: '¿Cerrar Sesión?',
+        text: "Verifica que no tengas encuestas pendientes por sincronizar.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#773357', // Tu color Guinda
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="fa-solid fa-power-off"></i> SÍ, SALIR',
+        cancelButtonText: 'CANCELAR',
+        reverseButtons: true,
+        backdrop: `rgba(119, 51, 87, 0.2)` // Un ligero tinte guinda al fondo
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Animación de salida para que no se vea el brinco brusco
+            Swal.fire({
+                title: 'Finalizando jornada...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Redirección definitiva al controlador Auth/logout
+            window.location.href = rutaLogout;
+        }
+    });
+});
     // También actualizamos el de offline para que sea consistente
     window.addEventListener('offline', () => {
         $('.status-indicator').css({
