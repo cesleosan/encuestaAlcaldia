@@ -51,9 +51,97 @@ async function buscarColoniasLocal(cp) {
     }
 }
 
-$(document).ready(function () {
+ $(document).on('click', '.btn-exit-modern', function (e) {
+    e.preventDefault(); // Evitamos que el navegador cierre la sesión de golpe
+    const rutaLogout = $(this).attr('href');
 
-    
+    Swal.fire({
+        title: '¿Cerrar Sesión?',
+        text: "Verifica que no tengas encuestas pendientes por sincronizar.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#773357', // Tu color Guinda
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="fa-solid fa-power-off"></i> SÍ, SALIR',
+        cancelButtonText: 'CANCELAR',
+        reverseButtons: true,
+        backdrop: `rgba(119, 51, 87, 0.2)` // Un ligero tinte guinda al fondo
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Animación de salida para que no se vea el brinco brusco
+            Swal.fire({
+                title: 'Finalizando jornada...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Redirección definitiva al controlador Auth/logout
+            window.location.href = rutaLogout;
+        }
+    });
+});
+
+    window.addEventListener('offline', () => {
+        $('.status-indicator').css({
+            'background-color': '#dc3545', 
+            'box-shadow': '0 0 5px rgba(220, 53, 69, 0.5)'
+        });
+    });
+
+    window.addEventListener('online', async () => {
+    // 1. Indicador visual de red
+    $('.status-indicator').css({'background-color': '#28a745'});
+
+    const pendientes = await dbLocal.encuestas.toArray();
+    if (pendientes.length === 0) return;
+
+    // 🔥 ACUMULADOR PARA EL REPORTE FINAL
+    let foliosSincronizados = [];
+
+    console.log(`Iniciando sincronización de ${pendientes.length} encuestas...`);
+
+    for (const item of pendientes) {
+        try {
+            const res = await fetch(`${URLROOT}/index.php?url=Encuesta/guardar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(item.datos)
+            });
+
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                await dbLocal.encuestas.delete(item.id);
+                foliosSincronizados.push(item.folio); // Guardamos para el reporte
+                console.log(`✅ Folio ${item.folio} sincronizado.`);
+            }
+        } catch(e) { 
+            console.error("Fallo de red en medio de la sincronización.", e);
+            break; 
+        } 
+    }
+
+    // 🔥 MOSTRAR REPORTE FINAL AL TÉCNICO
+    if (foliosSincronizados.length > 0) {
+        Swal.fire({
+            title: '¡Sincronización Exitosa!',
+            html: `
+                <div style="text-align: left;">
+                    <p>Se subieron <b>${foliosSincronizados.length}</b> encuestas pendientes:</p>
+                    <ul style="max-height: 150px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 10px; list-style: none;">
+                        ${foliosSincronizados.map(f => `<li>✅ Folio: <b>${f}</b></li>`).join('')}
+                    </ul>
+                </div>
+            `,
+            icon: 'success',
+            confirmButtonColor: '#773357'
+        });
+    }
+});
+
+$(document).ready(function () {
     const element = document.getElementById('survey-app');
     if (!element) return;
 
@@ -735,92 +823,8 @@ function enviarAlServidor(payload) {
     renderPregunta(preguntaActual);
 
     // CAMBIO 4: Sincronización automática al detectar red
-window.addEventListener('online', async () => {
-    // 1. Indicador visual de red
-    $('.status-indicator').css({'background-color': '#28a745'});
 
-    const pendientes = await dbLocal.encuestas.toArray();
-    if (pendientes.length === 0) return;
 
-    // 🔥 ACUMULADOR PARA EL REPORTE FINAL
-    let foliosSincronizados = [];
-
-    console.log(`Iniciando sincronización de ${pendientes.length} encuestas...`);
-
-    for (const item of pendientes) {
-        try {
-            const res = await fetch(`${URLROOT}/index.php?url=Encuesta/guardar`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(item.datos)
-            });
-
-            const data = await res.json();
-
-            if (data.status === 'success') {
-                await dbLocal.encuestas.delete(item.id);
-                foliosSincronizados.push(item.folio); // Guardamos para el reporte
-                console.log(`✅ Folio ${item.folio} sincronizado.`);
-            }
-        } catch(e) { 
-            console.error("Fallo de red en medio de la sincronización.", e);
-            break; 
-        } 
-    }
-
-    // 🔥 MOSTRAR REPORTE FINAL AL TÉCNICO
-    if (foliosSincronizados.length > 0) {
-        Swal.fire({
-            title: '¡Sincronización Exitosa!',
-            html: `
-                <div style="text-align: left;">
-                    <p>Se subieron <b>${foliosSincronizados.length}</b> encuestas pendientes:</p>
-                    <ul style="max-height: 150px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 10px; list-style: none;">
-                        ${foliosSincronizados.map(f => `<li>✅ Folio: <b>${f}</b></li>`).join('')}
-                    </ul>
-                </div>
-            `,
-            icon: 'success',
-            confirmButtonColor: '#773357'
-        });
-    }
-});
- $(document).on('click', '.btn-exit-modern', function (e) {
-    e.preventDefault(); // Evitamos que el navegador cierre la sesión de golpe
-    const rutaLogout = $(this).attr('href');
-
-    Swal.fire({
-        title: '¿Cerrar Sesión?',
-        text: "Verifica que no tengas encuestas pendientes por sincronizar.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#773357', // Tu color Guinda
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: '<i class="fa-solid fa-power-off"></i> SÍ, SALIR',
-        cancelButtonText: 'CANCELAR',
-        reverseButtons: true,
-        backdrop: `rgba(119, 51, 87, 0.2)` // Un ligero tinte guinda al fondo
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Animación de salida para que no se vea el brinco brusco
-            Swal.fire({
-                title: 'Finalizando jornada...',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-            
-            // Redirección definitiva al controlador Auth/logout
-            window.location.href = rutaLogout;
-        }
-    });
-});
     // También actualizamos el de offline para que sea consistente
-    window.addEventListener('offline', () => {
-        $('.status-indicator').css({
-            'background-color': '#dc3545', 
-            'box-shadow': '0 0 5px rgba(220, 53, 69, 0.5)'
-        });
-    });
+
 });
