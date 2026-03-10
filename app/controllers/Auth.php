@@ -33,26 +33,28 @@ class Auth extends Controller {
             return;
         }
 
-        // --- 2. VALIDACIÓN BASE DE DATOS ---
+        // --- 2. VALIDACIÓN BASE DE DATOS (NUEVA LÓGICA DE HASH) ---
         $usuario = trim($_POST['usuario'] ?? '');
-        $password = trim($_POST['password'] ?? '');
+        $passwordInput = trim($_POST['password'] ?? '');
 
-        // Llamamos al método login del modelo Usuario.php
-        $userLogged = $this->usuarioModel->login($usuario, $password);
+        // Paso A: Obtenemos el registro del usuario solo por su nombre
+        // Importante: El modelo ahora debe devolver el hash guardado
+        $userRow = $this->usuarioModel->obtenerUsuarioPorNombre($usuario);
 
-        if ($userLogged) {
+        // Paso B: Verificamos si el usuario existe y si el hash coincide con lo escrito
+        if ($userRow && password_verify($passwordInput, $userRow->password)) {
+            
             // ¡ÉXITO! Guardamos variables de sesión
-            $_SESSION['user_id'] = $userLogged->id;
-            $_SESSION['rol'] = $userLogged->rol;
-            // Nota: En la BD le pusimos 'nombre_completo', en sesión usamos 'nombre'
-            $_SESSION['nombre'] = $userLogged->nombre_completo; 
+            $_SESSION['user_id'] = $userRow->id;
+            $_SESSION['rol'] = $userRow->rol;
+            $_SESSION['nombre'] = $userRow->nombre_completo; 
 
-            // Redireccionar según el rol
-            $this->redireccionarRol($userLogged->rol);
+            // Redireccionar según el rol (Root, Supervisor o Encuestador)
+            $this->redireccionarRol($userRow->rol);
             exit;
 
         } else {
-            // Falla
+            // Falla: O no existe el usuario o la contraseña no coincide con el hash
             $data = ['error' => 'Usuario o contraseña incorrectos'];
             $this->view('auth/login', $data);
         }
