@@ -185,18 +185,19 @@ class EncuestaModelo {
     }
 
     public function getListadoMaestro() {
-        // Unimos con la tabla usuarios para saber el nombre del encuestador
+        // Cambiamos u.nombre por u.nombre_completo
         $this->db->query("SELECT 
             e.folio, 
-            u.nombre as encuestador, -- 🚨 ¿Seguro se llama 'nombre' en la tabla usuarios?
+            u.nombre_completo as encuestador, 
             e.actividad_principal, 
             e.colonia_nombre,
             e.superficie_total, 
             e.fecha_inicio,
             e.estatus
             FROM encuestas e
-            LEFT JOIN usuarios u ON e.usuario_id = u.id -- Cambiado a LEFT JOIN
+            LEFT JOIN usuarios u ON e.usuario_id = u.id 
             ORDER BY e.fecha_inicio DESC");
+            
         return $this->db->resultSet();
     }
 

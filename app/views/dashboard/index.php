@@ -207,7 +207,7 @@ $(document).ready(function() {
                 tbody.append(`
                     <tr>
                         <td class="ps-3 fw-bold text-guinda">${e.folio}</td>
-                        <td class="small">${e.encuestador}</td>
+                        <td class="small">${e.encuestador || 'Sin asignar'}</td> 
                         <td class="small text-uppercase">${e.actividad_principal}</td>
                         <td class="small text-muted">${e.colonia_nombre || 'N/A'}</td>
                         <td class="text-center font-monospace">${parseFloat(e.superficie_total).toFixed(2)}</td>
