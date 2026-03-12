@@ -102,7 +102,7 @@ class Encuesta extends Controller {
             'unidad_medida'        => $unidad,
             'estatus'              => 'Completa',
             'fecha_conclusion'     => date('Y-m-d H:i:s'), // 🔥 Registramos el cierre real
-            'respuestas_completas' => json_encode($respuestas, JSON_UNESCAPED_UNICODE) 
+            'respuestas_completas' => $json,
         ];
 
         $exito = $this->encuestaModel->agregar($datosGuardar);
@@ -172,7 +172,9 @@ public function getEstadisticas() {
         'puntos'      => $this->encuestaModel->obtenerCoordenadasMapa(),
         'actividades' => $this->encuestaModel->getConteoActividades(),
         'colonias'    => $this->encuestaModel->getProduccionPorColonia(),
-        'problemas'   => $this->encuestaModel->getProblemasPrincipales()
+        'problemas'   => $this->encuestaModel->getProblemasPrincipales(),
+        'maestro'     => $this->encuestaModel->getListadoMaestro(),
+        'tendencia'   => $this->encuestaModel->getTendenciaDiaria()
     ];
 
     echo json_encode($datos);

@@ -6,130 +6,136 @@
 <style>
     :root { --guinda: #773357; --guinda-light: #fdf2f7; --dorado: #987b47; }
     body { background-color: #f4f6f9; font-family: 'Montserrat', sans-serif; }
-    
-    /* Tarjetas Modernas */
-    .card { border: none; border-radius: 15px; transition: transform 0.2s; }
-    .card:hover { transform: translateY(-5px); }
-    .border-left-guinda { border-left: 5px solid var(--guinda) !important; }
-    .border-left-success { border-left: 5px solid #28a745 !important; }
-    .border-left-info { border-left: 5px solid #17a2b8 !important; }
-    
-    /* Títulos y Botones */
-    .text-guinda { color: var(--guinda); font-weight: 800; }
-    .btn-guinda { background-color: var(--guinda); color: white; border-radius: 10px; padding: 10px 20px; font-weight: 600; border: none; }
+    .card { border: none; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
+    .text-guinda { color: var(--guinda); }
+    .bg-guinda { background-color: var(--guinda); }
+    .btn-guinda { background-color: var(--guinda); color: white; border-radius: 10px; font-weight: 600; }
     .btn-guinda:hover { background-color: #5a2642; color: white; }
-    
-    /* Mapa y Gráficas */
-    #mapa-dashboard { height: 500px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 1; }
-    .chart-container { position: relative; height: 300px; }
-    
-    .kpi-icon { font-size: 2rem; opacity: 0.3; }
+    #mapa-dashboard { height: 450px; border-radius: 15px; z-index: 1; }
+    .table thead th { background-color: #f8f9fa; color: var(--guinda); border-bottom: 2px solid #dee2e6; text-transform: uppercase; font-size: 0.75rem; }
+    .badge-status { border-radius: 20px; padding: 5px 12px; font-size: 0.7rem; }
 </style>
 
 <div class="container-fluid py-4">
-    <div class="row mb-4 align-items-center">
-        <div class="col-md-8">
-            <h1 class="text-guinda mb-0">Panel de Control: Tierra con Corazón 2026</h1>
-            <p class="text-muted">Monitoreo de levantamientos en tiempo real - Alcaldía Tlalpan</p>
+    <div class="row mb-4">
+        <div class="col-md-7">
+            <h2 class="fw-bold text-guinda mb-0">Command Center: Tierra con Corazón</h2>
+            <p class="text-muted">Análisis integral del Censo Agropecuario Tlalpan 2026</p>
         </div>
-        <div class="col-md-4 text-end">
-            <button onclick="location.reload()" class="btn btn-guinda shadow-sm">
-                <i class="fas fa-sync-alt"></i> ACTUALIZAR DATOS
-            </button>
+        <div class="col-md-5 text-end">
+            <button class="btn btn-outline-secondary me-2"><i class="fas fa-file-export"></i> Exportar</button>
+            <button onclick="location.reload()" class="btn btn-guinda"><i class="fas fa-sync-alt"></i> Sincronizar</button>
         </div>
     </div>
 
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card shadow-sm border-left-guinda p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-uppercase text-muted small">Total Encuestas</h6>
-                        <h2 class="fw-bold mb-0" id="kpi-total">0</h2>
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card p-3 border-start border-4 border-primary">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted small mb-1">ENCUESTAS TOTALES</h6>
+                        <h3 class="fw-bold mb-0" id="kpi-total">0</h3>
                     </div>
-                    <i class="fas fa-clipboard-check kpi-icon text-guinda"></i>
+                    <i class="fas fa-file-signature fa-2x text-light"></i>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card shadow-sm border-left-success p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-uppercase text-muted small">Superficie Total</h6>
-                        <h2 class="fw-bold mb-0"><span id="kpi-hectareas">0</span> <small class="h6">ha</small></h2>
+        <div class="col-md-3">
+            <div class="card p-3 border-start border-4 border-success">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted small mb-1">HECTÁREAS TOTALES</h6>
+                        <h3 class="fw-bold mb-0" id="kpi-hectareas">0.00</h3>
                     </div>
-                    <i class="fas fa-mountain-sun kpi-icon text-success"></i>
+                    <i class="fas fa-seedling fa-2x text-light"></i>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card shadow-sm border-left-info p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-uppercase text-muted small">Técnicos Activos</h6>
-                        <h2 class="fw-bold mb-0" id="kpi-tecnicos">0</h2>
+        <div class="col-md-3">
+            <div class="card p-3 border-start border-4 border-info">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted small mb-1">TÉCNICOS ACTIVOS</h6>
+                        <h3 class="fw-bold mb-0" id="kpi-tecnicos">0</h3>
                     </div>
-                    <i class="fas fa-user-shield kpi-icon text-info"></i>
+                    <i class="fas fa-user-check fa-2x text-light"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 border-start border-4 border-warning">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted small mb-1">AVANCE DIARIO (PROMEDIO)</h6>
+                        <h3 class="fw-bold mb-0" id="kpi-avance">0</h3>
+                    </div>
+                    <i class="fas fa-chart-line fa-2x text-light"></i>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="row">
-        <div class="col-lg-8 mb-4">
-            <div class="card shadow-sm h-100">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
                 <div class="card-header bg-white py-3">
-                    <h5 class="m-0 text-guinda"><i class="fas fa-map-location-dot me-2"></i> Georreferenciación Territorial</h5>
+                    <h6 class="m-0 fw-bold text-guinda"><i class="fas fa-map-marked-alt me-2"></i>Distribución de Levantamientos por Coordenadas</h6>
                 </div>
                 <div class="card-body p-0">
                     <div id="mapa-dashboard"></div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-4 mb-4">
+        <div class="col-lg-4">
             <div class="card shadow-sm h-100">
-                <div class="card-header bg-white py-3">
-                    <h5 class="m-0 text-guinda"><i class="fas fa-chart-pie me-2"></i> Vocación Productiva</h5>
+                <div class="card-header bg-white py-3 text-center">
+                    <h6 class="m-0 fw-bold text-guinda">Vocación Productiva</h6>
                 </div>
-                <div class="card-body">
-                    <div class="chart-container">
-                        <canvas id="chartActividades"></canvas>
-                    </div>
-                    <div id="legendActividades" class="mt-3 small text-muted"></div>
+                <div class="card-body d-flex flex-column justify-content-center">
+                    <canvas id="chartActividades"></canvas>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="row">
-        <div class="col-lg-7">
-            <div class="card shadow-sm mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow-sm">
                 <div class="card-header bg-white py-3">
-                    <h5 class="m-0 text-guinda"><i class="fas fa-list-ol me-2"></i> Top 10 Colonias por Producción</h5>
+                    <h6 class="m-0 fw-bold text-guinda"><i class="fas fa-history me-2"></i>Ritmo de Levantamiento (Histórico Diario)</h6>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0" id="tabla-colonias">
-                            <thead class="table-light text-guinda">
-                                <tr>
-                                    <th>Colonia / Pueblo</th>
-                                    <th class="text-center">Productores</th>
-                                    <th class="text-center">Superficie (ha)</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
+                <div class="card-body">
+                    <canvas id="chartTendencia" style="height: 200px;"></canvas>
                 </div>
             </div>
         </div>
-        <div class="col-lg-5 text-center">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white py-3 text-start">
-                    <h5 class="m-0 text-guinda"><i class="fas fa-exclamation-triangle me-2"></i> Problemáticas Principales</h5>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold text-guinda"><i class="fas fa-table me-2"></i>Listado Maestro de Encuestas (Sin Datos Sensibles)</h6>
+                    <input type="text" id="tablaSearch" class="form-control form-control-sm w-25" placeholder="Buscar folio o encuestador...">
                 </div>
-                <div class="card-body">
-                    <canvas id="chartProblemas" style="max-height: 350px;"></canvas>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="tablaEncuestas">
+                            <thead>
+                                <tr>
+                                    <th class="ps-3">Folio</th>
+                                    <th>Encuestador</th>
+                                    <th>Actividad</th>
+                                    <th>Pueblo / Colonia</th>
+                                    <th class="text-center">Sup. (ha)</th>
+                                    <th class="text-center">Fecha</th>
+                                    <th class="text-center">Estatus</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -143,81 +149,83 @@
 
 <script>
 $(document).ready(function() {
-    // Configuración de colores
     const palette = ['#773357', '#987b47', '#4a1e36', '#2c3e50', '#1cc88a', '#36b9cc', '#f6c23e'];
 
-    // 1. Inicializar Mapa con estilo Light
+    // 1. Mapa
     const map = L.map('mapa-dashboard').setView([19.180, -99.160], 12);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; Glomo MX 2026'
-    }).addTo(map);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
 
-    // 2. Cargar datos desde el controlador
+    // 2. Obtener Datos
     fetch('<?php echo URLROOT; ?>/Encuesta/getEstadisticas')
         .then(res => res.json())
         .then(data => {
             
-            // Llenar KPIs (Asegúrate de que el Back envíe estos nombres)
+            // KPIs
             $("#kpi-total").text(data.kpis.total_encuestas || 0);
             $("#kpi-hectareas").text(parseFloat(data.kpis.total_hectareas || 0).toFixed(2));
             $("#kpi-tecnicos").text(data.kpis.tecnicos_activos || 0);
 
-            // Mapa: Puntos con círculo estético
+            // Mapa
             data.puntos.forEach(p => {
                 if(p.latitud && p.longitud) {
                     L.circleMarker([p.latitud, p.longitud], {
-                        radius: 7,
-                        fillColor: "#773357",
-                        color: "#fff",
-                        weight: 2,
-                        opacity: 1,
-                        fillOpacity: 0.9
-                    }).addTo(map)
-                    .bindPopup(`<div style="font-family:'Montserrat';"><strong>Folio:</strong> ${p.folio}<br><strong>Actividad:</strong> ${p.actividad_principal}</div>`);
+                        radius: 6, fillColor: "#773357", color: "#fff", weight: 1, opacity: 1, fillOpacity: 0.8
+                    }).addTo(map).bindPopup(`<b>Folio:</b> ${p.folio}<br><b>Actividad:</b> ${p.actividad_principal}`);
                 }
             });
 
-            // Gráfica de Pay (Actividades)
+            // Gráfica Doughnut (Actividades)
             new Chart(document.getElementById('chartActividades'), {
                 type: 'doughnut',
                 data: {
                     labels: data.actividades.map(a => a.actividad_principal),
-                    datasets: [{
-                        data: data.actividades.map(a => a.total),
-                        backgroundColor: palette,
-                        borderWidth: 0
-                    }]
+                    datasets: [{ data: data.actividades.map(a => a.total), backgroundColor: palette }]
                 },
-                options: { cutout: '75%', plugins: { legend: { display: false } } }
+                options: { plugins: { legend: { position: 'bottom' } }, cutout: '60%' }
             });
 
-            // Gráfica de Barras (Problemas)
-            new Chart(document.getElementById('chartProblemas'), {
-                type: 'bar',
+            // Gráfica de Tendencia (Línea)
+            new Chart(document.getElementById('chartTendencia'), {
+                type: 'line',
                 data: {
-                    labels: data.problemas.map(p => p.problema || 'No especificado'),
+                    labels: data.tendencia.map(t => t.fecha),
                     datasets: [{
-                        label: 'Productores afectados',
-                        data: data.problemas.map(p => p.total),
-                        backgroundColor: '#987b47',
-                        borderRadius: 10
+                        label: 'Encuestas por día',
+                        data: data.tendencia.map(t => t.total),
+                        borderColor: '#773357',
+                        backgroundColor: 'rgba(119, 51, 87, 0.1)',
+                        fill: true,
+                        tension: 0.4
                     }]
                 },
-                options: { indexAxis: 'y', plugins: { legend: { display: false } } }
+                options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
 
-            // Llenar Tabla
-            const tbody = $("#tabla-colonias tbody");
-            data.colonias.forEach(c => {
+            // Llenar Tabla Maestra
+            const tbody = $("#tablaEncuestas tbody");
+            data.maestro.forEach(e => {
                 tbody.append(`
                     <tr>
-                        <td class="ps-3 fw-bold text-muted">${c.colonia_nombre}</td>
-                        <td class="text-center"><span class="badge bg-light text-dark">${c.total}</span></td>
-                        <td class="text-center font-weight-bold text-guinda">${parseFloat(c.hectareas).toFixed(2)}</td>
+                        <td class="ps-3 fw-bold text-guinda">${e.folio}</td>
+                        <td class="small">${e.encuestador}</td>
+                        <td class="small text-uppercase">${e.actividad_principal}</td>
+                        <td class="small text-muted">${e.colonia_nombre || 'N/A'}</td>
+                        <td class="text-center font-monospace">${parseFloat(e.superficie_total).toFixed(2)}</td>
+                        <td class="text-center small">${e.fecha_inicio.substring(0,10)}</td>
+                        <td class="text-center">
+                            <span class="badge bg-success badge-status">${e.estatus}</span>
+                        </td>
                     </tr>
                 `);
             });
-        })
-        .catch(err => console.error("Error cargando dashboard:", err));
+
+            // Buscador de tabla sencillo
+            $("#tablaSearch").on("keyup", function() {
+                var value = $(this).val().toLowerCase();
+                $("#tablaEncuestas tbody tr").filter(function() {
+                    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+                });
+            });
+        });
 });
 </script>

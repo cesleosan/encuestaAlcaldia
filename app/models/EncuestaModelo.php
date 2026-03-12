@@ -180,4 +180,30 @@ class EncuestaModelo {
             HAVING problema IS NOT NULL");
         return $this->db->resultSet();
     }
+
+    public function getListadoMaestro() {
+        // Unimos con la tabla usuarios para saber el nombre del encuestador
+        $this->db->query("SELECT 
+            e.folio, 
+            u.nombre as encuestador, 
+            e.actividad_principal, 
+            e.colonia_nombre,
+            e.superficie_total, 
+            e.fecha_inicio,
+            e.estatus
+            FROM encuestas e
+            INNER JOIN usuarios u ON e.usuario_id = u.id
+            ORDER BY e.fecha_inicio DESC");
+        return $this->db->resultSet();
+    }
+
+    public function getTendenciaDiaria() {
+        $this->db->query("SELECT 
+            DATE(fecha_inicio) as fecha, 
+            COUNT(*) as total 
+            FROM encuestas 
+            GROUP BY DATE(fecha_inicio) 
+            ORDER BY fecha ASC");
+        return $this->db->resultSet();
+    }
 }
