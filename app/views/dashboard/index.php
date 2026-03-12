@@ -19,6 +19,16 @@
     /* Paginación Estilo Guinda */
     .pagination .page-link { color: var(--guinda); }
     .pagination .page-item.active .page-link { background-color: var(--guinda); border-color: var(--guinda); }
+    /* Añadir a tu bloque <style> */
+    .btn-danger {
+        background-color: #a02020; /* Un rojo más serio */
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+    }
+    .btn-danger:hover {
+        background-color: #7a1818;
+    }
 </style>
 
 <div class="container-fluid py-4">
@@ -28,8 +38,14 @@
             <p class="text-muted">Análisis integral del Censo Agropecuario Tlalpan 2026</p>
         </div>
         <div class="col-md-5 text-end">
-            <button class="btn btn-outline-secondary me-2"><i class="fas fa-file-export"></i> Exportar Excel</button>
+            <button id="btnExportar" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-file-export"></i> Exportar Excel
+            </button>
             <button onclick="location.reload()" class="btn btn-guinda"><i class="fas fa-sync-alt"></i> Sincronizar</button>
+            <a href="<?php echo URLROOT; ?>/Auth/logout" class="btn btn-danger shadow-sm" 
+            onclick="return confirm('¿Estás seguro de que deseas cerrar sesión?')">
+                <i class="fas fa-sign-out-alt"></i> Salir
+            </a>
         </div>
     </div>
 
@@ -341,6 +357,53 @@ $(document).ready(function() {
             (e.colonia_nombre && e.colonia_nombre.toLowerCase().includes(val))
         );
         renderTable(1);
+    });
+
+    // --- FUNCIÓN DE EXPORTACIÓN A EXCEL (CSV) ---
+    $("#btnExportar").on("click", function() {
+        if (fullMaestroData.length === 0) {
+            alert("No hay datos para exportar");
+            return;
+        }
+
+        // 1. Definir encabezados
+        const headers = ["Folio", "Encuestador", "Actividad", "Colonia", "Superficie (ha)", "Fecha", "Estatus"];
+        
+        // 2. Transformar los datos al formato de filas
+        const rows = fullMaestroData.map(e => [
+            e.folio,
+            e.encuestador || "Sin asignar",
+            e.actividad_principal,
+            e.colonia_nombre || "N/A",
+            parseFloat(e.superficie_total).toFixed(2),
+            e.fecha_inicio,
+            e.estatus
+        ]);
+
+        // 3. Crear el contenido CSV
+        // El \uFEFF es el "BOM" para que Excel reconozca los acentos (UTF-8) correctamente
+        let csvContent = "\uFEFF"; 
+        csvContent += headers.join(",") + "\n";
+        
+        rows.forEach(rowArray => {
+            // Envolvemos cada celda en comillas para evitar errores con las comas internas
+            let row = rowArray.map(val => `"${val}"`).join(",");
+            csvContent += row + "\n";
+        });
+
+        // 4. Crear el archivo y disparar la descarga
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        
+        const fechaDescarga = new Date().toISOString().slice(0,10);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Censo_Tlalpan_Reporte_${fechaDescarga}.csv`);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     });
 });
 </script>
