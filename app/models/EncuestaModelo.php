@@ -51,25 +51,28 @@ class EncuestaModelo {
     /**
      * 2. Guardar la Encuesta (Versión Blindada)
      */
-    public function agregar($datos) {
+   public function agregar($datos) {
         try {
+            // ✅ SQL ACTUALIZADO: Agregamos columnas de métricas y conclusión
             $sql = 'INSERT INTO encuestas (
-                        usuario_id, curp, nombre, apellido_paterno, apellido_materno,
+                        folio, usuario_id, curp, nombre, apellido_paterno, apellido_materno,
                         fecha_nacimiento, sexo, tiempo_residencia_tlalpan, tiempo_residencia_cdmx,
-                        calle, numero_exterior, colonia_id, latitud, longitud, 
-                        actividad_principal, respuestas_json, estatus, folio
+                        calle, numero_exterior, colonia_id, colonia_nombre, latitud, longitud, 
+                        actividad_principal, superficie_total, volumen_total, unidad_medida,
+                        respuestas_json, estatus, fecha_conclusion
                     ) VALUES (
-                        :usuario_id, :curp, :nombre, :paterno, :materno,
+                        :folio, :usuario_id, :curp, :nombre, :paterno, :materno,
                         :nacimiento, :sexo, :res_tlalpan, :res_cdmx,
-                        :calle, :num_ext, :colonia_id, :lat, :lon,
-                        :actividad, :json, "Completa", :folio
+                        :calle, :num_ext, :colonia_id, :colonia_nom, :lat, :lon,
+                        :actividad, :superficie, :volumen, :unidad,
+                        :json, :estatus, :fecha_fin
                     )';
             
             $this->db->query($sql);
             
-            // Bindeos de texto y enteros
+            // Bindeos de Identidad y Tiempo
             $this->db->bind(':folio', $datos['folio']);
-            $this->db->bind(':usuario_id', $_SESSION['user_id']);
+            $this->db->bind(':usuario_id', $datos['usuario_id']);
             $this->db->bind(':curp', $datos['curp']);
             $this->db->bind(':nombre', $datos['nombre']);
             $this->db->bind(':paterno', $datos['paterno']);
@@ -77,37 +80,43 @@ class EncuestaModelo {
             $this->db->bind(':nacimiento', $datos['fecha_nacimiento']);
             $this->db->bind(':sexo', $datos['sexo']);
             $this->db->bind(':res_tlalpan', $datos['tiempo_tlalpan']);
-            $this->db->bind(':res_cdmx', $datos['tiempo_residencia_cdmx'] ?? $datos['tiempo_cdmx']);
+            $this->db->bind(':res_cdmx', $datos['tiempo_cdmx']);
+            
+            // Bindeos de Ubicación
             $this->db->bind(':calle', $datos['calle']);
             $this->db->bind(':num_ext', $datos['num_ext']);
-            $this->db->bind(':colonia_id', !empty($datos['colonia_id']) ? $datos['colonia_id'] : null);
-            $this->db->bind(':actividad', $datos['actividad_principal']);
-
-            // --- CORRECCIÓN QUIRÚRGICA: COORDENADAS ---
-            // Si latitud o longitud vienen como string vacío "", mandamos NULL para evitar el error de MariaDB
-            $lat = ($datos['latitud'] !== '') ? $datos['latitud'] : null;
-            $lon = ($datos['longitud'] !== '') ? $datos['longitud'] : null;
+            $this->db->bind(':colonia_id', $datos['colonia_id'] ?? null);
+            $this->db->bind(':colonia_nom', $datos['colonia_nombre']); // 🔥 Captura "SAN MIGUEL TOPILEJO" etc.
+            
+            // Bindeos de Coordenadas (Manejo de NULLs quirúrgico)
+            $lat = ($datos['latitud'] !== '' && $datos['latitud'] !== 0) ? $datos['latitud'] : null;
+            $lon = ($datos['longitud'] !== '' && $datos['longitud'] !== 0) ? $datos['longitud'] : null;
             $this->db->bind(':lat', $lat);
             $this->db->bind(':lon', $lon);
 
-            // Asegurar que el JSON se codifique correctamente
-            $jsonRespuestas = json_encode($datos['respuestas_completas'], JSON_UNESCAPED_UNICODE);
-            $this->db->bind(':json', $jsonRespuestas);
+            // 🔥 Bindeos de Métricas (Pantalla 47/48)
+            $this->db->bind(':actividad', $datos['actividad_principal']);
+            $this->db->bind(':superficie', $datos['superficie_total']);
+            $this->db->bind(':volumen', $datos['volumen_total']);
+            $this->db->bind(':unidad', $datos['unidad_medida']);
+
+            // Estado y JSON
+            $this->db->bind(':estatus', $datos['estatus']);
+            $this->db->bind(':fecha_fin', $datos['fecha_conclusion']); // 🔥 Ya no será NULL
+            
+            // 🚨 IMPORTANTE: En el controlador ya hicimos json_encode. 
+            // Aquí bindeamos la cadena directamente para evitar doble escape.
+            $this->db->bind(':json', $datos['respuestas_completas']);
 
             if ($this->db->execute()) {
                 return $datos['folio']; 
             }
             
-            // Si llega aquí sin excepción pero falló el execute
-            $this->ultimoError = "Fallo la ejecución de la consulta (execute returned false).";
+            $this->ultimoError = "Fallo la ejecución de la consulta MariaDB.";
             return false;
 
         } catch (PDOException $e) {
-            // Capturamos el error real de SQL (ej: columna inexistente o valor inválido)
-            $this->ultimoError = $e->getMessage();
-            return false;
-        } catch (Exception $e) {
-            $this->ultimoError = $e->getMessage();
+            $this->ultimoError = "SQL Error: " . $e->getMessage();
             return false;
         }
     }
@@ -119,5 +128,56 @@ class EncuestaModelo {
         $this->db->query("SELECT MAX(id) as ultimo FROM encuestas");
         $row = $this->db->single();
         return $row->ultimo ?? 0;
+    }
+
+    public function obtenerCoordenadasMapa() {
+        $this->db->query("SELECT folio, latitud, longitud, actividad_principal 
+                        FROM encuestas 
+                        WHERE latitud IS NOT NULL AND longitud IS NOT NULL");
+        return $this->db->resultSet();
+    }
+
+    public function getConteoActividades() {
+        $this->db->query("SELECT actividad_principal, COUNT(*) as total 
+                        FROM encuestas 
+                        GROUP BY actividad_principal");
+        return $this->db->resultSet();
+    }
+    // En EncuestaModelo.php
+
+    public function getDashboardKPIs() {
+        $this->db->query("SELECT 
+            COUNT(*) as total_encuestas,
+            IFNULL(SUM(superficie_total), 0) as total_hectareas,
+            COUNT(DISTINCT usuario_id) as tecnicos_activos,
+            (SELECT COUNT(*) FROM cat_colonias) as colonias_cobertura
+            FROM encuestas");
+        return $this->db->single();
+    }
+
+    public function getProduccionPorColonia() {
+        $this->db->query("SELECT 
+            colonia_nombre, 
+            COUNT(*) as total, 
+            SUM(superficie_total) as hectareas 
+            FROM encuestas 
+            WHERE colonia_nombre IS NOT NULL 
+            GROUP BY colonia_nombre 
+            ORDER BY hectareas DESC 
+            LIMIT 10");
+        return $this->db->resultSet();
+    }
+
+    public function getProblemasPrincipales() {
+        // Esta consulta extrae el problema del JSON de forma masiva (Pantalla 11, campo problema_principal)
+        // Nota: Como ya tienes superficie_total fuera, lo ideal sería mapear 'problema' también.
+        // Por ahora, lo sacamos del JSON directamente:
+        $this->db->query("SELECT 
+            JSON_UNQUOTE(JSON_EXTRACT(respuestas_json, '$.11[2].value')) as problema,
+            COUNT(*) as total
+            FROM encuestas
+            GROUP BY problema
+            HAVING problema IS NOT NULL");
+        return $this->db->resultSet();
     }
 }

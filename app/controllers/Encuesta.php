@@ -43,30 +43,43 @@ class Encuesta extends Controller {
             return;
         }
 
-        // --- MAPEO DE DATOS PROFESIONAL ---
+        // 1. Mapeo de Identidad (Pantalla 2)
         $curp = strtoupper($this->buscarValor($respuestas[2], 'curp'));
-
-        // 2. Validar Duplicado Real (CURP)
+        
+        // Validar Duplicado Real
         $folioExistente = $this->encuestaModel->existeCurp($curp);
         if ($folioExistente) {
             echo json_encode(['status' => 'error', 'msg' => "El CURP ya fue registrado con folio: $folioExistente"]);
             return;
         }
 
-        // Mejora en parsing de nombre (evita errores si solo ponen un apellido)
+        // Parsing de nombre
         $nombre_completo = $this->buscarValor($respuestas[2], 'nombre_productor'); 
         $partes = explode(' ', trim($nombre_completo));
         $materno = (count($partes) > 2) ? array_pop($partes) : '';
         $paterno = (count($partes) > 1) ? array_pop($partes) : '';
         $nombre = implode(' ', $partes);
 
+        // 2. Mapeo de Ubicación (Pantalla 5 y 6)
         $lat = $respuestas[6]['latitud'] ?? 0;
         $lon = $respuestas[6]['longitud'] ?? 0;
         $calle = $respuestas[6]['calle_numero'] ?? '';
         
+        // Manejo de Colonia (OTRO vs Catálogo)
+        $pueblo_seleccionado = $this->buscarValor($respuestas[5], 'pueblo_colonia');
+        $pueblo_otro = $this->buscarValor($respuestas[5], 'pueblo_otro');
+        $colonia_final = ($pueblo_seleccionado === 'OTRO') ? $pueblo_otro : $pueblo_seleccionado;
+
+        // 3. Mapeo de Actividad y Métricas (Pantalla 18 y 47)
         $actividad = $respuestas[18] ?? [];
         $actividad_str = is_array($actividad) ? implode(', ', array_map(function($item) { return $item['value']; }, $actividad)) : 'OTRO';
 
+        // 🔥 EXTRACCIÓN QUIRÚRGICA DE MÉTRICAS (Lo que faltaba en el registro de Omar)
+        $superficie = $this->buscarValor($respuestas[47], 'superficie_prod');
+        $volumen = $this->buscarValor($respuestas[47], 'volumen_prod');
+        $unidad = $this->buscarValor($respuestas[48], 'unidad_medida');
+
+        // 4. Preparación del Array de Carga
         $datosGuardar = [
             'folio'                => $this->buscarValor($respuestas[2], 'folio'),
             'usuario_id'           => $_SESSION['user_id'],
@@ -80,26 +93,27 @@ class Encuesta extends Controller {
             'tiempo_cdmx'          => $this->buscarValor($respuestas[4], 'tiempo_residencia_cdmx'),
             'calle'                => $calle,
             'num_ext'              => 'S/N',
-            'colonia_id'           => null,
+            'colonia_nombre'       => $colonia_final, // Columna de texto para reportes rápidos
             'latitud'              => $lat,
             'longitud'             => $lon,
             'actividad_principal'  => $actividad_str,
-            
-            // 🔥 EL FIX: Convertir el array a una cadena JSON antes de guardar
+            'superficie_total'     => floatval($superficie), // Aseguramos que sea número
+            'volumen_total'        => floatval($volumen),
+            'unidad_medida'        => $unidad,
+            'estatus'              => 'Completa',
+            'fecha_conclusion'     => date('Y-m-d H:i:s'), // 🔥 Registramos el cierre real
             'respuestas_completas' => json_encode($respuestas, JSON_UNESCAPED_UNICODE) 
         ];
 
-        $nuevoFolio = $this->encuestaModel->agregar($datosGuardar);
+        $exito = $this->encuestaModel->agregar($datosGuardar);
 
-        if ($nuevoFolio) {
-            echo json_encode(['status' => 'success', 'folio' => $nuevoFolio]);
+        if ($exito) {
+            echo json_encode(['status' => 'success', 'folio' => $datosGuardar['folio']]);
         } else {
-            // Esto es lo que te dirá la verdad técnica
-            $errorReal = $this->encuestaModel->getError();
             echo json_encode([
                 'status' => 'error', 
                 'msg' => 'Error al insertar en base de datos',
-                'detalles' => $errorReal 
+                'detalles' => $this->encuestaModel->getError() 
             ]);
         }
     }
@@ -146,6 +160,22 @@ public function getTodasLasColonias() {
     $colonias = $this->encuestaModel->getColoniasTlalpan(2000); 
     
     echo json_encode($colonias, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+public function getEstadisticas() {
+    if (ob_get_length()) ob_clean();
+    header('Content-Type: application/json');
+
+    $datos = [
+        'kpis'        => $this->encuestaModel->getDashboardKPIs(),
+        'puntos'      => $this->encuestaModel->obtenerCoordenadasMapa(),
+        'actividades' => $this->encuestaModel->getConteoActividades(),
+        'colonias'    => $this->encuestaModel->getProduccionPorColonia(),
+        'problemas'   => $this->encuestaModel->getProblemasPrincipales()
+    ];
+
+    echo json_encode($datos);
     exit;
 }
 }
