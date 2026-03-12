@@ -34,8 +34,7 @@
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-md-7">
-            <h2 class="fw-bold text-guinda mb-0">Command Center: Tierra con Corazón</h2>
-            <p class="text-muted">Análisis integral del Censo Agropecuario Tlalpan 2026</p>
+            <h2 class="fw-bold text-guinda mb-0">Dashboard: Tierra con Corazón</h2>
         </div>
         <div class="col-md-5 text-end">
             <button id="btnExportar" class="btn btn-outline-secondary me-2">
