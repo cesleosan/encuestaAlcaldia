@@ -173,9 +173,12 @@ class EncuestaModelo {
         // Nota: Como ya tienes superficie_total fuera, lo ideal sería mapear 'problema' también.
         // Por ahora, lo sacamos del JSON directamente:
         $this->db->query("SELECT 
+            -- Extraemos el valor pero solo si el JSON es válido
             JSON_UNQUOTE(JSON_EXTRACT(respuestas_json, '$.11[2].value')) as problema,
             COUNT(*) as total
             FROM encuestas
+            WHERE respuestas_json IS NOT NULL 
+            AND JSON_VALID(respuestas_json) -- 🔥 Esto evita que truene con JSONs mal formados
             GROUP BY problema
             HAVING problema IS NOT NULL");
         return $this->db->resultSet();
@@ -185,14 +188,14 @@ class EncuestaModelo {
         // Unimos con la tabla usuarios para saber el nombre del encuestador
         $this->db->query("SELECT 
             e.folio, 
-            u.nombre as encuestador, 
+            u.nombre as encuestador, -- 🚨 ¿Seguro se llama 'nombre' en la tabla usuarios?
             e.actividad_principal, 
             e.colonia_nombre,
             e.superficie_total, 
             e.fecha_inicio,
             e.estatus
             FROM encuestas e
-            INNER JOIN usuarios u ON e.usuario_id = u.id
+            LEFT JOIN usuarios u ON e.usuario_id = u.id -- Cambiado a LEFT JOIN
             ORDER BY e.fecha_inicio DESC");
         return $this->db->resultSet();
     }
