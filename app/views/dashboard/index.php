@@ -418,23 +418,23 @@ $(document).ready(function() {
         });
         document.body.removeChild(link);
     });
+});
 
     function confirmarSalida() {
-    Swal.fire({
-        title: '¿Cerrar sesión?',
-        text: "Tendrás que ingresar tus credenciales nuevamente.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#773357', // Color Guinda
-        cancelButtonColor: '#858796',
-        confirmButtonText: 'Sí, salir',
-        cancelButtonText: 'Cancelar',
-        reverseButtons: true
-    }).then((result) => {
-        if (result.isConfirmed) {
-            window.location.href = '<?php echo URLROOT; ?>/Auth/logout';
-        }
-    });
-}
-});
+        Swal.fire({
+            title: '¿Cerrar sesión?',
+            text: "Tendrás que ingresar tus credenciales nuevamente.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#773357', // Color Guinda
+            cancelButtonColor: '#858796',
+            confirmButtonText: 'Sí, salir',
+            cancelButtonText: 'Cancelar',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = '<?php echo URLROOT; ?>/Auth/logout';
+            }
+        });
+    }
 </script>
