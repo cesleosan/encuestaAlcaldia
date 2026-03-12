@@ -42,10 +42,9 @@
                 <i class="fas fa-file-export"></i> Exportar Excel
             </button>
             <button onclick="location.reload()" class="btn btn-guinda"><i class="fas fa-sync-alt"></i> Sincronizar</button>
-            <a href="<?php echo URLROOT; ?>/Auth/logout" class="btn btn-danger shadow-sm" 
-            onclick="return confirm('¿Estás seguro de que deseas cerrar sesión?')">
+            <button onclick="confirmarSalida()" class="btn btn-danger shadow-sm">
                 <i class="fas fa-sign-out-alt"></i> Salir
-            </a>
+            </button>
         </div>
     </div>
 
@@ -202,6 +201,7 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -362,9 +362,14 @@ $(document).ready(function() {
     // --- FUNCIÓN DE EXPORTACIÓN A EXCEL (CSV) ---
     $("#btnExportar").on("click", function() {
         if (fullMaestroData.length === 0) {
-            alert("No hay datos para exportar");
-            return;
-        }
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: 'No hay datos para exportar en este momento.',
+                    confirmButtonColor: '#773357'
+                });
+                return;
+            }
 
         // 1. Definir encabezados
         const headers = ["Folio", "Encuestador", "Actividad", "Colonia", "Superficie (ha)", "Fecha", "Estatus"];
@@ -403,7 +408,33 @@ $(document).ready(function() {
         
         document.body.appendChild(link);
         link.click();
+        Swal.fire({
+            title: '¡Descarga Exitosa!',
+            text: 'El reporte del censo se ha generado correctamente.',
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false,
+            timerProgressBar: true
+        });
         document.body.removeChild(link);
     });
+
+    function confirmarSalida() {
+    Swal.fire({
+        title: '¿Cerrar sesión?',
+        text: "Tendrás que ingresar tus credenciales nuevamente.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#773357', // Color Guinda
+        cancelButtonColor: '#858796',
+        confirmButtonText: 'Sí, salir',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = '<?php echo URLROOT; ?>/Auth/logout';
+        }
+    });
+}
 });
 </script>
