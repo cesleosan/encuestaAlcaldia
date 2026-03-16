@@ -5,6 +5,102 @@ dbLocal.version(2).stores({
     catalogos: 'id' 
 });
 
+// BLOQUE 2: Sincronizador Maestro con detección de sesión
+// Función auxiliar para generar un nuevo sufijo aleatorio de 6 caracteres
+function generarNuevoSufijo() {
+    return Math.random().toString(16).toUpperCase().substring(2, 8);
+}
+
+async function ejecutarSincronizacionMasiva() {
+    const pendientes = await dbLocal.encuestas.toArray();
+    if (pendientes.length === 0) return;
+
+    let foliosSincronizados = [];
+    
+    for (const item of pendientes) {
+        let datosAEnviar = item.datos; 
+        let exitoItem = false;
+        let intentos = 0;
+
+        // Bucle de reintento con regeneración de folio
+        while (!exitoItem && intentos < 3) {
+            try {
+                const res = await fetch(`${URLROOT}/index.php?url=Encuesta/guardar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(datosAEnviar)
+                });
+
+                const data = await res.json();
+
+                // 1. Manejo de Sesión Expirada
+                if (data.status === 'error' && data.msg === 'Sesión expirada') {
+                    Swal.fire({
+                        title: 'Sesión Expirada',
+                        text: 'Inicia sesión de nuevo para subir las encuestas pendientes.',
+                        icon: 'warning',
+                        confirmButtonText: 'IR AL LOGIN',
+                        confirmButtonColor: '#773357'
+                    }).then(() => { window.location.href = `${URLROOT}/Auth`; });
+                    return; 
+                }
+
+                // 2. Manejo de Éxito
+                if (data.status === 'success') {
+                    await dbLocal.encuestas.delete(item.id);
+                    // Obtenemos el folio final (sea el original o el regenerado)
+                    const folioFinal = datosAEnviar[2].find(c => c.name === 'folio').value;
+                    foliosSincronizados.push(folioFinal);
+                    exitoItem = true; 
+                } 
+
+                // 3. REGENERACIÓN QUIRÚRGICA DEL FOLIO POR DUPLICADO
+                else if (data.status === 'duplicate') {
+                    intentos++;
+                    
+                    // Buscamos el objeto del folio en la pantalla 2 (índice 2 del JSON)
+                    const campoFolio = datosAEnviar[2].find(c => c.name === 'folio');
+                    
+                    if (campoFolio) {
+                        const folioViejo = campoFolio.value;
+                        // Estructura: TLP-26-IDUSUARIO-SUFIJO
+                        // Cortamos el folio para mantener el prefijo y cambiar solo los últimos 6 caracteres
+                        const partes = folioViejo.split('-');
+                        if (partes.length >= 4) {
+                            partes[3] = generarNuevoSufijo(); // Reemplazamos el sufijo aleatorio
+                            campoFolio.value = partes.join('-');
+                        } else {
+                            // Fallback por si el formato es distinto
+                            campoFolio.value = `${folioViejo}-${generarNuevoSufijo()}`;
+                        }
+                        
+                        console.warn(`Colisión en ${folioViejo}. Regenerado a: ${campoFolio.value}`);
+                    }
+                    // El bucle while volverá a intentar el fetch con el nuevo valor de campoFolio.value
+                } 
+
+                else {
+                    console.error("Error no recuperable:", data.msg);
+                    break; 
+                }
+
+            } catch(e) { 
+                console.error("Fallo de red:", e);
+                return; 
+            } 
+        }
+    }
+
+    if (foliosSincronizados.length > 0) {
+        Swal.fire({
+            title: '¡Sincronización Exitosa!',
+            html: `<p>Se subieron <b>${foliosSincronizados.length}</b> encuestas.</p>`,
+            icon: 'success',
+            confirmButtonColor: '#773357'
+        });
+    }
+}
+
 // 2. Precarga de colonias
 async function precargarColonias() {
     if (!navigator.onLine) return;
@@ -737,101 +833,6 @@ async function finalizarEncuesta() {
     }
 }
 
-// BLOQUE 2: Sincronizador Maestro con detección de sesión
-// Función auxiliar para generar un nuevo sufijo aleatorio de 6 caracteres
-function generarNuevoSufijo() {
-    return Math.random().toString(16).toUpperCase().substring(2, 8);
-}
-
-async function ejecutarSincronizacionMasiva() {
-    const pendientes = await dbLocal.encuestas.toArray();
-    if (pendientes.length === 0) return;
-
-    let foliosSincronizados = [];
-    
-    for (const item of pendientes) {
-        let datosAEnviar = item.datos; 
-        let exitoItem = false;
-        let intentos = 0;
-
-        // Bucle de reintento con regeneración de folio
-        while (!exitoItem && intentos < 3) {
-            try {
-                const res = await fetch(`${URLROOT}/index.php?url=Encuesta/guardar`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(datosAEnviar)
-                });
-
-                const data = await res.json();
-
-                // 1. Manejo de Sesión Expirada
-                if (data.status === 'error' && data.msg === 'Sesión expirada') {
-                    Swal.fire({
-                        title: 'Sesión Expirada',
-                        text: 'Inicia sesión de nuevo para subir las encuestas pendientes.',
-                        icon: 'warning',
-                        confirmButtonText: 'IR AL LOGIN',
-                        confirmButtonColor: '#773357'
-                    }).then(() => { window.location.href = `${URLROOT}/Auth`; });
-                    return; 
-                }
-
-                // 2. Manejo de Éxito
-                if (data.status === 'success') {
-                    await dbLocal.encuestas.delete(item.id);
-                    // Obtenemos el folio final (sea el original o el regenerado)
-                    const folioFinal = datosAEnviar[2].find(c => c.name === 'folio').value;
-                    foliosSincronizados.push(folioFinal);
-                    exitoItem = true; 
-                } 
-
-                // 3. REGENERACIÓN QUIRÚRGICA DEL FOLIO POR DUPLICADO
-                else if (data.status === 'duplicate') {
-                    intentos++;
-                    
-                    // Buscamos el objeto del folio en la pantalla 2 (índice 2 del JSON)
-                    const campoFolio = datosAEnviar[2].find(c => c.name === 'folio');
-                    
-                    if (campoFolio) {
-                        const folioViejo = campoFolio.value;
-                        // Estructura: TLP-26-IDUSUARIO-SUFIJO
-                        // Cortamos el folio para mantener el prefijo y cambiar solo los últimos 6 caracteres
-                        const partes = folioViejo.split('-');
-                        if (partes.length >= 4) {
-                            partes[3] = generarNuevoSufijo(); // Reemplazamos el sufijo aleatorio
-                            campoFolio.value = partes.join('-');
-                        } else {
-                            // Fallback por si el formato es distinto
-                            campoFolio.value = `${folioViejo}-${generarNuevoSufijo()}`;
-                        }
-                        
-                        console.warn(`Colisión en ${folioViejo}. Regenerado a: ${campoFolio.value}`);
-                    }
-                    // El bucle while volverá a intentar el fetch con el nuevo valor de campoFolio.value
-                } 
-
-                else {
-                    console.error("Error no recuperable:", data.msg);
-                    break; 
-                }
-
-            } catch(e) { 
-                console.error("Fallo de red:", e);
-                return; 
-            } 
-        }
-    }
-
-    if (foliosSincronizados.length > 0) {
-        Swal.fire({
-            title: '¡Sincronización Exitosa!',
-            html: `<p>Se subieron <b>${foliosSincronizados.length}</b> encuestas.</p>`,
-            icon: 'success',
-            confirmButtonColor: '#773357'
-        });
-    }
-}
 
 function guardarEnLocal(payload) {
     dbLocal.encuestas.add(payload).then(() => {
