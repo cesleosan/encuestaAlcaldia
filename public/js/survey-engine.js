@@ -91,12 +91,28 @@ async function ejecutarSincronizacionMasiva() {
         }
     }
 
-    if (foliosSincronizados.length > 0) {
+if (foliosSincronizados.length > 0) {
+        // 1. Creamos la lista de folios con un map
+        const listaFoliosHtml = foliosSincronizados
+            .map(f => `<li style="margin-bottom: 5px;"><i class="fa-solid fa-check-circle" style="color: #28a745;"></i> <b>${f}</b></li>`)
+            .join('');
+
+        // 2. Disparamos el SweetAlert con el listado
         Swal.fire({
             title: '¡Sincronización Exitosa!',
-            html: `<p>Se subieron <b>${foliosSincronizados.length}</b> encuestas.</p>`,
+            html: `
+                <div style="text-align: left;">
+                    <p>Se subieron correctamente <b>${foliosSincronizados.length}</b> encuestas pendientes:</p>
+                    <div style="max-height: 200px; overflow-y: auto; background: #f8f9fa; padding: 15px; border-radius: 10px; border: 1px solid #dee2e6; margin-top: 10px;">
+                        <ul style="list-style: none; padding: 0; margin: 0; font-family: monospace; font-size: 0.9rem;">
+                            ${listaFoliosHtml}
+                        </ul>
+                    </div>
+                </div>
+            `,
             icon: 'success',
-            confirmButtonColor: '#773357'
+            confirmButtonColor: '#773357',
+            confirmButtonText: 'EXCELENTE'
         });
     }
 }
