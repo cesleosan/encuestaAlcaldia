@@ -89,59 +89,17 @@ async function buscarColoniasLocal(cp) {
             'box-shadow': '0 0 5px rgba(220, 53, 69, 0.5)'
         });
     });
-
-    window.addEventListener('online', async () => {
-    // 1. Indicador visual de red
+window.addEventListener('online', async () => {
     $('.status-indicator').css({'background-color': '#28a745'});
-
-    const pendientes = await dbLocal.encuestas.toArray();
-    if (pendientes.length === 0) return;
-
-    // 🔥 ACUMULADOR PARA EL REPORTE FINAL
-    let foliosSincronizados = [];
-
-    console.log(`Iniciando sincronización de ${pendientes.length} encuestas...`);
-
-    for (const item of pendientes) {
-        try {
-            const res = await fetch(`${URLROOT}/index.php?url=Encuesta/guardar`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(item.datos)
-            });
-
-            const data = await res.json();
-
-            if (data.status === 'success') {
-                await dbLocal.encuestas.delete(item.id);
-                foliosSincronizados.push(item.folio); // Guardamos para el reporte
-                console.log(`✅ Folio ${item.folio} sincronizado.`);
-            }
-        } catch(e) { 
-            console.error("Fallo de red en medio de la sincronización.", e);
-            break; 
-        } 
-    }
-
-    // 🔥 MOSTRAR REPORTE FINAL AL TÉCNICO
-    if (foliosSincronizados.length > 0) {
-        Swal.fire({
-            title: '¡Sincronización Exitosa!',
-            html: `
-                <div style="text-align: left;">
-                    <p>Se subieron <b>${foliosSincronizados.length}</b> encuestas pendientes:</p>
-                    <ul style="max-height: 150px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 10px; list-style: none;">
-                        ${foliosSincronizados.map(f => `<li>✅ Folio: <b>${f}</b></li>`).join('')}
-                    </ul>
-                </div>
-            `,
-            icon: 'success',
-            confirmButtonColor: '#773357'
-        });
-    }
+    ejecutarSincronizacionMasiva();
 });
-
+ 
 $(document).ready(function () {
+
+    if (navigator.onLine) {
+        ejecutarSincronizacionMasiva();
+    }
+
     const element = document.getElementById('survey-app');
     if (!element) return;
 
@@ -755,9 +713,12 @@ function renderMapaGPS(data, contenedor) {
         $("#progress-bar").css("width", (id / total * 100) + "%");
     }
 
+// BLOQUE 1: Finalización Blindada
 async function finalizarEncuesta() {
+    // Asegúrate de que USER_ID_SESION esté disponible (puedes pasarla desde PHP al JS)
     const payload = { 
         folio: FOLIO_AUTO, 
+        usuario_id: typeof USER_ID_SESION !== 'undefined' ? USER_ID_SESION : null, 
         datos: respuestas, 
         fecha: new Date().toISOString() 
     };
@@ -765,13 +726,112 @@ async function finalizarEncuesta() {
     if (navigator.onLine) {
         enviarAlServidor(payload);
     } else {
+        // Dexie es el búnker: aquí el dato está a salvo aunque cierres el navegador
         await dbLocal.encuestas.add(payload);
-        Swal.fire('Modo Offline', 'Sin internet. Encuesta guardada en el celular.', 'info')
-            .then(() => location.reload());
+        Swal.fire({
+            title: 'Modo Offline: Protegido',
+            text: 'Sin internet. La encuesta se guardó físicamente en el celular y se subirá en cuanto detecte señal.',
+            icon: 'success',
+            confirmButtonColor: '#773357'
+        }).then(() => location.reload());
     }
 }
 
+// BLOQUE 2: Sincronizador Maestro con detección de sesión
+// Función auxiliar para generar un nuevo sufijo aleatorio de 6 caracteres
+function generarNuevoSufijo() {
+    return Math.random().toString(16).toUpperCase().substring(2, 8);
+}
 
+async function ejecutarSincronizacionMasiva() {
+    const pendientes = await dbLocal.encuestas.toArray();
+    if (pendientes.length === 0) return;
+
+    let foliosSincronizados = [];
+    
+    for (const item of pendientes) {
+        let datosAEnviar = item.datos; 
+        let exitoItem = false;
+        let intentos = 0;
+
+        // Bucle de reintento con regeneración de folio
+        while (!exitoItem && intentos < 3) {
+            try {
+                const res = await fetch(`${URLROOT}/index.php?url=Encuesta/guardar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(datosAEnviar)
+                });
+
+                const data = await res.json();
+
+                // 1. Manejo de Sesión Expirada
+                if (data.status === 'error' && data.msg === 'Sesión expirada') {
+                    Swal.fire({
+                        title: 'Sesión Expirada',
+                        text: 'Inicia sesión de nuevo para subir las encuestas pendientes.',
+                        icon: 'warning',
+                        confirmButtonText: 'IR AL LOGIN',
+                        confirmButtonColor: '#773357'
+                    }).then(() => { window.location.href = `${URLROOT}/Auth`; });
+                    return; 
+                }
+
+                // 2. Manejo de Éxito
+                if (data.status === 'success') {
+                    await dbLocal.encuestas.delete(item.id);
+                    // Obtenemos el folio final (sea el original o el regenerado)
+                    const folioFinal = datosAEnviar[2].find(c => c.name === 'folio').value;
+                    foliosSincronizados.push(folioFinal);
+                    exitoItem = true; 
+                } 
+
+                // 3. REGENERACIÓN QUIRÚRGICA DEL FOLIO POR DUPLICADO
+                else if (data.status === 'duplicate') {
+                    intentos++;
+                    
+                    // Buscamos el objeto del folio en la pantalla 2 (índice 2 del JSON)
+                    const campoFolio = datosAEnviar[2].find(c => c.name === 'folio');
+                    
+                    if (campoFolio) {
+                        const folioViejo = campoFolio.value;
+                        // Estructura: TLP-26-IDUSUARIO-SUFIJO
+                        // Cortamos el folio para mantener el prefijo y cambiar solo los últimos 6 caracteres
+                        const partes = folioViejo.split('-');
+                        if (partes.length >= 4) {
+                            partes[3] = generarNuevoSufijo(); // Reemplazamos el sufijo aleatorio
+                            campoFolio.value = partes.join('-');
+                        } else {
+                            // Fallback por si el formato es distinto
+                            campoFolio.value = `${folioViejo}-${generarNuevoSufijo()}`;
+                        }
+                        
+                        console.warn(`Colisión en ${folioViejo}. Regenerado a: ${campoFolio.value}`);
+                    }
+                    // El bucle while volverá a intentar el fetch con el nuevo valor de campoFolio.value
+                } 
+
+                else {
+                    console.error("Error no recuperable:", data.msg);
+                    break; 
+                }
+
+            } catch(e) { 
+                console.error("Fallo de red:", e);
+                return; 
+            } 
+        }
+    }
+
+    if (foliosSincronizados.length > 0) {
+        Swal.fire({
+            title: '¡Sincronización Exitosa!',
+            html: `<p>Se subieron <b>${foliosSincronizados.length}</b> encuestas.</p>`,
+            icon: 'success',
+            confirmButtonColor: '#773357'
+        });
+    }
+}
 
 function guardarEnLocal(payload) {
     dbLocal.encuestas.add(payload).then(() => {

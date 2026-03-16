@@ -15,7 +15,7 @@ class Encuesta extends Controller {
 
         // ✅ MEJORA: Folio único basado en el ID del usuario y tiempo para evitar colisiones
         $userId = $_SESSION['user_id'];
-        $sufijoAleatorio = strtoupper(substr(md5(uniqid(rand(), true)), 0, 4));
+        $sufijoAleatorio = strtoupper(substr(md5(uniqid(rand(), true)), 0, 6));
         $folioPro = "TLP-26-" . $userId . "-" . $sufijoAleatorio;
 
         $data = [

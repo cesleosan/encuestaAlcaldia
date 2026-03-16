@@ -116,8 +116,11 @@ class EncuestaModelo {
             return false;
 
         } catch (PDOException $e) {
-            $this->ultimoError = "SQL Error: " . $e->getMessage();
-            return false;
+            if ($e->errorInfo[1] == 1062) {
+                    return ['status' => 'duplicate', 'msg' => 'Folio ya existe'];
+                }
+                $this->ultimoError = $e->getMessage();
+                return false;
         }
     }
 
