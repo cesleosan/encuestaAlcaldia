@@ -811,7 +811,6 @@ function renderMapaGPS(data, contenedor) {
 
 // BLOQUE 1: Finalización Blindada
 async function finalizarEncuesta() {
-    // Asegúrate de que USER_ID_SESION esté disponible (puedes pasarla desde PHP al JS)
     const payload = { 
         folio: FOLIO_AUTO, 
         usuario_id: typeof USER_ID_SESION !== 'undefined' ? USER_ID_SESION : null, 
@@ -822,14 +821,29 @@ async function finalizarEncuesta() {
     if (navigator.onLine) {
         enviarAlServidor(payload);
     } else {
-        // Dexie es el búnker: aquí el dato está a salvo aunque cierres el navegador
+        // Guardamos físicamente en IndexedDB (Dexie)
         await dbLocal.encuestas.add(payload);
+        
+        // 🔥 Mensaje personalizado para el equipo de Tlalpan
         Swal.fire({
-            title: 'Modo Offline: Protegido',
-            text: 'Sin internet. La encuesta se guardó físicamente en el celular y se subirá en cuanto detecte señal.',
+            title: '¡Encuesta Guardada!',
+            html: `
+                <div style="text-align: center;">
+                    <p>La encuesta con folio <b>${payload.folio}</b> se guardó correctamente en el dispositivo.</p>
+                    <p style="font-size: 0.9rem; color: #666;">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> 
+                        Al detectar una conexión a internet, se sincronizará automáticamente.
+                    </p>
+                </div>
+            `,
             icon: 'success',
-            confirmButtonColor: '#773357'
-        }).then(() => location.reload());
+            confirmButtonColor: '#773357', // Color guinda institucional
+            confirmButtonText: 'ENTENDIDO'
+        }).then(() => {
+            // Al recargar, el Service Worker v5 servirá la página desde el caché
+            // evitando la pantalla negra.
+            location.reload(); 
+        });
     }
 }
 

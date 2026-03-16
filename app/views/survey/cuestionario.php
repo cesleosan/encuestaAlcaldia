@@ -244,13 +244,31 @@ input[type="email"] {
 </script>
 
 <script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js')
-                .then(reg => console.log('Tierra con Corazón Offline Ready'))
-                .catch(err => console.log('SW Error:', err));
-        });
-    }
+if ('serviceWorker' in navigator) {
+    // Añadimos la fecha actual para que el navegador siempre descargue el sw.js nuevo
+    navigator.serviceWorker.register('<?php echo URLROOT; ?>/sw.js?v=' + Date.now())
+    .then(reg => {
+        console.log('Service Worker registrado con éxito');
+        
+        // Si detectamos que hay un SW nuevo esperando, recargamos la página una vez
+        reg.onupdatefound = () => {
+            const installingWorker = reg.installing;
+            installingWorker.onstatechange = () => {
+                if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    Swal.fire({
+                        title: 'Actualización lista',
+                        text: 'Se ha instalado una versión nueva de la app. Vamos a recargar.',
+                        icon: 'info',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                }
+            };
+        };
+    });
+}
 
         // Detectores de red para el indicador visual (la bolita verde/roja)
     window.addEventListener('online', () => {

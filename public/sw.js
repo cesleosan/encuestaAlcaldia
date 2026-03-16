@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tierra-corazon-v4';
+const CACHE_NAME = 'tierra-corazon-v5'; // 🔥 Incrementamos versión para forzar actualización
 
 const assets = [
   '/',
@@ -21,58 +21,70 @@ const assets = [
 
 // 1. INSTALACIÓN
 self.addEventListener('install', e => {
-  self.skipWaiting(); 
+  self.skipWaiting(); // 🔥 Fuerza al SW nuevo a tomar el control de inmediato
   e.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      console.log('SW: Cacheando activos críticos...');
+      console.log('SW: Cacheando activos críticos v5...');
       return cache.addAll(assets);
     })
   );
 });
 
-// 2. ACTIVACIÓN
+// 2. ACTIVACIÓN: Limpieza de cachés viejos
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys => {
       return Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+        keys.map(key => {
+          if (key !== CACHE_NAME) {
+            console.log('SW: Borrando caché antiguo:', key);
+            return caches.delete(key);
+          }
+        })
       );
     })
   );
-  return self.clients.claim();
+  return self.clients.claim(); // 🔥 Toma el control de las pestañas abiertas inmediatamente
 });
 
-// 3. ESTRATEGIA DE RED (Cache First + Network Fallback)
+// 3. ESTRATEGIA DE RED (Network First para Navegación / Cache First para Activos)
 self.addEventListener('fetch', e => {
-    if (!(e.request.url.indexOf('http') === 0)) return;
+  // Solo procesar peticiones HTTP/HTTPS
+  if (!(e.request.url.indexOf('http') === 0)) return;
 
+  // ESTRATEGIA PARA NAVEGACIÓN (Páginas HTML)
+  // Esto evita el pantallazo negro al redireccionar o recargar
+  if (e.request.mode === 'navigate') {
     e.respondWith(
-        caches.match(e.request, { ignoreSearch: true }).then(res => {
-            // 1. Si está en caché, lo servimos (Cache First)
-            if (res) return res;
-
-            // 2. Si no está, intentamos red
-            return fetch(e.request).then(fetchRes => {
-                // Opcional: Podrías cachear dinámicamente aquí lo que vayas encontrando
-                return fetchRes;
-            }).catch(() => {
-                // 🚨 FALLBACK OFFLINE (Aquí evitamos el pantallazo negro)
-                
-                // Si el técnico está navegando (recarga o link)
-                if (e.request.mode === 'navigate') {
-                    // Si la URL contiene "Encuesta", devolvemos el cascarón cacheado
-                    if (e.request.url.includes('/Encuesta')) {
-                        return caches.match('/Encuesta');
-                    }
-                    return caches.match('/');
-                }
-
-                // Si falla un recurso (img/js) devolvemos error controlado
-                return new Response('Offline: Recurso no disponible', {
-                    status: 503,
-                    headers: { 'Content-Type': 'text/plain' }
-                });
-            });
-        })
+      fetch(e.request).catch(() => {
+        // Si falla la red (estamos offline), buscamos en el caché
+        // Intentamos coincidir con /Encuesta o el Index
+        return caches.match('/Encuesta') || 
+               caches.match('/Encuesta/') || 
+               caches.match('/Encuesta/index') ||
+               caches.match('/');
+      })
     );
+    return;
+  }
+
+  // ESTRATEGIA PARA RECURSOS (Imágenes, JS, CSS)
+  e.respondWith(
+    caches.match(e.request, { ignoreSearch: true }).then(res => {
+      // 1. Si está en caché, lo servimos
+      if (res) return res;
+
+      // 2. Si no, vamos a la red
+      return fetch(e.request).then(fetchRes => {
+        // Opcional: Podrías guardar en caché dinámico aquí
+        return fetchRes;
+      }).catch(() => {
+        // Si falla todo, devolvemos una respuesta vacía válida
+        return new Response('Offline: Recurso no disponible', {
+          status: 503,
+          headers: { 'Content-Type': 'text/plain' }
+        });
+      });
+    })
+  );
 });
