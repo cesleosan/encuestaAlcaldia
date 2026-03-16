@@ -3,6 +3,8 @@ const CACHE_NAME = 'tierra-corazon-v4';
 const assets = [
   '/',
   '/Encuesta',
+  '/Encuesta/',
+  '/Encuesta/index',
   '/mapa_offline.php',
   '/css/styles.css',
   '/css/leaflet.css',
@@ -42,34 +44,35 @@ self.addEventListener('activate', e => {
 
 // 3. ESTRATEGIA DE RED (Cache First + Network Fallback)
 self.addEventListener('fetch', e => {
-  if (!(e.request.url.indexOf('http') === 0)) return;
+    if (!(e.request.url.indexOf('http') === 0)) return;
 
-  e.respondWith(
-    caches.match(e.request).then(res => {
-      // Si está en caché, lo servimos de inmediato
-      if (res) return res;
+    e.respondWith(
+        caches.match(e.request, { ignoreSearch: true }).then(res => {
+            // 1. Si está en caché, lo servimos (Cache First)
+            if (res) return res;
 
-      // Si no, intentamos ir a la red
-      return fetch(e.request).then(fetchRes => {
-        return fetchRes;
-      }).catch(() => {
-        // 🔥 FIX QUIRÚRGICO: Manejo de errores para evitar el 'Failed to convert to Response'
-        
-        // Si es una navegación (una página)
-        if (e.request.mode === 'navigate') {
-          if (e.request.url.includes('/Encuesta')) return caches.match('/Encuesta');
-          if (e.request.url.includes('mapa_offline')) return caches.match('/mapa_offline.php');
-          return caches.match('/');
-        }
+            // 2. Si no está, intentamos red
+            return fetch(e.request).then(fetchRes => {
+                // Opcional: Podrías cachear dinámicamente aquí lo que vayas encontrando
+                return fetchRes;
+            }).catch(() => {
+                // 🚨 FALLBACK OFFLINE (Aquí evitamos el pantallazo negro)
+                
+                // Si el técnico está navegando (recarga o link)
+                if (e.request.mode === 'navigate') {
+                    // Si la URL contiene "Encuesta", devolvemos el cascarón cacheado
+                    if (e.request.url.includes('/Encuesta')) {
+                        return caches.match('/Encuesta');
+                    }
+                    return caches.match('/');
+                }
 
-        // Si es un recurso (imagen, script, etc) y no hay red ni caché
-        // Devolvemos una respuesta vacía pero VÁLIDA para que el navegador no lance el TypeError
-        return new Response('Recurso no disponible offline', {
-          status: 503,
-          statusText: 'Service Unavailable',
-          headers: new Headers({ 'Content-Type': 'text/plain' })
-        });
-      });
-    })
-  );
+                // Si falla un recurso (img/js) devolvemos error controlado
+                return new Response('Offline: Recurso no disponible', {
+                    status: 503,
+                    headers: { 'Content-Type': 'text/plain' }
+                });
+            });
+        })
+    );
 });
