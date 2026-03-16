@@ -244,23 +244,22 @@ input[type="email"] {
 </script>
 
 <script>
+// CAMBIO CRÍTICO: Usar v5 (estático) en lugar de Date.now()
 if ('serviceWorker' in navigator) {
-    // Añadimos la fecha actual para que el navegador siempre descargue el sw.js nuevo
-    navigator.serviceWorker.register('<?php echo URLROOT; ?>/sw.js?v=' + Date.now())
+    navigator.serviceWorker.register('<?php echo URLROOT; ?>/sw.js?v=v5') 
     .then(reg => {
-        console.log('Service Worker registrado con éxito');
-        
-        // Si detectamos que hay un SW nuevo esperando, recargamos la página una vez
+        // Revisar si hay un worker esperando (update ready)
         reg.onupdatefound = () => {
             const installingWorker = reg.installing;
             installingWorker.onstatechange = () => {
+                // Solo disparamos el Swal si el nuevo worker terminó de instalarse
                 if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
                     Swal.fire({
                         title: 'Actualización lista',
-                        text: 'Se ha instalado una versión nueva de la app. Vamos a recargar.',
+                        text: 'Se ha instalado una versión nueva. Vamos a refrescar.',
                         icon: 'info',
-                        timer: 2000,
-                        showConfirmButton: false
+                        confirmButtonText: 'ACEPTAR',
+                        confirmButtonColor: '#773357'
                     }).then(() => {
                         location.reload();
                     });
