@@ -241,7 +241,7 @@
             <div class="col-lg-12">
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
-                        <h6 class="m-0 fw-bold text-guinda"><i class="fas fa-file-csv me-2"></i>Base de Datos Detallada (JSON Aplanado)</h6>
+                        <h6 class="m-0 fw-bold text-guinda"><i class="fas fa-file-csv me-2"></i>Base de Datos Detallada</h6>
                         <button id="btnExportarFull" class="btn btn-success btn-sm shadow-sm">
                             <i class="fas fa-file-excel me-1"></i> Descargar Excel Completo
                         </button>
