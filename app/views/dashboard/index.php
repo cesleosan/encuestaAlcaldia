@@ -262,136 +262,52 @@ $(document).ready(function() {
     fetch('<?php echo URLROOT; ?>/Encuesta/getEstadisticas')
         .then(res => res.json())
         .then(data => {
-            
+            console.log("Datos cargados:", data); // Debug para ver si llega el respuestas_json
+
             // A. KPIs
             $("#kpi-total").text(data.kpis.total_encuestas || 0);
             $("#kpi-hectareas").text(parseFloat(data.kpis.total_hectareas || 0).toFixed(2));
             $("#kpi-tecnicos").text(data.kpis.tecnicos_activos || 0);
-            $("#kpi-avance").text(Math.round((data.kpis.total_encuestas || 0) / (data.tendencia.length || 1)));
+            $("#kpi-avance").text(data.tendencia.length > 0 ? Math.round(data.kpis.total_encuestas / data.tendencia.length) : 0);
 
             // B. Mapa
-            data.puntos.forEach(p => {
-                if(p.latitud && p.longitud) {
-                    L.circleMarker([p.latitud, p.longitud], {
-                        radius: 6, fillColor: "#773357", color: "#fff", weight: 1, opacity: 1, fillOpacity: 0.8
-                    }).addTo(map).bindPopup(`<b>Folio:</b> ${p.folio}<br><b>Actividad:</b> ${p.actividad_principal}`);
-                }
-            });
+            if(data.puntos) {
+                data.puntos.forEach(p => {
+                    if(p.latitud && p.longitud) {
+                        L.circleMarker([p.latitud, p.longitud], {
+                            radius: 6, fillColor: "#773357", color: "#fff", weight: 1, opacity: 1, fillOpacity: 0.8
+                        }).addTo(map).bindPopup(`<b>Folio:</b> ${p.folio}<br><b>Actividad:</b> ${p.actividad_principal}`);
+                    }
+                });
+            }
 
-            // C. Gráfica Actividades
-            new Chart(document.getElementById('chartActividades'), {
-                type: 'doughnut',
-                data: {
-                    labels: data.actividades.map(a => a.actividad_principal),
-                    datasets: [{ data: data.actividades.map(a => a.total), backgroundColor: palette }]
-                },
-                options: { plugins: { legend: { position: 'bottom' } }, cutout: '65%' }
-            });
+            // C. Gráficas (Protegidas)
+            try { renderCharts(data); } catch(e) { console.error("Error Gráficas:", e); }
 
-            // D. Gráfica Tendencia
-            new Chart(document.getElementById('chartTendencia'), {
-                type: 'line',
-                data: {
-                    labels: data.tendencia.map(t => t.fecha),
-                    datasets: [{
-                        label: 'Encuestas',
-                        data: data.tendencia.map(t => t.total),
-                        borderColor: '#773357',
-                        backgroundColor: 'rgba(119, 51, 87, 0.1)',
-                        fill: true, tension: 0.4
-                    }]
-                },
-                options: { maintainAspectRatio: false }
-            });
-
-            // E. Gráfica Problemas
-            new Chart(document.getElementById('chartProblemas'), {
-                type: 'bar',
-                data: {
-                    labels: data.problemas.map(p => p.problema || 'N/A'),
-                    datasets: [{
-                        label: 'Reportes',
-                        data: data.problemas.map(p => p.total),
-                        backgroundColor: '#987b47'
-                    }]
-                },
-                options: { indexAxis: 'y', maintainAspectRatio: false }
-            });
-
-            // F. Tabla Colonias
+            // D. Tabla Colonias
             const tCol = $("#tablaColonias tbody");
-            data.colonias.forEach(c => {
-                tCol.append(`
-                    <tr>
-                        <td class="ps-3 fw-bold">${c.colonia_nombre}</td>
-                        <td class="text-center">${c.total}</td>
-                        <td class="text-center fw-bold text-guinda">${parseFloat(c.hectareas).toFixed(2)} ha</td>
-                    </tr>
-                `);
-            });
+            if(data.colonias) {
+                data.colonias.forEach(c => {
+                    tCol.append(`<tr><td class="ps-3 fw-bold">${c.colonia_nombre}</td><td class="text-center">${c.total}</td><td class="text-center fw-bold text-guinda">${parseFloat(c.hectareas).toFixed(2)} ha</td></tr>`);
+                });
+            }
 
-            // G. Listado Maestro con Paginación
-            fullMaestroData = data.maestro;
+            // E. Inicializar Tablas
+            fullMaestroData = data.maestro || [];
             filteredData = [...fullMaestroData];
             renderTable(1);
 
-            // 🔥 H. Llenar Nueva Tabla Detallada (JSON Aplanado)
-            renderTablaDetalladaJSON(fullMaestroData);
-
+            // F. Llenar Tabla Detallada JSON (Con delay para no saturar el hilo principal)
+            setTimeout(() => {
+                renderTablaDetalladaJSON(fullMaestroData);
+            }, 300);
         });
 
-    // --- FUNCIÓN PARA EXTRAER VALORES DEL JSON (MULTI-SECCIÓN) ---
-    function extraerValorGlobal(json, campoBuscado) {
-        // Caso especial pantalla 6 (Coordenadas son objeto directo)
-        if (json["6"] && json["6"][campoBuscado]) return json["6"][campoBuscado];
-
-        for (let sec in json) {
-            if (Array.isArray(json[sec])) {
-                // Filtramos por nombre exacto o nombre con corchetes []
-                const matches = json[sec].filter(i => i.name === campoBuscado || i.name === campoBuscado + '[]');
-                if (matches.length > 0) {
-                    // Si hay varios (checkboxes), los unimos con punto y coma
-                    return matches.map(m => m.value).join('; ');
-                }
-            } else if (typeof json[sec] === 'string' && sec === campoBuscado) {
-                return json[sec];
-            }
-        }
-        return '';
-    }
-
-    // --- FUNCIÓN RENDER TABLA DETALLADA ---
-    function renderTablaDetalladaJSON(data) {
-        const $headerRow = $("#headersCSV");
-        const $tbody = $("#bodyCSV");
-
-        // Cabeceras
-        $headerRow.empty().append('<th>ID_BD</th>');
-        camposCSV.forEach(c => $headerRow.append(`<th>${c.replace(/_/g, ' ').toUpperCase()}</th>`));
-
-        // Filas
-        $tbody.empty();
-        data.forEach(reg => {
-            try {
-                const json = JSON.parse(reg.respuestas_json);
-                let rowHtml = `<tr><td>${reg.id}</td>`;
-                camposCSV.forEach(campo => {
-                    let valor = extraerValorGlobal(json, campo);
-                    rowHtml += `<td>${valor || ''}</td>`;
-                });
-                rowHtml += `</tr>`;
-                $tbody.append(rowHtml);
-            } catch (e) { console.error("Error parseando JSON ID: " + reg.id); }
-        });
-    }
-
-    // Función para Renderizar Tabla con Paginación (Original)
+    // --- RENDERIZADO DE TABLA MAESTRA (CON PAGINACIÓN LIMITADA) ---
     function renderTable(page) {
         currentPage = page;
         const start = (page - 1) * pageSize;
-        const end = start + pageSize;
-        const items = filteredData.slice(start, end);
-        
+        const items = filteredData.slice(start, start + pageSize);
         const tbody = $("#tablaEncuestas tbody");
         tbody.empty();
 
@@ -400,11 +316,11 @@ $(document).ready(function() {
                 <tr>
                     <td class="ps-3 fw-bold text-guinda">${e.folio}</td>
                     <td class="small">${e.encuestador || 'Sin asignar'}</td>
-                    <td class="small text-uppercase">${e.actividad_principal}</td>
+                    <td class="small text-uppercase">${e.actividad_principal || 'N/A'}</td>
                     <td class="small text-muted">${e.colonia_nombre || 'N/A'}</td>
-                    <td class="text-center font-monospace">${parseFloat(e.superficie_total).toFixed(2)}</td>
-                    <td class="text-center small">${e.fecha_inicio.substring(0,10)}</td>
-                    <td class="text-center"><span class="badge bg-success badge-status">${e.estatus}</span></td>
+                    <td class="text-center font-monospace">${parseFloat(e.superficie_total || 0).toFixed(2)}</td>
+                    <td class="text-center small">${(e.fecha_inicio || '').substring(0,10)}</td>
+                    <td class="text-center"><span class="badge bg-success">${e.estatus}</span></td>
                 </tr>
             `);
         });
@@ -413,102 +329,178 @@ $(document).ready(function() {
         renderPagination();
     }
 
+    // 🔥 SOLUCIÓN AL DESBORDE DE PAGINACIÓN
     function renderPagination() {
         const totalPages = Math.ceil(filteredData.length / pageSize);
         const container = $("#paginationControls");
         container.empty();
 
-        if(totalPages <= 1) return;
+        if (totalPages <= 1) return;
 
-        for(let i = 1; i <= totalPages; i++) {
+        // Lógica de "Ventana": Mostrar solo 5 páginas alrededor de la actual
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, startPage + 4);
+        
+        if (endPage - startPage < 4) {
+            startPage = Math.max(1, endPage - 4);
+        }
+
+        // Botón "Primero" si estamos lejos del inicio
+        if (currentPage > 1) {
+            container.append(`<li class="page-item"><a class="page-link" href="#" data-page="1"><i class="fas fa-angle-double-left"></i></a></li>`);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
             container.append(`
                 <li class="page-item ${i === currentPage ? 'active' : ''}">
-                    <a class="page-link" href="#" onclick="event.preventDefault();">${i}</a>
+                    <a class="page-link" href="#" data-page="${i}">${i}</a>
                 </li>
             `);
         }
 
-        container.find('a').on('click', function() {
-            renderTable(parseInt($(this).text()));
+        // Botón "Último" si estamos lejos del final
+        if (currentPage < totalPages) {
+            container.append(`<li class="page-item"><a class="page-link" href="#" data-page="${totalPages}"><i class="fas fa-angle-double-right"></i></a></li>`);
+        }
+
+        // Eventos de clic
+        container.find('a').on('click', function(e) {
+            e.preventDefault();
+            renderTable(parseInt($(this).attr('data-page')));
         });
     }
 
-    // Buscador (Original)
+    // --- RENDERIZADO DE TABLA DETALLADA (EXTRACCIÓN JSON) ---
+    function renderTablaDetalladaJSON(data) {
+        const $headerRow = $("#headersCSV");
+        const $tbody = $("#bodyCSV");
+
+        $headerRow.empty().append('<th>ID_BD</th>');
+        camposCSV.forEach(c => $headerRow.append(`<th>${c.replace(/_/g, ' ').toUpperCase()}</th>`));
+
+        $tbody.empty();
+        data.forEach(reg => {
+            try {
+                // Si el JSON no existe o está vacío, evitamos que truene
+                const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
+                let rowHtml = `<tr><td>${reg.id}</td>`;
+                camposCSV.forEach(campo => {
+                    let valor = extraerValorGlobal(json, campo);
+                    rowHtml += `<td>${valor || ''}</td>`;
+                });
+                rowHtml += `</tr>`;
+                $tbody.append(rowHtml);
+            } catch (e) { console.warn("Error en fila ID: " + reg.id); }
+        });
+    }
+
+    function extraerValorGlobal(json, campoBuscado) {
+        if (!json) return '';
+        // Sección 6 especial (Coordenadas/Dirección)
+        if (json["6"] && json["6"][campoBuscado]) return json["6"][campoBuscado];
+
+        for (let sec in json) {
+            if (Array.isArray(json[sec])) {
+                const matches = json[sec].filter(i => i.name === campoBuscado || i.name === campoBuscado + '[]');
+                if (matches.length > 0) return matches.map(m => m.value).join('; ');
+            } else if (typeof json[sec] === 'string' && sec === campoBuscado) {
+                return json[sec];
+            }
+        }
+        return '';
+    }
+
+    // Buscador
     $("#tablaSearch").on("keyup", function() {
         const val = $(this).val().toLowerCase();
         filteredData = fullMaestroData.filter(e => 
-            e.folio.toLowerCase().includes(val) || 
-            (e.encuestador && e.encuestador.toLowerCase().includes(val)) ||
-            (e.colonia_nombre && e.colonia_nombre.toLowerCase().includes(val))
+            (e.folio || "").toLowerCase().includes(val) || 
+            (e.encuestador || "").toLowerCase().includes(val) ||
+            (e.colonia_nombre || "").toLowerCase().includes(val)
         );
         renderTable(1);
     });
 
-    // --- EXPORTACIÓN LISTA RÁPIDA (Original) ---
-    $("#btnExportar").on("click", function() {
-        if (fullMaestroData.length === 0) {
-            Swal.fire({ icon: 'error', title: 'Oops...', text: 'No hay datos.', confirmButtonColor: '#773357' });
-            return;
-        }
-        const headers = ["Folio", "Encuestador", "Actividad", "Colonia", "Superficie (ha)", "Fecha", "Estatus"];
-        const rows = fullMaestroData.map(e => [e.folio, e.encuestador || "Sin asignar", e.actividad_principal, e.colonia_nombre || "N/A", parseFloat(e.superficie_total).toFixed(2), e.fecha_inicio, e.estatus]);
-        
-        let csvContent = "\uFEFF" + headers.join(",") + "\n";
-        rows.forEach(r => { csvContent += r.map(val => `"${val}"`).join(",") + "\n"; });
+    function renderCharts(data) {
+        // Doughnut Actividades
+        new Chart(document.getElementById('chartActividades'), {
+            type: 'doughnut',
+            data: {
+                labels: data.actividades.map(a => a.actividad_principal),
+                datasets: [{ data: data.actividades.map(a => a.total), backgroundColor: palette }]
+            },
+            options: { plugins: { legend: { position: 'bottom' } }, cutout: '65%' }
+        });
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `Censo_Tlalpan_Resumen_${new Date().toISOString().slice(0,10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        Swal.fire({ title: '¡Éxito!', text: 'Reporte resumido generado.', icon: 'success', timer: 2000, showConfirmButton: false });
+        // Line Tendencia
+        new Chart(document.getElementById('chartTendencia'), {
+            type: 'line',
+            data: {
+                labels: data.tendencia.map(t => t.fecha),
+                datasets: [{
+                    label: 'Encuestas',
+                    data: data.tendencia.map(t => t.total),
+                    borderColor: '#773357',
+                    backgroundColor: 'rgba(119, 51, 87, 0.1)',
+                    fill: true, tension: 0.4
+                }]
+            },
+            options: { maintainAspectRatio: false }
+        });
+
+        // Bar Problemas
+        new Chart(document.getElementById('chartProblemas'), {
+            type: 'bar',
+            data: {
+                labels: data.problemas.map(p => p.problema || 'N/A'),
+                datasets: [{
+                    label: 'Reportes',
+                    data: data.problemas.map(p => p.total),
+                    backgroundColor: '#987b47'
+                }]
+            },
+            options: { indexAxis: 'y', maintainAspectRatio: false }
+        });
+    }
+
+    // --- BOTONES DE EXPORTACIÓN ---
+    $("#btnExportar").on("click", function() {
+        const headers = ["Folio", "Encuestador", "Actividad", "Colonia", "Superficie (ha)", "Fecha", "Estatus"];
+        const rows = fullMaestroData.map(e => [e.folio, e.encuestador, e.actividad_principal, e.colonia_nombre, e.superficie_total, e.fecha_inicio, e.estatus]);
+        descargarCSV("\uFEFF" + headers.join(",") + "\n" + rows.map(r => r.map(v => `"${v}"`).join(",")).join("\n"), "Censo_Resumen");
     });
 
-    // --- 🔥 NUEVA EXPORTACIÓN FULL (CSV DETALLADO) ---
     $("#btnExportarFull").on("click", function() {
-        if (fullMaestroData.length === 0) return;
-
-        let csv = "\uFEFF"; // BOM para acentos en Excel
+        let csv = "\uFEFF";
         let headers = ["ID_BD", ...camposCSV.map(c => c.toUpperCase())];
         csv += headers.join(",") + "\n";
-
         $("#bodyCSV tr").each(function() {
             let fila = [];
             $(this).find("td").each(function() {
-                // Limpieza de comas y comillas para no romper el CSV
-                let texto = $(this).text().replace(/"/g, '""').replace(/,/g, ';').trim();
-                fila.push(`"${texto}"`);
+                fila.push(`"${$(this).text().replace(/"/g, '""').replace(/,/g, ';').trim()}"`);
             });
             csv += fila.join(",") + "\n";
         });
-
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `Censo_Detallado_Full_${new Date().toISOString().slice(0,10)}.csv`;
-        link.click();
-        
-        Swal.fire({ title: '¡Descarga Completa!', text: 'Se ha generado el archivo con todos los datos del JSON.', icon: 'success', timer: 2500, showConfirmButton: false });
+        descargarCSV(csv, "Censo_Detallado_Full");
     });
 
+    function descargarCSV(contenido, nombre) {
+        const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `${nombre}_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+    }
 });
 
 function confirmarSalida() {
     Swal.fire({
         title: '¿Cerrar sesión?',
-        text: "Tendrás que ingresar tus credenciales nuevamente.",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#773357',
         confirmButtonText: 'Sí, salir',
         reverseButtons: true
-    }).then((result) => {
-        if (result.isConfirmed) {
-            window.location.href = '<?php echo URLROOT; ?>/Auth/logout';
-        }
-    });
+    }).then((result) => { if (result.isConfirmed) window.location.href = '<?php echo URLROOT; ?>/Auth/logout'; });
 }
 </script>

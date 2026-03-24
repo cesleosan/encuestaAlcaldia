@@ -105,11 +105,21 @@ class Encuesta extends Controller {
             'respuestas_completas' => $json,
         ];
 
-        $exito = $this->encuestaModel->agregar($datosGuardar);
+       $resultado = $this->encuestaModel->agregar($datosGuardar);
 
-        if ($exito) {
-            echo json_encode(['status' => 'success', 'folio' => $datosGuardar['folio']]);
-        } else {
+        // Retornamos el status 'duplicate' para que el JS genere un folio nuevo
+        if (is_array($resultado) && isset($resultado['status']) && $resultado['status'] === 'duplicate') {
+            echo json_encode($resultado);
+            return;
+        }
+        // El modelo devuelve el folio (string) si la inserción fue correcta
+        if ($resultado) {
+            echo json_encode([
+                'status' => 'success', 
+                'folio' => $datosGuardar['folio']
+            ]);
+        } 
+        else {
             echo json_encode([
                 'status' => 'error', 
                 'msg' => 'Error al insertar en base de datos',

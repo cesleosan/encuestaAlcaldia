@@ -188,21 +188,22 @@ class EncuestaModelo {
     }
 
     public function getListadoMaestro() {
-        // Cambiamos u.nombre por u.nombre_completo
-        $this->db->query("SELECT 
-            e.folio, 
-            u.nombre_completo as encuestador, 
-            e.actividad_principal, 
-            e.colonia_nombre,
-            e.superficie_total, 
-            e.fecha_inicio,
-            e.estatus
-            FROM encuestas e
-            LEFT JOIN usuarios u ON e.usuario_id = u.id 
-            ORDER BY e.fecha_inicio DESC");
-            
-        return $this->db->resultSet();
-    }
+    $this->db->query("SELECT 
+        e.id, 
+        e.folio, 
+        u.nombre_completo as encuestador, 
+        e.actividad_principal, 
+        e.colonia_nombre,
+        e.superficie_total, 
+        e.fecha_inicio,
+        e.estatus,
+        e.respuestas_json 
+        FROM encuestas e
+        LEFT JOIN usuarios u ON e.usuario_id = u.id 
+        ORDER BY e.fecha_inicio DESC");
+        
+    return $this->db->resultSet();
+}
 
     public function getTendenciaDiaria() {
         $this->db->query("SELECT 
