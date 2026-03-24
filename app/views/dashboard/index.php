@@ -274,13 +274,13 @@
 $(document).ready(function() {
     const palette = ['#773357', '#987b47', '#4a1e36', '#2c3e50', '#1cc88a', '#36b9cc', '#f6c23e'];
     
-    // Variables de Estado
+    // Variables de Control
     let fullMaestroData = [];
     let filteredData = [];
     const pageSize = 5;
     let currentPage = 1;
 
-    // 🔥 Configuración exacta de las 23 columnas solicitadas
+    // Configuración exacta de las 23 columnas (CSV)
     const camposCSV = [
         "tecnico_nombre", "curp", "nombre_productor", "sexo", "estado_civil", 
         "ocupacion", "tel_particular", "tel_recados", "email", "cp", 
@@ -289,14 +289,15 @@ $(document).ready(function() {
         "superficie_prod", "volumen_prod", "unidad_medida"
     ];
 
-    // 1. Inicializar Mapa con Estilo Light
+    // 1. Inicialización de Mapa
     const map = L.map('mapa-dashboard').setView([19.180, -99.160], 11);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
 
-    // 2. Fetch de Datos Principal
+    // 2. Carga Maestra de Datos
     fetch('<?php echo URLROOT; ?>/Encuesta/getEstadisticas')
         .then(res => res.json())
         .then(data => {
+            
             // A. Llenar KPIs
             $("#kpi-total").text(data.kpis.total_encuestas || 0);
             $("#kpi-hectareas").text(parseFloat(data.kpis.total_hectareas || 0).toFixed(2));
@@ -315,18 +316,34 @@ $(document).ready(function() {
             }
 
             // C. Renderizar Gráficas
-            try { renderCharts(data); } catch(e) { console.error("Error en gráficas", e); }
+            try { renderCharts(data); } catch(e) { console.error("Error Gráficas:", e); }
 
-            // D. Inicializar Tablas
+            // 🔥 D. TABLA TOP COLONIAS (RECUPERADA)
+            const tCol = $("#tablaColonias tbody");
+            tCol.empty();
+            if(data.colonias) {
+                data.colonias.forEach(c => {
+                    tCol.append(`
+                        <tr>
+                            <td class="ps-3 fw-bold text-secondary">${c.colonia_nombre}</td>
+                            <td class="text-center">${c.total}</td>
+                            <td class="text-center fw-bold text-guunda" style="color:var(--guinda);">${parseFloat(c.hectareas).toFixed(2)} ha</td>
+                        </tr>
+                    `);
+                });
+            }
+
+            // E. Inicializar Tablas de Datos
             fullMaestroData = data.maestro || [];
             filteredData = [...fullMaestroData];
             
-            renderMasterTable(1); // Tabla Maestra (Arriba)
-            renderDetailedTable(fullMaestroData); // Tabla Detallada (Abajo)
+            renderMasterTable(1); // Tabla de arriba
+            renderDetailedTable(fullMaestroData); // Tabla de abajo (JSON)
 
-        }).catch(err => console.error("Error de carga:", err));
+        }).catch(err => console.error("Error general de carga:", err));
 
-    // --- FUNCIÓN: RENDER TABLA MAESTRA (UI/UX MEJORADA) ---
+
+    // --- FUNCIÓN: RENDER TABLA MAESTRA (ARRIBA) ---
     function renderMasterTable(page) {
         currentPage = page;
         const start = (page - 1) * pageSize;
@@ -342,7 +359,7 @@ $(document).ready(function() {
                     <td class="small text-uppercase">${e.actividad_principal || 'N/A'}</td>
                     <td class="small text-muted"><i class="fas fa-map-marker-alt me-1"></i>${e.colonia_nombre || 'N/A'}</td>
                     <td class="text-center fw-bold text-guinda">${parseFloat(e.superficie_total || 0).toFixed(2)}</td>
-                    <td class="text-center small">${(e.fecha_inicio || '').substring(0,10)}</td>
+                    <td class="text-center small text-secondary">${(e.fecha_inicio || '').substring(0,10)}</td>
                     <td class="text-center">
                         <span class="badge bg-success badge-status shadow-sm">
                             <i class="fas fa-check me-1"></i> ${e.estatus}
@@ -356,7 +373,7 @@ $(document).ready(function() {
         renderPaginationUI();
     }
 
-    // --- FUNCIÓN: PAGINACIÓN CON LÓGICA DE VENTANA (MÁXIMO 5 BOTONES) ---
+    // --- FUNCIÓN: PAGINACIÓN CON LÓGICA DE VENTANA ---
     function renderPaginationUI() {
         const totalPages = Math.ceil(filteredData.length / pageSize);
         const container = $("#paginationControls");
@@ -367,14 +384,12 @@ $(document).ready(function() {
         let endPage = Math.min(totalPages, startPage + 4);
         if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
 
-        // Botón Prev
         container.append(`<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage - 1}"><i class="fas fa-chevron-left"></i></a></li>`);
 
         for (let i = startPage; i <= endPage; i++) {
             container.append(`<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link shadow-sm" href="#" data-page="${i}">${i}</a></li>`);
         }
 
-        // Botón Next
         container.append(`<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage + 1}"><i class="fas fa-chevron-right"></i></a></li>`);
 
         container.find('a').on('click', function(e) {
@@ -384,12 +399,12 @@ $(document).ready(function() {
         });
     }
 
-    // --- FUNCIÓN: RENDER TABLA DETALLADA (23 COLUMNAS) ---
+    // --- FUNCIÓN: RENDER TABLA DETALLADA (ABAJO) ---
     function renderDetailedTable(data) {
         const $headerRow = $("#headersCSV");
         const $tbody = $("#bodyCSV");
 
-        $headerRow.empty().append('<th style="width:50px;">ID</th><th style="width:150px;">FOLIO</th>');
+        $headerRow.empty().append('<th style="min-width:60px;">ID</th><th style="min-width:150px;">FOLIO</th>');
         camposCSV.forEach(c => $headerRow.append(`<th>${c.replace(/_/g, ' ').toUpperCase()}</th>`));
 
         $tbody.empty();
@@ -409,11 +424,21 @@ $(document).ready(function() {
         });
     }
 
-    // Extractor de valores recursivo para el JSON
+    // Buscador Global
+    $("#tablaSearch").on("keyup", function() {
+        const val = $(this).val().toLowerCase();
+        filteredData = fullMaestroData.filter(e => 
+            (e.folio || "").toLowerCase().includes(val) || 
+            (e.encuestador || "").toLowerCase().includes(val) ||
+            (e.colonia_nombre || "").toLowerCase().includes(val)
+        );
+        renderMasterTable(1);
+    });
+
+    // Helper: Extracción de JSON multi-sección
     function extraerValorGlobal(json, campoBuscado) {
         if (!json) return '';
-        if (json["6"] && json["6"][campoBuscado]) return json["6"][campoBuscado]; // Pantalla 6 especial
-
+        if (json["6"] && json["6"][campoBuscado]) return json["6"][campoBuscado];
         for (let sec in json) {
             if (Array.isArray(json[sec])) {
                 const matches = json[sec].filter(i => i.name === campoBuscado || i.name === campoBuscado + '[]');
@@ -425,18 +450,7 @@ $(document).ready(function() {
         return '';
     }
 
-    // Buscador Global (Tablas)
-    $("#tablaSearch").on("keyup", function() {
-        const val = $(this).val().toLowerCase();
-        filteredData = fullMaestroData.filter(e => 
-            (e.folio || "").toLowerCase().includes(val) || 
-            (e.encuestador || "").toLowerCase().includes(val) ||
-            (e.colonia_nombre || "").toLowerCase().includes(val)
-        );
-        renderMasterTable(1);
-    });
-
-    // Gráficas Chart.js
+    // Generador de Gráficas
     function renderCharts(data) {
         new Chart(document.getElementById('chartActividades'), {
             type: 'doughnut',
@@ -464,7 +478,13 @@ $(document).ready(function() {
         });
     }
 
-    // Exportadores a Excel (CSV UTF-8)
+    // Exportación a Excel
+    $("#btnExportar").on("click", function() {
+        const headers = ["Folio", "Encuestador", "Actividad", "Colonia", "Superficie", "Fecha", "Estatus"];
+        const rows = fullMaestroData.map(e => [e.folio, e.encuestador, e.actividad_principal, e.colonia_nombre, e.superficie_total, e.fecha_inicio, e.estatus]);
+        descargarCSV("\uFEFF" + headers.join(",") + "\n" + rows.map(r => r.map(v => `"${v}"`).join(",")).join("\n"), "Censo_Resumen");
+    });
+
     $("#btnExportarFull").on("click", function() {
         let csv = "\uFEFFID,FOLIO," + camposCSV.map(c => c.toUpperCase()).join(",") + "\n";
         $("#bodyCSV tr").each(function() {
@@ -474,12 +494,16 @@ $(document).ready(function() {
             });
             csv += fila.join(",") + "\n";
         });
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        descargarCSV(csv, "Censo_Detallado_Full");
+    });
+
+    function descargarCSV(contenido, nombre) {
+        const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `Censo_Detallado_Tlalpan_${new Date().toISOString().slice(0,10)}.csv`;
+        link.download = `${nombre}_${new Date().toISOString().slice(0,10)}.csv`;
         link.click();
-    });
+    }
 });
 
 function confirmarSalida() {
@@ -490,7 +514,6 @@ function confirmarSalida() {
         showCancelButton: true,
         confirmButtonColor: '#773357',
         confirmButtonText: 'Sí, salir',
-        cancelButtonText: 'Cancelar',
         reverseButtons: true
     }).then((result) => { if (result.isConfirmed) window.location.href = '<?php echo URLROOT; ?>/Auth/logout'; });
 }
