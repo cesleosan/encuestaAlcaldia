@@ -4,31 +4,70 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800&display=swap" rel="stylesheet">
 
 <style>
-    :root { --guinda: #773357; --guinda-light: #fdf2f7; --dorado: #987b47; }
-    body { background-color: #f4f6f9; font-family: 'Montserrat', sans-serif; }
-    .card { border: none; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
-    .text-guinda { color: var(--guinda); }
-    .bg-guinda { background-color: var(--guinda); }
-    .btn-guinda { background-color: var(--guinda); color: white; border-radius: 10px; font-weight: 600; }
-    .btn-guinda:hover { background-color: #5a2642; color: white; }
-    #mapa-dashboard { height: 450px; border-radius: 15px; z-index: 1; }
+    :root { 
+        --guinda: #773357; 
+        --guinda-light: #fdf2f7; 
+        --guinda-hover: #5a2642;
+        --dorado: #987b47; 
+        --gris-fondo: #f4f6f9;
+    }
+
+    body { background-color: var(--gris-fondo); font-family: 'Montserrat', sans-serif; }
     
-    .table thead th { background-color: #f8f9fa; color: var(--guinda); border-bottom: 2px solid #dee2e6; text-transform: uppercase; font-size: 0.7rem; }
-    .badge-status { border-radius: 20px; padding: 5px 12px; font-size: 0.7rem; }
+    /* Tarjetas y Sombras */
+    .card { border: none; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 1.5rem; transition: transform 0.2s; }
+    .card-header { background-color: white !important; border-bottom: 1px solid var(--guinda-light); padding: 1.25rem; border-radius: 15px 15px 0 0 !important; }
     
-    /* Paginación Estilo Guinda */
-    .pagination .page-link { color: var(--guinda); }
-    .pagination .page-item.active .page-link { background-color: var(--guinda); border-color: var(--guinda); }
-    /* Añadir a tu bloque <style> */
-    .btn-danger {
-        background-color: #a02020; /* Un rojo más serio */
+    /* Tablas Modernas */
+    .table thead th { 
+        background-color: var(--guinda) !important; 
+        color: white !important; 
+        text-transform: uppercase; 
+        font-size: 0.7rem; 
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        padding: 12px;
         border: none;
-        border-radius: 10px;
-        font-weight: 600;
     }
-    .btn-danger:hover {
-        background-color: #7a1818;
+    .table-hover tbody tr:hover { background-color: var(--guinda-light) !important; }
+    .table td { vertical-align: middle; border-color: #f1f1f1; padding: 12px; }
+
+    /* Sticky Columns para Tabla Detallada */
+    .table-sticky-columns { position: relative; }
+    #tablaDetalladaFull thead th:nth-child(1), #tablaDetalladaFull thead th:nth-child(2),
+    #tablaDetalladaFull tbody td:nth-child(1), #tablaDetalladaFull tbody td:nth-child(2) {
+        position: sticky; background-color: white; z-index: 2; border-right: 2px solid #eee;
     }
+    #tablaDetalladaFull thead th:nth-child(1), #tablaDetalladaFull thead th:nth-child(2) { 
+        z-index: 3; background-color: var(--guinda) !important; 
+    }
+    #tablaDetalladaFull tbody td:nth-child(1) { left: 0; }
+    #tablaDetalladaFull tbody td:nth-child(2) { left: 50px; } /* Ajuste según ancho ID */
+    #tablaDetalladaFull thead th:nth-child(1) { left: 0; }
+    #tablaDetalladaFull thead th:nth-child(2) { left: 50px; }
+
+    /* Paginación Guinda UI/UX */
+    .pagination .page-link { 
+        color: var(--guinda); border: none; margin: 0 4px; border-radius: 8px !important; 
+        font-weight: 600; transition: 0.3s; padding: 8px 14px;
+    }
+    .pagination .page-item.active .page-link { 
+        background-color: var(--guinda) !important; color: white !important;
+        box-shadow: 0 4px 10px rgba(119, 51, 87, 0.3);
+    }
+    .pagination .page-item.disabled .page-link { background-color: transparent; opacity: 0.5; }
+
+    /* Botones y Badges */
+    .btn-guinda { background-color: var(--guinda); color: white; border-radius: 10px; font-weight: 600; padding: 8px 18px; border: none; }
+    .btn-guinda:hover { background-color: var(--guinda-hover); color: white; transform: translateY(-1px); }
+    .badge-status { border-radius: 50px; padding: 6px 15px; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; }
+    
+    /* Scrollbars Elegantes */
+    .table-responsive::-webkit-scrollbar { height: 8px; width: 8px; }
+    .table-responsive::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+    .table-responsive::-webkit-scrollbar-thumb:hover { background: var(--guinda); }
+
+    #mapa-dashboard { height: 450px; border-radius: 15px; z-index: 1; border: 4px solid white; }
 </style>
 
 <div class="container-fluid py-4">
@@ -235,72 +274,60 @@
 $(document).ready(function() {
     const palette = ['#773357', '#987b47', '#4a1e36', '#2c3e50', '#1cc88a', '#36b9cc', '#f6c23e'];
     
-    // Variables para Paginación
+    // Variables de Estado
     let fullMaestroData = [];
     let filteredData = [];
     const pageSize = 5;
     let currentPage = 1;
 
-    // --- CONFIGURACIÓN DE COLUMNAS PARA REPORTE DETALLADO (CSV) ---
+    // 🔥 Configuración exacta de las 23 columnas solicitadas
     const camposCSV = [
-            "tecnico_nombre", "curp", "nombre_productor", "sexo", "estado_civil", 
-            "ocupacion", "tel_particular", "tel_recados", "email", "cp", 
-            "pueblo_colonia", "situacion_unidad", "grado_estudios", "tipo_agua", 
-            "financiamiento", "tema_capacitacion", "tipo_apoyo", "tipo_produccion", 
-            "superficie_prod", "volumen_prod", "unidad_medida"
-        ];
+        "tecnico_nombre", "curp", "nombre_productor", "sexo", "estado_civil", 
+        "ocupacion", "tel_particular", "tel_recados", "email", "cp", 
+        "pueblo_colonia", "situacion_unidad", "grado_estudios", "tipo_agua", 
+        "financiamiento", "tema_capacitacion", "tipo_apoyo", "tipo_produccion", 
+        "superficie_prod", "volumen_prod", "unidad_medida"
+    ];
 
-    // 1. Mapa
+    // 1. Inicializar Mapa con Estilo Light
     const map = L.map('mapa-dashboard').setView([19.180, -99.160], 11);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
 
-    // 2. Fetch de Datos
+    // 2. Fetch de Datos Principal
     fetch('<?php echo URLROOT; ?>/Encuesta/getEstadisticas')
         .then(res => res.json())
         .then(data => {
-            console.log("Datos cargados:", data); // Debug para ver si llega el respuestas_json
-
-            // A. KPIs
+            // A. Llenar KPIs
             $("#kpi-total").text(data.kpis.total_encuestas || 0);
             $("#kpi-hectareas").text(parseFloat(data.kpis.total_hectareas || 0).toFixed(2));
             $("#kpi-tecnicos").text(data.kpis.tecnicos_activos || 0);
             $("#kpi-avance").text(data.tendencia.length > 0 ? Math.round(data.kpis.total_encuestas / data.tendencia.length) : 0);
 
-            // B. Mapa
+            // B. Marcadores en Mapa
             if(data.puntos) {
                 data.puntos.forEach(p => {
                     if(p.latitud && p.longitud) {
                         L.circleMarker([p.latitud, p.longitud], {
-                            radius: 6, fillColor: "#773357", color: "#fff", weight: 1, opacity: 1, fillOpacity: 0.8
+                            radius: 7, fillColor: "#773357", color: "#fff", weight: 2, fillOpacity: 0.9
                         }).addTo(map).bindPopup(`<b>Folio:</b> ${p.folio}<br><b>Actividad:</b> ${p.actividad_principal}`);
                     }
                 });
             }
 
-            // C. Gráficas (Protegidas)
-            try { renderCharts(data); } catch(e) { console.error("Error Gráficas:", e); }
+            // C. Renderizar Gráficas
+            try { renderCharts(data); } catch(e) { console.error("Error en gráficas", e); }
 
-            // D. Tabla Colonias
-            const tCol = $("#tablaColonias tbody");
-            if(data.colonias) {
-                data.colonias.forEach(c => {
-                    tCol.append(`<tr><td class="ps-3 fw-bold">${c.colonia_nombre}</td><td class="text-center">${c.total}</td><td class="text-center fw-bold text-guinda">${parseFloat(c.hectareas).toFixed(2)} ha</td></tr>`);
-                });
-            }
-
-            // E. Inicializar Tablas
+            // D. Inicializar Tablas
             fullMaestroData = data.maestro || [];
             filteredData = [...fullMaestroData];
-            renderTable(1);
+            
+            renderMasterTable(1); // Tabla Maestra (Arriba)
+            renderDetailedTable(fullMaestroData); // Tabla Detallada (Abajo)
 
-            // F. Llenar Tabla Detallada JSON (Con delay para no saturar el hilo principal)
-            setTimeout(() => {
-                renderTablaDetalladaJSON(fullMaestroData);
-            }, 300);
-        });
+        }).catch(err => console.error("Error de carga:", err));
 
-    // --- RENDERIZADO DE TABLA MAESTRA (CON PAGINACIÓN LIMITADA) ---
-    function renderTable(page) {
+    // --- FUNCIÓN: RENDER TABLA MAESTRA (UI/UX MEJORADA) ---
+    function renderMasterTable(page) {
         currentPage = page;
         const start = (page - 1) * pageSize;
         const items = filteredData.slice(start, start + pageSize);
@@ -310,90 +337,82 @@ $(document).ready(function() {
         items.forEach(e => {
             tbody.append(`
                 <tr>
-                    <td class="ps-3 fw-bold text-guinda">${e.folio}</td>
-                    <td class="small">${e.encuestador || 'Sin asignar'}</td>
+                    <td class="ps-3"><span class="badge bg-light text-guinda border fw-bold">${e.folio}</span></td>
+                    <td class="small fw-bold text-secondary">${e.encuestador || '---'}</td>
                     <td class="small text-uppercase">${e.actividad_principal || 'N/A'}</td>
-                    <td class="small text-muted">${e.colonia_nombre || 'N/A'}</td>
-                    <td class="text-center font-monospace">${parseFloat(e.superficie_total || 0).toFixed(2)}</td>
+                    <td class="small text-muted"><i class="fas fa-map-marker-alt me-1"></i>${e.colonia_nombre || 'N/A'}</td>
+                    <td class="text-center fw-bold text-guinda">${parseFloat(e.superficie_total || 0).toFixed(2)}</td>
                     <td class="text-center small">${(e.fecha_inicio || '').substring(0,10)}</td>
-                    <td class="text-center"><span class="badge bg-success">${e.estatus}</span></td>
+                    <td class="text-center">
+                        <span class="badge bg-success badge-status shadow-sm">
+                            <i class="fas fa-check me-1"></i> ${e.estatus}
+                        </span>
+                    </td>
                 </tr>
             `);
         });
 
-        $("#tableInfo").text(`Mostrando ${items.length} de ${filteredData.length} registros`);
-        renderPagination();
+        $("#tableInfo").html(`Mostrando <b>${items.length}</b> de <b>${filteredData.length}</b> encuestas`);
+        renderPaginationUI();
     }
 
-    // 🔥 SOLUCIÓN AL DESBORDE DE PAGINACIÓN
-    function renderPagination() {
+    // --- FUNCIÓN: PAGINACIÓN CON LÓGICA DE VENTANA (MÁXIMO 5 BOTONES) ---
+    function renderPaginationUI() {
         const totalPages = Math.ceil(filteredData.length / pageSize);
         const container = $("#paginationControls");
         container.empty();
-
         if (totalPages <= 1) return;
 
-        // Lógica de "Ventana": Mostrar solo 5 páginas alrededor de la actual
         let startPage = Math.max(1, currentPage - 2);
         let endPage = Math.min(totalPages, startPage + 4);
-        
-        if (endPage - startPage < 4) {
-            startPage = Math.max(1, endPage - 4);
-        }
+        if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
 
-        // Botón "Primero" si estamos lejos del inicio
-        if (currentPage > 1) {
-            container.append(`<li class="page-item"><a class="page-link" href="#" data-page="1"><i class="fas fa-angle-double-left"></i></a></li>`);
-        }
+        // Botón Prev
+        container.append(`<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage - 1}"><i class="fas fa-chevron-left"></i></a></li>`);
 
         for (let i = startPage; i <= endPage; i++) {
-            container.append(`
-                <li class="page-item ${i === currentPage ? 'active' : ''}">
-                    <a class="page-link" href="#" data-page="${i}">${i}</a>
-                </li>
-            `);
+            container.append(`<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link shadow-sm" href="#" data-page="${i}">${i}</a></li>`);
         }
 
-        // Botón "Último" si estamos lejos del final
-        if (currentPage < totalPages) {
-            container.append(`<li class="page-item"><a class="page-link" href="#" data-page="${totalPages}"><i class="fas fa-angle-double-right"></i></a></li>`);
-        }
+        // Botón Next
+        container.append(`<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage + 1}"><i class="fas fa-chevron-right"></i></a></li>`);
 
-        // Eventos de clic
         container.find('a').on('click', function(e) {
             e.preventDefault();
-            renderTable(parseInt($(this).attr('data-page')));
+            const p = parseInt($(this).attr('data-page'));
+            if(p >= 1 && p <= totalPages) renderMasterTable(p);
         });
     }
 
-    // --- RENDERIZADO DE TABLA DETALLADA (EXTRACCIÓN JSON) ---
-    function renderTablaDetalladaJSON(data) {
+    // --- FUNCIÓN: RENDER TABLA DETALLADA (23 COLUMNAS) ---
+    function renderDetailedTable(data) {
         const $headerRow = $("#headersCSV");
         const $tbody = $("#bodyCSV");
 
-        $headerRow.empty().append('<th>ID_BD</th>');
+        $headerRow.empty().append('<th style="width:50px;">ID</th><th style="width:150px;">FOLIO</th>');
         camposCSV.forEach(c => $headerRow.append(`<th>${c.replace(/_/g, ' ').toUpperCase()}</th>`));
 
         $tbody.empty();
         data.forEach(reg => {
             try {
-                // Si el JSON no existe o está vacío, evitamos que truene
                 const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
-                let rowHtml = `<tr><td>${reg.id}</td>`;
+                let rowHtml = `<tr><td class="fw-bold text-muted bg-white">${reg.id}</td><td class="fw-bold text-guinda bg-white">${reg.folio}</td>`;
+                
                 camposCSV.forEach(campo => {
                     let valor = extraerValorGlobal(json, campo);
-                    rowHtml += `<td>${valor || ''}</td>`;
+                    rowHtml += `<td>${valor || '---'}</td>`;
                 });
+                
                 rowHtml += `</tr>`;
                 $tbody.append(rowHtml);
-            } catch (e) { console.warn("Error en fila ID: " + reg.id); }
+            } catch (e) { console.warn("Error JSON en ID:", reg.id); }
         });
     }
 
+    // Extractor de valores recursivo para el JSON
     function extraerValorGlobal(json, campoBuscado) {
         if (!json) return '';
-        // Sección 6 especial (Coordenadas/Dirección)
-        if (json["6"] && json["6"][campoBuscado]) return json["6"][campoBuscado];
+        if (json["6"] && json["6"][campoBuscado]) return json["6"][campoBuscado]; // Pantalla 6 especial
 
         for (let sec in json) {
             if (Array.isArray(json[sec])) {
@@ -406,7 +425,7 @@ $(document).ready(function() {
         return '';
     }
 
-    // Buscador
+    // Buscador Global (Tablas)
     $("#tablaSearch").on("keyup", function() {
         const val = $(this).val().toLowerCase();
         filteredData = fullMaestroData.filter(e => 
@@ -414,62 +433,40 @@ $(document).ready(function() {
             (e.encuestador || "").toLowerCase().includes(val) ||
             (e.colonia_nombre || "").toLowerCase().includes(val)
         );
-        renderTable(1);
+        renderMasterTable(1);
     });
 
+    // Gráficas Chart.js
     function renderCharts(data) {
-        // Doughnut Actividades
         new Chart(document.getElementById('chartActividades'), {
             type: 'doughnut',
             data: {
                 labels: data.actividades.map(a => a.actividad_principal),
                 datasets: [{ data: data.actividades.map(a => a.total), backgroundColor: palette }]
             },
-            options: { plugins: { legend: { position: 'bottom' } }, cutout: '65%' }
+            options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }, cutout: '70%' }
         });
-
-        // Line Tendencia
         new Chart(document.getElementById('chartTendencia'), {
             type: 'line',
             data: {
                 labels: data.tendencia.map(t => t.fecha),
-                datasets: [{
-                    label: 'Encuestas',
-                    data: data.tendencia.map(t => t.total),
-                    borderColor: '#773357',
-                    backgroundColor: 'rgba(119, 51, 87, 0.1)',
-                    fill: true, tension: 0.4
-                }]
+                datasets: [{ label: 'Encuestas', data: data.tendencia.map(t => t.total), borderColor: '#773357', backgroundColor: 'rgba(119, 51, 87, 0.1)', fill: true, tension: 0.4 }]
             },
             options: { maintainAspectRatio: false }
         });
-
-        // Bar Problemas
         new Chart(document.getElementById('chartProblemas'), {
             type: 'bar',
             data: {
                 labels: data.problemas.map(p => p.problema || 'N/A'),
-                datasets: [{
-                    label: 'Reportes',
-                    data: data.problemas.map(p => p.total),
-                    backgroundColor: '#987b47'
-                }]
+                datasets: [{ label: 'Casos', data: data.problemas.map(p => p.total), backgroundColor: '#987b47', borderRadius: 5 }]
             },
             options: { indexAxis: 'y', maintainAspectRatio: false }
         });
     }
 
-    // --- BOTONES DE EXPORTACIÓN ---
-    $("#btnExportar").on("click", function() {
-        const headers = ["Folio", "Encuestador", "Actividad", "Colonia", "Superficie (ha)", "Fecha", "Estatus"];
-        const rows = fullMaestroData.map(e => [e.folio, e.encuestador, e.actividad_principal, e.colonia_nombre, e.superficie_total, e.fecha_inicio, e.estatus]);
-        descargarCSV("\uFEFF" + headers.join(",") + "\n" + rows.map(r => r.map(v => `"${v}"`).join(",")).join("\n"), "Censo_Resumen");
-    });
-
+    // Exportadores a Excel (CSV UTF-8)
     $("#btnExportarFull").on("click", function() {
-        let csv = "\uFEFF";
-        let headers = ["ID_BD", ...camposCSV.map(c => c.toUpperCase())];
-        csv += headers.join(",") + "\n";
+        let csv = "\uFEFFID,FOLIO," + camposCSV.map(c => c.toUpperCase()).join(",") + "\n";
         $("#bodyCSV tr").each(function() {
             let fila = [];
             $(this).find("td").each(function() {
@@ -477,25 +474,23 @@ $(document).ready(function() {
             });
             csv += fila.join(",") + "\n";
         });
-        descargarCSV(csv, "Censo_Detallado_Full");
-    });
-
-    function descargarCSV(contenido, nombre) {
-        const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `${nombre}_${new Date().toISOString().slice(0,10)}.csv`;
+        link.download = `Censo_Detallado_Tlalpan_${new Date().toISOString().slice(0,10)}.csv`;
         link.click();
-    }
+    });
 });
 
 function confirmarSalida() {
     Swal.fire({
         title: '¿Cerrar sesión?',
+        text: "Regresa pronto para continuar el censo.",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#773357',
         confirmButtonText: 'Sí, salir',
+        cancelButtonText: 'Cancelar',
         reverseButtons: true
     }).then((result) => { if (result.isConfirmed) window.location.href = '<?php echo URLROOT; ?>/Auth/logout'; });
 }
