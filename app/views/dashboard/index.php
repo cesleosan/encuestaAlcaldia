@@ -197,6 +197,31 @@
                 </div>
             </div>
         </div>
+
+       <div class="row mt-4">
+            <div class="col-lg-12">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+                        <h6 class="m-0 fw-bold text-guinda"><i class="fas fa-file-csv me-2"></i>Base de Datos Detallada (JSON Aplanado)</h6>
+                        <button id="btnExportarFull" class="btn btn-success btn-sm shadow-sm">
+                            <i class="fas fa-file-excel me-1"></i> Descargar Excel Completo
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 500px; overflow: both;">
+                            <table class="table table-sm table-hover table-bordered align-middle mb-0" id="tablaDetalladaFull" style="font-size: 0.7rem; white-space: nowrap;">
+                                <thead class="table-dark">
+                                    <tr id="headersCSV">
+                                        </tr>
+                                </thead>
+                                <tbody id="bodyCSV">
+                                    </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -215,6 +240,19 @@ $(document).ready(function() {
     let filteredData = [];
     const pageSize = 5;
     let currentPage = 1;
+
+    // --- CONFIGURACIÓN DE COLUMNAS PARA REPORTE DETALLADO (CSV) ---
+    const camposCSV = [
+        "tecnico_nombre", "folio", "curp", "nombre_productor", "fecha_nacimiento", "sexo", "tiempo_residencia",
+        "grupo_etnico", "estado_civil", "ocupacion", "tel_particular", "tel_recados", "email", "tiempo_residencia_cdmx",
+        "cp", "pueblo_colonia", "latitud", "longitud", "calle_numero", "situacion_unidad", "grado_estudios",
+        "dependientes_economicos", "servicios_salud", "material_pisos", "combustible_cocina", "bienes_vivienda",
+        "tipo_agua", "insumos_agricolas", "maquinaria", "problema_principal", "ingreso_mensual", "dependencia_economica",
+        "destino_produccion", "financiamiento", "dificultades_comercializacion", "participacion_mujeres",
+        "nuevas_generaciones", "tema_capacitacion", "tipo_apoyo", "carta_finiquito", "tipo_produccion",
+        "tipo_granja", "especies_granja", "alimentacion_granja", "productos_granja", "destino_granja",
+        "necesidades_granja", "superficie_prod", "volumen_prod", "unidad_medida", "capacitaciones_deseadas", "observaciones"
+    ];
 
     // 1. Mapa
     const map = L.map('mapa-dashboard').setView([19.180, -99.160], 11);
@@ -297,9 +335,57 @@ $(document).ready(function() {
             filteredData = [...fullMaestroData];
             renderTable(1);
 
+            // 🔥 H. Llenar Nueva Tabla Detallada (JSON Aplanado)
+            renderTablaDetalladaJSON(fullMaestroData);
+
         });
 
-    // Función para Renderizar Tabla con Paginación
+    // --- FUNCIÓN PARA EXTRAER VALORES DEL JSON (MULTI-SECCIÓN) ---
+    function extraerValorGlobal(json, campoBuscado) {
+        // Caso especial pantalla 6 (Coordenadas son objeto directo)
+        if (json["6"] && json["6"][campoBuscado]) return json["6"][campoBuscado];
+
+        for (let sec in json) {
+            if (Array.isArray(json[sec])) {
+                // Filtramos por nombre exacto o nombre con corchetes []
+                const matches = json[sec].filter(i => i.name === campoBuscado || i.name === campoBuscado + '[]');
+                if (matches.length > 0) {
+                    // Si hay varios (checkboxes), los unimos con punto y coma
+                    return matches.map(m => m.value).join('; ');
+                }
+            } else if (typeof json[sec] === 'string' && sec === campoBuscado) {
+                return json[sec];
+            }
+        }
+        return '';
+    }
+
+    // --- FUNCIÓN RENDER TABLA DETALLADA ---
+    function renderTablaDetalladaJSON(data) {
+        const $headerRow = $("#headersCSV");
+        const $tbody = $("#bodyCSV");
+
+        // Cabeceras
+        $headerRow.empty().append('<th>ID_BD</th>');
+        camposCSV.forEach(c => $headerRow.append(`<th>${c.replace(/_/g, ' ').toUpperCase()}</th>`));
+
+        // Filas
+        $tbody.empty();
+        data.forEach(reg => {
+            try {
+                const json = JSON.parse(reg.respuestas_json);
+                let rowHtml = `<tr><td>${reg.id}</td>`;
+                camposCSV.forEach(campo => {
+                    let valor = extraerValorGlobal(json, campo);
+                    rowHtml += `<td>${valor || ''}</td>`;
+                });
+                rowHtml += `</tr>`;
+                $tbody.append(rowHtml);
+            } catch (e) { console.error("Error parseando JSON ID: " + reg.id); }
+        });
+    }
+
+    // Función para Renderizar Tabla con Paginación (Original)
     function renderTable(page) {
         currentPage = page;
         const start = (page - 1) * pageSize;
@@ -347,7 +433,7 @@ $(document).ready(function() {
         });
     }
 
-    // Buscador
+    // Buscador (Original)
     $("#tablaSearch").on("keyup", function() {
         const val = $(this).val().toLowerCase();
         filteredData = fullMaestroData.filter(e => 
@@ -358,82 +444,71 @@ $(document).ready(function() {
         renderTable(1);
     });
 
-    // --- FUNCIÓN DE EXPORTACIÓN A EXCEL (CSV) ---
+    // --- EXPORTACIÓN LISTA RÁPIDA (Original) ---
     $("#btnExportar").on("click", function() {
         if (fullMaestroData.length === 0) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Oops...',
-                    text: 'No hay datos para exportar en este momento.',
-                    confirmButtonColor: '#773357'
-                });
-                return;
-            }
-
-        // 1. Definir encabezados
+            Swal.fire({ icon: 'error', title: 'Oops...', text: 'No hay datos.', confirmButtonColor: '#773357' });
+            return;
+        }
         const headers = ["Folio", "Encuestador", "Actividad", "Colonia", "Superficie (ha)", "Fecha", "Estatus"];
+        const rows = fullMaestroData.map(e => [e.folio, e.encuestador || "Sin asignar", e.actividad_principal, e.colonia_nombre || "N/A", parseFloat(e.superficie_total).toFixed(2), e.fecha_inicio, e.estatus]);
         
-        // 2. Transformar los datos al formato de filas
-        const rows = fullMaestroData.map(e => [
-            e.folio,
-            e.encuestador || "Sin asignar",
-            e.actividad_principal,
-            e.colonia_nombre || "N/A",
-            parseFloat(e.superficie_total).toFixed(2),
-            e.fecha_inicio,
-            e.estatus
-        ]);
+        let csvContent = "\uFEFF" + headers.join(",") + "\n";
+        rows.forEach(r => { csvContent += r.map(val => `"${val}"`).join(",") + "\n"; });
 
-        // 3. Crear el contenido CSV
-        // El \uFEFF es el "BOM" para que Excel reconozca los acentos (UTF-8) correctamente
-        let csvContent = "\uFEFF"; 
-        csvContent += headers.join(",") + "\n";
-        
-        rows.forEach(rowArray => {
-            // Envolvemos cada celda en comillas para evitar errores con las comas internas
-            let row = rowArray.map(val => `"${val}"`).join(",");
-            csvContent += row + "\n";
-        });
-
-        // 4. Crear el archivo y disparar la descarga
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
-        
-        const fechaDescarga = new Date().toISOString().slice(0,10);
+        const link = document.createElement("a");
         link.setAttribute("href", url);
-        link.setAttribute("download", `Censo_Tlalpan_Reporte_${fechaDescarga}.csv`);
-        link.style.visibility = 'hidden';
-        
+        link.setAttribute("download", `Censo_Tlalpan_Resumen_${new Date().toISOString().slice(0,10)}.csv`);
         document.body.appendChild(link);
         link.click();
-        Swal.fire({
-            title: '¡Descarga Exitosa!',
-            text: 'El reporte del censo se ha generado correctamente.',
-            icon: 'success',
-            timer: 2000,
-            showConfirmButton: false,
-            timerProgressBar: true
-        });
         document.body.removeChild(link);
+        Swal.fire({ title: '¡Éxito!', text: 'Reporte resumido generado.', icon: 'success', timer: 2000, showConfirmButton: false });
     });
+
+    // --- 🔥 NUEVA EXPORTACIÓN FULL (CSV DETALLADO) ---
+    $("#btnExportarFull").on("click", function() {
+        if (fullMaestroData.length === 0) return;
+
+        let csv = "\uFEFF"; // BOM para acentos en Excel
+        let headers = ["ID_BD", ...camposCSV.map(c => c.toUpperCase())];
+        csv += headers.join(",") + "\n";
+
+        $("#bodyCSV tr").each(function() {
+            let fila = [];
+            $(this).find("td").each(function() {
+                // Limpieza de comas y comillas para no romper el CSV
+                let texto = $(this).text().replace(/"/g, '""').replace(/,/g, ';').trim();
+                fila.push(`"${texto}"`);
+            });
+            csv += fila.join(",") + "\n";
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `Censo_Detallado_Full_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+        
+        Swal.fire({ title: '¡Descarga Completa!', text: 'Se ha generado el archivo con todos los datos del JSON.', icon: 'success', timer: 2500, showConfirmButton: false });
+    });
+
 });
 
-    function confirmarSalida() {
-        Swal.fire({
-            title: '¿Cerrar sesión?',
-            text: "Tendrás que ingresar tus credenciales nuevamente.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#773357', // Color Guinda
-            cancelButtonColor: '#858796',
-            confirmButtonText: 'Sí, salir',
-            cancelButtonText: 'Cancelar',
-            reverseButtons: true
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = '<?php echo URLROOT; ?>/Auth/logout';
-            }
-        });
-    }
+function confirmarSalida() {
+    Swal.fire({
+        title: '¿Cerrar sesión?',
+        text: "Tendrás que ingresar tus credenciales nuevamente.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#773357',
+        confirmButtonText: 'Sí, salir',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = '<?php echo URLROOT; ?>/Auth/logout';
+        }
+    });
+}
 </script>
