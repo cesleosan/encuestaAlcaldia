@@ -243,16 +243,12 @@ $(document).ready(function() {
 
     // --- CONFIGURACIÓN DE COLUMNAS PARA REPORTE DETALLADO (CSV) ---
     const camposCSV = [
-        "tecnico_nombre", "folio", "curp", "nombre_productor", "fecha_nacimiento", "sexo", "tiempo_residencia",
-        "grupo_etnico", "estado_civil", "ocupacion", "tel_particular", "tel_recados", "email", "tiempo_residencia_cdmx",
-        "cp", "pueblo_colonia", "latitud", "longitud", "calle_numero", "situacion_unidad", "grado_estudios",
-        "dependientes_economicos", "servicios_salud", "material_pisos", "combustible_cocina", "bienes_vivienda",
-        "tipo_agua", "insumos_agricolas", "maquinaria", "problema_principal", "ingreso_mensual", "dependencia_economica",
-        "destino_produccion", "financiamiento", "dificultades_comercializacion", "participacion_mujeres",
-        "nuevas_generaciones", "tema_capacitacion", "tipo_apoyo", "carta_finiquito", "tipo_produccion",
-        "tipo_granja", "especies_granja", "alimentacion_granja", "productos_granja", "destino_granja",
-        "necesidades_granja", "superficie_prod", "volumen_prod", "unidad_medida", "capacitaciones_deseadas", "observaciones"
-    ];
+            "tecnico_nombre", "curp", "nombre_productor", "sexo", "estado_civil", 
+            "ocupacion", "tel_particular", "tel_recados", "email", "cp", 
+            "pueblo_colonia", "situacion_unidad", "grado_estudios", "tipo_agua", 
+            "financiamiento", "tema_capacitacion", "tipo_apoyo", "tipo_produccion", 
+            "superficie_prod", "volumen_prod", "unidad_medida"
+        ];
 
     // 1. Mapa
     const map = L.map('mapa-dashboard').setView([19.180, -99.160], 11);
