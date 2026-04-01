@@ -214,4 +214,40 @@ class EncuestaModelo {
             ORDER BY fecha ASC");
         return $this->db->resultSet();
     }
+    /**
+     * Obtiene una encuesta específica por su ID
+     */
+    public function getEncuestaById($id) {
+        $this->db->query("SELECT * FROM encuestas WHERE id = :id");
+        $this->db->bind(':id', $id);
+        return $this->db->single();
+    }
+
+    /**
+     * Actualización integral del expediente (Física + JSON)
+     */
+    public function actualizarExpediente($data) {
+        $this->db->query("UPDATE encuestas SET 
+                            nombre = :nombre, 
+                            apellido_paterno = :paterno, 
+                            apellido_materno = :materno, 
+                            curp = :curp, 
+                            colonia_nombre = :colonia,
+                            superficie_total = :superficie, 
+                            fase_proceso = :fase, 
+                            respuestas_json = :json 
+                          WHERE id = :id");
+        
+        $this->db->bind(':id', $data['id']);
+        $this->db->bind(':nombre', $data['nombre']);
+        $this->db->bind(':paterno', $data['paterno']);
+        $this->db->bind(':materno', $data['materno']);
+        $this->db->bind(':curp', $data['curp']);
+        $this->db->bind(':colonia', $data['colonia']);
+        $this->db->bind(':superficie', $data['superficie']);
+        $this->db->bind(':fase', $data['fase']);
+        $this->db->bind(':json', $data['json']);
+
+        return $this->db->execute();
+    }
 }

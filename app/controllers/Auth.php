@@ -70,6 +70,10 @@ class Auth extends Controller {
                 header('Location: ' . URLROOT . '/Dashboard/index');
                 break;
 
+            case 'capturista':
+                header('Location: ' . URLROOT . '/Captura/index');
+                break;
+
             case 'encuestador':
             default:
                 // Los técnicos van a la Encuesta
