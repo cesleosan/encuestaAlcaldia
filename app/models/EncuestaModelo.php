@@ -196,6 +196,7 @@ class EncuestaModelo {
         e.colonia_nombre,
         e.superficie_total, 
         e.fecha_inicio,
+        e.fase_proceso,
         e.estatus,
         e.respuestas_json 
         FROM encuestas e
