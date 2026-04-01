@@ -5,17 +5,27 @@
 <style>
     :root { --guinda: #773357; --guinda-light: #fdf2f7; --guinda-hover: #5a2642; --gris-fondo: #f4f6f9; }
     body { background-color: var(--gris-fondo); font-family: 'Montserrat', sans-serif; }
+    
     .card { border: none; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 1.5rem; }
     .card-header { background-color: white !important; border-bottom: 1px solid var(--guinda-light); padding: 1.25rem; border-radius: 15px 15px 0 0 !important; }
     .text-guinda { color: var(--guinda); }
     .btn-guinda { background-color: var(--guinda); color: white; border-radius: 10px; font-weight: 600; padding: 8px 18px; border: none; }
-    .table thead th { background-color: var(--guinda) !important; color: white !important; text-transform: uppercase; font-size: 0.7rem; font-weight: 700; padding: 12px; }
+    
+    /* Tablas y Fases */
+    .table thead th { background-color: var(--guinda) !important; color: white !important; text-transform: uppercase; font-size: 0.7rem; padding: 12px; }
     .badge-fase { border-radius: 50px; padding: 6px 12px; font-weight: 700; font-size: 0.65rem; text-transform: uppercase; }
     .fase-EMPADRONADO { background-color: #6c757d; color: white; }
     .fase-VALIDACION_DOCS { background-color: #17a2b8; color: white; }
     .fase-EN_REVISION { background-color: #ffc107; color: #333; }
     .fase-APROBADO { background-color: #28a745; color: white; }
     .fase-RECHAZADO { background-color: #dc3545; color: white; }
+
+    /* Estilo de Pestañas (Tabs) */
+    .nav-tabs .nav-link { border: none; color: #666; font-weight: 600; padding: 1rem; transition: 0.3s; }
+    .nav-tabs .nav-link.active { color: var(--guinda); border-bottom: 3px solid var(--guinda); background: transparent; }
+    .nav-tabs .nav-link:hover { color: var(--guinda); background: var(--guinda-light); }
+    
+    .border-bottom-light { border-bottom: 1px solid #f1f1f1; }
     .pagination .page-link { color: var(--guinda); border: none; margin: 0 3px; border-radius: 8px !important; font-weight: 600; }
     .pagination .page-item.active .page-link { background-color: var(--guinda) !important; color: white !important; }
 </style>
@@ -23,8 +33,8 @@
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-md-7">
-            <h2 class="fw-bold text-guinda mb-0">Módulo de Captura y Validación</h2>
-            <p class="text-muted">Centro de Control de Expedientes</p>
+            <h2 class="fw-bold text-guinda mb-0">Expediente Digital: Tlalpan</h2>
+            <p class="text-muted">Validación de documentos y seguimiento de productores</p>
         </div>
         <div class="col-md-5 text-end">
             <button onclick="location.reload()" class="btn btn-guinda shadow-sm"><i class="fas fa-sync-alt me-2"></i>Sincronizar</button>
@@ -33,40 +43,35 @@
     </div>
 
     <div class="row mb-2">
-        <div class="col-md-3"><div class="card p-3 border-start border-4 border-secondary"><h6 class="text-muted small mb-1">REGISTROS TOTALES</h6><h3 class="fw-bold mb-0" id="kpi-total">0</h3></div></div>
+        <div class="col-md-3"><div class="card p-3 border-start border-4 border-secondary"><h6 class="text-muted small mb-1">TOTAL REGISTROS</h6><h3 class="fw-bold mb-0" id="kpi-total">0</h3></div></div>
         <div class="col-md-3"><div class="card p-3 border-start border-4 border-info"><h6 class="text-muted small mb-1">VALIDACIÓN DOCS</h6><h3 class="fw-bold mb-0" id="kpi-pendientes">0</h3></div></div>
         <div class="col-md-3"><div class="card p-3 border-start border-4 border-warning"><h6 class="text-muted small mb-1">EN REVISIÓN</h6><h3 class="fw-bold mb-0" id="kpi-revision">0</h3></div></div>
-        <div class="col-md-3"><div class="card p-3 border-start border-4 border-success"><h6 class="text-muted small mb-1">APROBADOS</h6><h3 class="fw-bold mb-0" id="kpi-aprobados">0</h3></div></div>
+        <div class="col-md-3"><div class="card p-3 border-start border-4 border-success"><h6 class="text-muted small mb-1">TOTAL APROBADOS</h6><h3 class="fw-bold mb-0" id="kpi-aprobados">0</h3></div></div>
     </div>
 
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="card shadow-sm">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 fw-bold text-guinda"><i class="fas fa-list me-2"></i>Listado de Productores</h6>
-                    <input type="text" id="tablaSearch" class="form-control form-control-sm w-25" placeholder="Buscar por nombre, folio o CURP...">
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" id="tablaCaptura">
-                            <thead>
-                                <tr>
-                                    <th class="ps-3">Folio</th>
-                                    <th>Productor</th>
-                                    <th>CURP</th>
-                                    <th>Fase Actual</th>
-                                    <th class="text-center">Fecha</th>
-                                    <th class="text-center">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center p-3 border-top">
-                        <div class="small text-muted" id="tableInfo"></div>
-                        <nav><ul class="pagination pagination-sm mb-0" id="paginationControls"></ul></nav>
-                    </div>
-                </div>
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="m-0 fw-bold text-guinda"><i class="fas fa-list me-2"></i>Bandeja de Entrada de Expedientes</h6>
+            <input type="text" id="tablaSearch" class="form-control form-control-sm w-25 shadow-sm" placeholder="Buscar por folio o nombre...">
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tablaCaptura">
+                    <thead>
+                        <tr>
+                            <th class="ps-3">Folio</th>
+                            <th>Productor</th>
+                            <th>Fase del Proceso</th>
+                            <th class="text-center">Hectáreas</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center p-3 border-top">
+                <div class="small text-muted" id="tableInfo"></div>
+                <nav><ul class="pagination pagination-sm mb-0" id="paginationControls"></ul></nav>
             </div>
         </div>
     </div>
@@ -75,42 +80,21 @@
 <div class="modal fade" id="modalEdicion" data-bs-backdrop="static" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-guinda text-white py-3">
-                <div class="d-flex align-items-center">
-                    <div class="rounded-circle bg-white text-guinda d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px;">
-                        <i class="fas fa-file-invoice fa-lg"></i>
-                    </div>
-                    <div>
-                        <h5 class="modal-title fw-bold mb-0">EXPEDIENTE DIGITAL</h5>
-                        <small class="opacity-75">Folio: <span id="spanFolio" class="fw-bold text-warning"></span></small>
-                    </div>
-                </div>
+            <div class="modal-header bg-guinda text-white">
+                <h5 class="modal-title fw-bold"><i class="fas fa-folder-open me-2"></i>EXPEDIENTE: <span id="spanFolio"></span></h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
 
-            <ul class="nav nav-tabs nav-fill bg-white border-bottom" id="tabExpediente" role="tablist">
-                <li class="nav-item">
-                    <a class="nav-link active fw-bold text-guinda py-3" id="tab-datos-tab" data-bs-toggle="tab" href="#tab-datos">
-                        <i class="fas fa-search me-2"></i> 1. DATOS CAPTURADOS
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link fw-bold text-guinda py-3" id="tab-extra-tab" data-bs-toggle="tab" href="#tab-extra">
-                        <i class="fas fa-keyboard me-2"></i> 2. CAPTURA COMPLEMENTARIA
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link fw-bold text-guinda py-3" id="tab-docs-tab" data-bs-toggle="tab" href="#tab-docs">
-                        <i class="fas fa-cloud-upload-alt me-2"></i> 3. CARGA DE DOCUMENTOS
-                    </a>
-                </li>
+            <ul class="nav nav-tabs nav-fill bg-white border-bottom" id="tabExpediente">
+                <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-datos"><i class="fas fa-search me-1"></i> 1. DATOS CAPTURADOS</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-extra"><i class="fas fa-edit me-1"></i> 2. CAPTURA EXTRA</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-docs"><i class="fas fa-file-check me-1"></i> 3. DOCUMENTACIÓN</a></li>
             </ul>
 
-            <div class="modal-body bg-light p-4">
+            <div class="modal-body bg-light" style="max-height: 70vh; overflow-y: auto;">
                 <form id="formCaptura">
                     <input type="hidden" id="reg_id" name="id">
-                    
-                    <div class="tab-content" id="tabExpedienteContent">
+                    <div class="tab-content">
                         
                         <div class="tab-pane fade show active" id="tab-datos">
                             <div class="row g-3" id="resumenCaptura">
@@ -118,44 +102,45 @@
                         </div>
 
                         <div class="tab-pane fade" id="tab-extra">
-                            <div class="card border-0 shadow-sm mb-3">
-                                <div class="card-header bg-white"><h6 class="mb-0 fw-bold text-guinda">Información Adicional de Producción</h6></div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <label class="small fw-bold">Observaciones del Técnico</label>
-                                            <textarea class="form-control" name="observaciones_capturista" rows="3" placeholder="Añade detalles relevantes para el formato..."></textarea>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="small fw-bold text-danger">Fase de Avance</label>
-                                            <select class="form-select fw-bold border-danger" name="fase_proceso" id="in_fase">
-                                                <option value="EMPADRONADO">1. EMPADRONADO</option>
-                                                <option value="VALIDACION_DOCS">2. VALIDACIÓN DE DOCS</option>
-                                                <option value="EN_REVISION">3. EN REVISIÓN TÉCNICA</option>
-                                                <option value="APROBADO">4. APROBADO / ACREEDOR</option>
-                                            </select>
-                                        </div>
+                            <div class="card shadow-sm border-0 p-4">
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label class="fw-bold text-guinda mb-2">Observaciones de la Validación</label>
+                                        <textarea class="form-control" name="observaciones_capturista" rows="4" placeholder="Escriba aquí los detalles encontrados durante la revisión física de documentos..."></textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="fw-bold text-danger mb-2">PROMOCIÓN DE FASE:</label>
+                                        <select class="form-select fw-bold border-danger" name="fase_proceso" id="in_fase">
+                                            <option value="EMPADRONADO">1. EMPADRONADO (Campo)</option>
+                                            <option value="VALIDACION_DOCS">2. VALIDACIÓN DE DOCS</option>
+                                            <option value="EN_REVISION">3. EN REVISIÓN TÉCNICA</option>
+                                            <option value="APROBADO">4. APROBADO / ACREEDOR</option>
+                                            <option value="RECHAZADO">5. RECHAZADO / INCOMPLETO</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="tab-pane fade" id="tab-docs">
-                            <div class="alert alert-info border-0 shadow-sm small">
-                                <i class="fas fa-info-circle me-2"></i> Verifique que los archivos sean legibles antes de promover a la fase de Revisión.
-                            </div>
-                            <div class="list-group shadow-sm">
-                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
-                                    <div><i class="fas fa-address-card text-muted me-3"></i> <b>Identificación Oficial (INE)</b></div>
-                                    <input type="file" class="form-control form-control-sm w-50" name="doc_ine">
-                                </div>
-                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
-                                    <div><i class="fas fa-home text-muted me-3"></i> <b>Comprobante de Domicilio</b></div>
-                                    <input type="file" class="form-control form-control-sm w-50" name="doc_domicilio">
-                                </div>
-                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
-                                    <div><i class="fas fa-fingerprint text-muted me-3"></i> <b>CURP Certificada</b></div>
-                                    <input type="file" class="form-control form-control-sm w-50" name="doc_curp">
+                            <div class="card shadow-sm border-0">
+                                <div class="list-group list-group-flush">
+                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                        <span><i class="fas fa-id-card text-guinda me-3"></i> <b>Identificación Oficial (INE/Pasaporte)</b></span>
+                                        <input type="checkbox" name="check_ine" class="form-check-input h5 mb-0">
+                                    </label>
+                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                        <span><i class="fas fa-home text-guinda me-3"></i> <b>Comprobante de Domicilio (Luz/Agua/Predial)</b></span>
+                                        <input type="checkbox" name="check_dom" class="form-check-input h5 mb-0">
+                                    </label>
+                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                        <span><i class="fas fa-fingerprint text-guinda me-3"></i> <b>CURP Certificada (Actualizada)</b></span>
+                                        <input type="checkbox" name="check_curp" class="form-check-input h5 mb-0">
+                                    </label>
+                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                        <span><i class="fas fa-map-marked text-guinda me-3"></i> <b>Certificado de Producción / Tierra</b></span>
+                                        <input type="checkbox" name="check_tierra" class="form-check-input h5 mb-0">
+                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -163,12 +148,9 @@
                     </div>
                 </form>
             </div>
-
-            <div class="modal-footer bg-white border-0 py-3 shadow-sm">
-                <button type="button" class="btn btn-outline-secondary px-4 rounded-pill" data-bs-dismiss="modal">Cerrar</button>
-                <button type="button" onclick="confirmarGuardado()" class="btn btn-guinda px-5 rounded-pill shadow">
-                    <i class="fas fa-save me-2"></i>GUARDAR Y ACTUALIZAR
-                </button>
+            <div class="modal-footer bg-white border-0">
+                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" onclick="confirmarGuardado()" class="btn btn-guinda px-5 shadow"><i class="fas fa-save me-2"></i>GUARDAR EXPEDIENTE</button>
             </div>
         </div>
     </div>
@@ -185,7 +167,7 @@ $(document).ready(function() {
     const pageSize = 10;
     let currentPage = 1;
 
-    // 1. Fetch de Datos
+    // 1. Cargar Datos
     fetch('<?php echo URLROOT; ?>/Encuesta/getEstadisticas')
         .then(res => res.json())
         .then(data => {
@@ -212,11 +194,10 @@ $(document).ready(function() {
             const faseLimpia = (e.fase_proceso || 'EMPADRONADO').replace('_', ' ');
             tbody.append(`
                 <tr>
-                    <td class="ps-3 fw-bold text-guinda">${e.folio || 'S/F'}</td>
-                    <td class="small fw-bold">${e.nombre || ''} ${e.paterno || ''}</td>
-                    <td class="small font-monospace text-muted">${e.curp || '---'}</td>
+                    <td class="ps-3 fw-bold text-guinda">${e.folio}</td>
+                    <td class="small fw-bold">${e.nombre} ${e.paterno}</td>
                     <td><span class="badge badge-fase fase-${e.fase_proceso || 'EMPADRONADO'}">${faseLimpia}</span></td>
-                    <td class="text-center small text-muted">${(e.fecha_inicio || '').substring(0,10)}</td>
+                    <td class="text-center fw-bold">${parseFloat(e.superficie_total || 0).toFixed(2)}</td>
                     <td class="text-center">
                         <button onclick="abrirEdicion(${e.id})" class="btn btn-sm btn-guinda rounded-circle shadow-sm">
                             <i class="fas fa-user-edit"></i>
@@ -225,9 +206,7 @@ $(document).ready(function() {
                 </tr>
             `);
         });
-
-        $("#tableInfo").html(`Mostrando <b>${items.length}</b> de <b>${filteredData.length}</b> registros`);
-        renderPaginationUI(); // 🔥 Ahora sí está definida
+        renderPaginationUI();
     }
 
     function renderPaginationUI() {
@@ -241,7 +220,7 @@ $(document).ready(function() {
 
         if (currentPage > 1) container.append(`<li class="page-item"><a class="page-link" href="#" data-page="${currentPage-1}"><i class="fas fa-chevron-left"></i></a></li>`);
         for (let i = start; i <= end; i++) {
-            container.append(`<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link shadow-sm" href="#" data-page="${i}">${i}</a></li>`);
+            container.append(`<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`);
         }
         if (currentPage < totalPages) container.append(`<li class="page-item"><a class="page-link" href="#" data-page="${currentPage+1}"><i class="fas fa-chevron-right"></i></a></li>`);
 
@@ -251,19 +230,93 @@ $(document).ready(function() {
         });
     }
 
+    // 🔥 SOLUCIÓN AL ERROR: Exponer la función al objeto global window
+    window.abrirEdicion = function(id) {
+        const reg = rawData.find(i => i.id == id);
+        if(!reg) return;
+
+        const json = JSON.parse(reg.respuestas_json || '{}');
+        
+        $("#reg_id").val(reg.id);
+        $("#spanFolio").text(reg.folio);
+        $("#in_fase").val(reg.fase_proceso || 'EMPADRONADO');
+
+        // Llenado de Pestaña 1 (Grupal)
+        const $resumen = $("#resumenCaptura").empty();
+        const grupos = {
+            "Identidad": ["curp", "nombre_productor", "sexo", "estado_civil", "fecha_nacimiento"],
+            "Ubicación": ["cp", "pueblo_colonia", "situacion_unidad", "calle_numero"],
+            "Contacto": ["tel_particular", "tel_recados", "email"],
+            "Producción": ["tipo_produccion", "superficie_prod", "volumen_prod", "unidad_medida", "tipo_agua"]
+        };
+
+        for (const [titulo, campos] of Object.entries(grupos)) {
+            let html = `
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-header py-2 bg-white fw-bold small text-guinda">${titulo.toUpperCase()}</div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm mb-0 small">`;
+            campos.forEach(c => {
+                let valor = extraerValor(json, c);
+                html += `
+                    <tr class="border-bottom-light">
+                        <td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td>
+                        <td class="fw-bold py-2">${valor || '---'}</td>
+                    </tr>`;
+            });
+            html += `</table></div></div></div>`;
+            $resumen.append(html);
+        }
+
+        // Volver a la primera pestaña siempre
+        $('#tabExpediente a:first').tab('show');
+        $("#modalEdicion").modal('show');
+    };
+
+    function extraerValor(json, campo) {
+        for (let sec in json) {
+            if (Array.isArray(json[sec])) {
+                let found = json[sec].find(i => i.name === campo || i.name === campo + '[]');
+                if (found) return found.value;
+            }
+        }
+        return '';
+    }
+
     $("#tablaSearch").on("keyup", function() {
         const val = $(this).val().toLowerCase();
-        filteredData = rawData.filter(e => 
-            (e.folio || "").toLowerCase().includes(val) || 
-            (e.nombre || "").toLowerCase().includes(val) ||
-            (e.curp || "").toLowerCase().includes(val)
-        );
+        filteredData = rawData.filter(e => (e.folio || "").toLowerCase().includes(val) || (e.nombre || "").toLowerCase().includes(val) || (e.curp || "").toLowerCase().includes(val));
         renderTable(1);
     });
 });
 
+function confirmarGuardado() {
+    const formData = new FormData(document.getElementById('formCaptura'));
+    
+    Swal.fire({
+        title: '¿Confirmar cambios?',
+        text: "Se guardará el estatus y las observaciones del expediente.",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#773357',
+        confirmButtonText: 'Sí, guardar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('<?php echo URLROOT; ?>/Captura/actualizar', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Error', data.msg, 'error');
+                }
+            });
+        }
+    });
+}
+
 function confirmarSalida() {
-    Swal.fire({ title: '¿Cerrar sesión?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#773357', confirmButtonText: 'Sí, salir' })
-    .then((r) => { if (r.isConfirmed) window.location.href = '<?php echo URLROOT; ?>/Auth/logout'; });
+    window.location.href = '<?php echo URLROOT; ?>/Auth/logout';
 }
 </script>
