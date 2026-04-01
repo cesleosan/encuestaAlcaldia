@@ -255,4 +255,17 @@ class EncuestaModelo {
 
         return $this->db->execute();
     }
+
+    public function actualizarFase($data) {
+    $this->db->query("UPDATE encuestas SET 
+                        fase_proceso = :fase, 
+                        respuestas_json = :json 
+                      WHERE id = :id");
+    
+    $this->db->bind(':id', $data['id']);
+    $this->db->bind(':fase', $data['fase']);
+    $this->db->bind(':json', $data['json']);
+
+    return $this->db->execute();
+}
 }

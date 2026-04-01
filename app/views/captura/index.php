@@ -72,6 +72,108 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalEdicion" data-bs-backdrop="static" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-guinda text-white py-3">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-white text-guinda d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px;">
+                        <i class="fas fa-file-invoice fa-lg"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0">EXPEDIENTE DIGITAL</h5>
+                        <small class="opacity-75">Folio: <span id="spanFolio" class="fw-bold text-warning"></span></small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <ul class="nav nav-tabs nav-fill bg-white border-bottom" id="tabExpediente" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active fw-bold text-guinda py-3" id="tab-datos-tab" data-bs-toggle="tab" href="#tab-datos">
+                        <i class="fas fa-search me-2"></i> 1. DATOS CAPTURADOS
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-bold text-guinda py-3" id="tab-extra-tab" data-bs-toggle="tab" href="#tab-extra">
+                        <i class="fas fa-keyboard me-2"></i> 2. CAPTURA COMPLEMENTARIA
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-bold text-guinda py-3" id="tab-docs-tab" data-bs-toggle="tab" href="#tab-docs">
+                        <i class="fas fa-cloud-upload-alt me-2"></i> 3. CARGA DE DOCUMENTOS
+                    </a>
+                </li>
+            </ul>
+
+            <div class="modal-body bg-light p-4">
+                <form id="formCaptura">
+                    <input type="hidden" id="reg_id" name="id">
+                    
+                    <div class="tab-content" id="tabExpedienteContent">
+                        
+                        <div class="tab-pane fade show active" id="tab-datos">
+                            <div class="row g-3" id="resumenCaptura">
+                                </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="tab-extra">
+                            <div class="card border-0 shadow-sm mb-3">
+                                <div class="card-header bg-white"><h6 class="mb-0 fw-bold text-guinda">Información Adicional de Producción</h6></div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="small fw-bold">Observaciones del Técnico</label>
+                                            <textarea class="form-control" name="observaciones_capturista" rows="3" placeholder="Añade detalles relevantes para el formato..."></textarea>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="small fw-bold text-danger">Fase de Avance</label>
+                                            <select class="form-select fw-bold border-danger" name="fase_proceso" id="in_fase">
+                                                <option value="EMPADRONADO">1. EMPADRONADO</option>
+                                                <option value="VALIDACION_DOCS">2. VALIDACIÓN DE DOCS</option>
+                                                <option value="EN_REVISION">3. EN REVISIÓN TÉCNICA</option>
+                                                <option value="APROBADO">4. APROBADO / ACREEDOR</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="tab-docs">
+                            <div class="alert alert-info border-0 shadow-sm small">
+                                <i class="fas fa-info-circle me-2"></i> Verifique que los archivos sean legibles antes de promover a la fase de Revisión.
+                            </div>
+                            <div class="list-group shadow-sm">
+                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                    <div><i class="fas fa-address-card text-muted me-3"></i> <b>Identificación Oficial (INE)</b></div>
+                                    <input type="file" class="form-control form-control-sm w-50" name="doc_ine">
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                    <div><i class="fas fa-home text-muted me-3"></i> <b>Comprobante de Domicilio</b></div>
+                                    <input type="file" class="form-control form-control-sm w-50" name="doc_domicilio">
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                    <div><i class="fas fa-fingerprint text-muted me-3"></i> <b>CURP Certificada</b></div>
+                                    <input type="file" class="form-control form-control-sm w-50" name="doc_curp">
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer bg-white border-0 py-3 shadow-sm">
+                <button type="button" class="btn btn-outline-secondary px-4 rounded-pill" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" onclick="confirmarGuardado()" class="btn btn-guinda px-5 rounded-pill shadow">
+                    <i class="fas fa-save me-2"></i>GUARDAR Y ACTUALIZAR
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
