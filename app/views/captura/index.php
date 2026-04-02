@@ -115,25 +115,130 @@
                         </div>
 
                         <div class="tab-pane fade" id="tab-extra">
-                            <div class="card shadow-sm border-0 p-4">
-                                <div class="row">
-                                    <div class="col-md-12 mb-3">
-                                        <label class="fw-bold text-guinda mb-2">Observaciones de la Validación</label>
-                                        <textarea class="form-control" name="observaciones_capturista" rows="4" placeholder="Escriba aquí los detalles encontrados durante la revisión física de documentos..."></textarea>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="fw-bold text-danger mb-2">PROMOCIÓN DE FASE:</label>
-                                        <select class="form-select fw-bold border-danger" name="fase_proceso" id="in_fase">
-                                            <option value="EMPADRONADO">1. EMPADRONADO (Campo)</option>
-                                            <option value="VALIDACION_DOCS">2. VALIDACIÓN DE DOCS</option>
-                                            <option value="EN_REVISION">3. EN REVISIÓN TÉCNICA</option>
-                                            <option value="APROBADO">4. APROBADO / ACREEDOR</option>
-                                            <option value="RECHAZADO">5. RECHAZADO / INCOMPLETO</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+    <div class="alert alert-warning border-0 shadow-sm small mb-3">
+        <i class="fas fa-edit me-2"></i> <b>Modo Edición:</b> Los cambios realizados aquí actualizarán el expediente y el reporte final.
+    </div>
+    
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white"><h6 class="mb-0 fw-bold text-guinda"><i class="fas fa-id-card me-2"></i>1. Identidad y Localización</h6></div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="small fw-bold">Nombre del Productor</label>
+                    <input type="text" class="form-control form-control-sm" name="nombre_productor" id="in_nombre_productor">
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold">CURP</label>
+                    <input type="text" class="form-control form-control-sm" name="curp" id="in_curp_edit">
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold">Estado Civil</label>
+                    <select class="form-select form-select-sm" name="estado_civil" id="in_estado_civil"></select>
+                </div>
+                <div class="col-md-3">
+                    <label class="small fw-bold">Tel. Particular</label>
+                    <input type="text" class="form-control form-control-sm" name="tel_particular" id="in_tel_part">
+                </div>
+                <div class="col-md-3">
+                    <label class="small fw-bold">Correo Electrónico</label>
+                    <input type="email" class="form-control form-control-sm" name="email" id="in_email_edit">
+                </div>
+                <div class="col-md-2">
+                    <label class="small fw-bold">C.P.</label>
+                    <input type="text" class="form-control form-control-sm" name="cp" id="in_cp_edit">
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold">Pueblo / Colonia</label>
+                    <input type="text" class="form-control form-control-sm" name="pueblo_colonia" id="in_colonia_edit">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white"><h6 class="mb-0 fw-bold text-guinda"><i class="fas fa-users me-2"></i>2. Perfil Socioeconómico y Vivienda</h6></div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="small fw-bold">Grado de Estudios</label>
+                    <select class="form-select form-select-sm" name="grado_estudios" id="in_estudios"></select>
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold">Ocupación Principal</label>
+                    <input type="text" class="form-control form-control-sm" name="ocupacion" id="in_ocupacion">
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold">Ingreso Mensual aprox.</label>
+                    <select class="form-select form-select-sm" name="ingreso_mensual" id="in_ingreso"></select>
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold">Material de Pisos</label>
+                    <select class="form-select form-select-sm" name="material_pisos" id="in_pisos"></select>
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold">Fuente de Agua</label>
+                    <select class="form-select form-select-sm" name="tipo_agua" id="in_agua"></select>
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold">Situación de la Unidad</label>
+                    <select class="form-select form-select-sm" name="situacion_unidad" id="in_situacion"></select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4 border-start border-4 border-success">
+        <div class="card-header bg-white"><h6 class="mb-0 fw-bold text-success"><i class="fas fa-seedling me-2"></i>3. Datos Técnicos de Producción</h6></div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="small fw-bold">Tipo de Producción</label>
+                    <input type="text" class="form-control form-control-sm bg-light" name="tipo_produccion" id="in_tipo_prod" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold">Superficie Total (ha)</label>
+                    <input type="number" step="0.01" class="form-control form-control-sm" name="superficie_prod" id="in_sup_edit">
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold">Volumen Producción</label>
+                    <div class="input-group input-group-sm">
+                        <input type="number" class="form-control" name="volumen_prod" id="in_vol_edit">
+                        <input type="text" class="form-control w-25" name="unidad_medida" id="in_uni_edit" placeholder="Unidad">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="small fw-bold">Financiamiento</label>
+                    <input type="text" class="form-control form-control-sm" name="financiamiento" id="in_financia">
+                </div>
+                <div class="col-md-6">
+                    <label class="small fw-bold">Problema Principal</label>
+                    <input type="text" class="form-control form-control-sm" name="problema_principal" id="in_problema">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4 bg-guinda-light">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label class="small fw-bold text-guinda">Observaciones Generales del Capturista</label>
+                    <textarea class="form-control" name="observaciones_capturista" id="in_obs_captura" rows="3"></textarea>
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold text-danger">ESTADO DEL TRÁMITE</label>
+                    <select class="form-select fw-bold border-danger" name="fase_proceso" id="in_fase">
+                        <option value="EMPADRONADO">1. EMPADRONADO</option>
+                        <option value="VALIDACION_DOCS">2. VALIDACIÓN DE DOCS</option>
+                        <option value="EN_REVISION">3. EN REVISIÓN TÉCNICA</option>
+                        <option value="APROBADO">4. APROBADO / ACREEDOR</option>
+                        <option value="RECHAZADO">5. RECHAZADO</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
                         <div class="tab-pane fade" id="tab-docs">
                             <div class="card shadow-sm border-0">
@@ -311,56 +416,47 @@ $(document).ready(function() {
     }
 
     // 6. FUNCIÓN GLOBAL: ABRIR MODAL Y LLENAR EXPEDIENTE
-    window.abrirEdicion = function(id) {
-        const reg = rawData.find(i => i.id == id);
-        if (!reg) return;
+window.abrirEdicion = function(id) {
+    const reg = rawData.find(i => i.id == id);
+    if (!reg) return;
+    const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-        const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
-        
-        // Cargar IDs y Estatus
-        $("#reg_id").val(reg.id);
-        $("#spanFolio").text(reg.folio);
-        $("#in_fase").val(reg.fase_proceso || 'EMPADRONADO');
+    // A. Llenar encabezados y datos fijos
+    $("#reg_id").val(reg.id);
+    $("#spanFolio").text(reg.folio);
+    $("#in_fase").val(reg.fase_proceso || 'EMPADRONADO');
 
-        // Pestaña 1: Resumen de Datos (Las 23 columnas agrupadas)
-        const $resumen = $("#resumenCaptura").empty();
-        const gruposConfig = {
-            "Identidad y Registro": ["tecnico_nombre", "curp", "nombre_productor", "sexo", "estado_civil", "ocupacion"],
-            "Contacto y Ubicación": ["tel_particular", "tel_recados", "email", "cp", "pueblo_colonia"],
-            "Situación y Estudios": ["situacion_unidad", "grado_estudios", "tipo_agua", "financiamiento"],
-            "Producción y Apoyos": ["tema_capacitacion", "tipo_apoyo", "tipo_produccion", "superficie_prod", "volumen_prod", "unidad_medida"]
-        };
+    // B. Mapeo de Pestaña 2 (Inputs Editables)
+    // Usamos el helper obtenerDatoFinal que ya tenemos para llenar los inputs
+    $("#in_nombre_productor").val(obtenerDatoFinal(reg, "nombre_productor", json));
+    $("#in_curp_edit").val(reg.curp);
+    $("#in_tel_part").val(obtenerDatoFinal(reg, "tel_particular", json));
+    $("#in_email_edit").val(obtenerDatoFinal(reg, "email", json));
+    $("#in_cp_edit").val(obtenerDatoFinal(reg, "cp", json));
+    $("#in_colonia_edit").val(reg.colonia_nombre);
+    
+    $("#in_ocupacion").val(obtenerDatoFinal(reg, "ocupacion", json));
+    $("#in_sup_edit").val(reg.superficie_total);
+    $("#in_vol_edit").val(obtenerDatoFinal(reg, "volumen_prod", json));
+    $("#in_uni_edit").val(obtenerDatoFinal(reg, "unidad_medida", json));
+    $("#in_tipo_prod").val(obtenerDatoFinal(reg, "tipo_produccion", json));
+    $("#in_financia").val(obtenerDatoFinal(reg, "financiamiento", json));
+    $("#in_problema").val(obtenerDatoFinal(reg, "problema_principal", json));
 
-        for (const [titulo, campos] of Object.entries(gruposConfig)) {
-            let htmlCard = `
-                <div class="col-md-6 mb-3">
-                    <div class="card h-100 border-0 shadow-sm overflow-hidden">
-                        <div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small">
-                            <i class="fas fa-caret-right me-2 text-warning"></i>${titulo.toUpperCase()}
-                        </div>
-                        <div class="card-body p-0">
-                            <table class="table table-sm table-hover mb-0" style="font-size:0.75rem;">
-                                <tbody>`;
-            
-            campos.forEach(c => {
-                let valor = obtenerDatoFinal(reg, c, json);
-                htmlCard += `
-                    <tr class="border-bottom-light">
-                        <td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td>
-                        <td class="fw-bold py-2 text-dark">${valor || '---'}</td>
-                    </tr>`;
-            });
+    // C. Llenar Selects (Estado Civil, Estudios, etc.)
+    // Si el valor viene del JSON, lo seleccionamos
+    $("#in_estado_civil").html(`<option value="${obtenerDatoFinal(reg, "estado_civil", json)}">${obtenerDatoFinal(reg, "estado_civil", json)}</option>`);
+    $("#in_estudios").html(`<option value="${obtenerDatoFinal(reg, "grado_estudios", json)}">${obtenerDatoFinal(reg, "grado_estudios", json)}</option>`);
+    $("#in_ingreso").html(`<option value="${obtenerDatoFinal(reg, "ingreso_mensual", json)}">${obtenerDatoFinal(reg, "ingreso_mensual", json)}</option>`);
+    $("#in_pisos").html(`<option value="${obtenerDatoFinal(reg, "material_pisos", json)}">${obtenerDatoFinal(reg, "material_pisos", json)}</option>`);
+    $("#in_agua").html(`<option value="${obtenerDatoFinal(reg, "tipo_agua", json)}">${obtenerDatoFinal(reg, "tipo_agua", json)}</option>`);
+    $("#in_situacion").html(`<option value="${obtenerDatoFinal(reg, "situacion_unidad", json)}">${obtenerDatoFinal(reg, "situacion_unidad", json)}</option>`);
 
-            htmlCard += `</tbody></table></div></div></div>`;
-            $resumen.append(htmlCard);
-        }
+    // D. Pestaña 1 (Resumen Visual - El código que ya tenías)
+    renderTabResumen(reg, json);
 
-        // Siempre resetear a la primera pestaña (Datos Capturados)
-        const firstTab = document.querySelector('#tabExpediente li:first-child a');
-        if (firstTab) bootstrap.Tab.getOrCreateInstance(firstTab).show();
-        
-        $("#modalEdicion").modal('show');
-    };
+    $("#modalEdicion").modal('show');
+};
 
     // 7. BUSCADOR GLOBAL (Folio, Nombre o CURP)
     $("#tablaSearch").on("keyup", function() {
