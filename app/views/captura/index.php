@@ -344,7 +344,7 @@ $(document).ready(function() {
         renderPaginationUI();
     }
 
-    // 4. LÓGICA DE PAGINACIÓN (WINDOWED - MÁXIMO 5 BOTONES)
+    // 4. LÓGICA DE PAGINACIÓN
     function renderPaginationUI() {
         const totalPages = Math.ceil(filteredData.length / pageSize);
         const container = $("#paginationControls").empty();
@@ -354,7 +354,6 @@ $(document).ready(function() {
         let end = Math.min(totalPages, start + 4);
         if (end - start < 4) start = Math.max(1, end - 4);
 
-        // Botón Anterior
         if (currentPage > 1) {
             container.append(`<li class="page-item"><a class="page-link" href="#" data-page="${currentPage - 1}"><i class="fas fa-chevron-left"></i></a></li>`);
         }
@@ -367,7 +366,6 @@ $(document).ready(function() {
             `);
         }
 
-        // Botón Siguiente
         if (currentPage < totalPages) {
             container.append(`<li class="page-item"><a class="page-link" href="#" data-page="${currentPage + 1}"><i class="fas fa-chevron-right"></i></a></li>`);
         }
@@ -378,9 +376,8 @@ $(document).ready(function() {
         });
     }
 
-    // 5. EXTRACTOR INTELIGENTE (Crucial para llenar el modal sin "undefined")
+    // 5. EXTRACTOR INTELIGENTE
     function obtenerDatoFinal(reg, campoBuscado, json) {
-        // A. Prioridad 1: Columnas físicas de la tabla 'encuestas'
         const mapaFisico = {
             "tecnico_nombre": reg.encuestador,
             "folio": reg.folio,
@@ -394,71 +391,104 @@ $(document).ready(function() {
             return mapaFisico[campoBuscado];
         }
 
-        // B. Prioridad 2: Buscar dentro del respuestas_json
-        if (!json) return '---';
+        if (!json) return '';
 
-        // Caso especial Sección 6 (Objeto directo de geolocalización)
         if (json["6"] && json["6"][campoBuscado]) return json["6"][campoBuscado];
 
-        // Barrido por secciones (1, 2, 3...)
         for (let sec in json) {
             let contenido = json[sec];
             if (Array.isArray(contenido)) {
-                // El JSON guarda las respuestas como {name: 'campo', value: 'valor'}
                 const found = contenido.find(i => i.name === campoBuscado || i.name === campoBuscado + '[]');
                 if (found) return found.value;
+            } else if (typeof contenido === 'object' && contenido !== null) {
+                if (contenido[campoBuscado]) return contenido[campoBuscado];
             } else if (typeof contenido === 'string' && sec === campoBuscado) {
-                // Para campos que se guardan como llave:valor directo (ej. "14": "NO")
                 return contenido;
             }
         }
-        return '---';
+        return '';
     }
 
-    // 6. FUNCIÓN GLOBAL: ABRIR MODAL Y LLENAR EXPEDIENTE
-window.abrirEdicion = function(id) {
-    const reg = rawData.find(i => i.id == id);
-    if (!reg) return;
-    const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
+    // 🔥 6. FUNCIÓN PARA RENDERIZAR EL RESUMEN VISUAL (PESTAÑA 1)
+    function renderTabResumen(reg, json) {
+        const $resumen = $("#resumenCaptura").empty();
+        const gruposConfig = {
+            "Identidad y Registro": ["tecnico_nombre", "curp", "nombre_productor", "sexo", "estado_civil", "ocupacion"],
+            "Contacto y Ubicación": ["tel_particular", "tel_recados", "email", "cp", "pueblo_colonia", "calle_numero"],
+            "Situación y Estudios": ["situacion_unidad", "grado_estudios", "tipo_agua", "financiamiento"],
+            "Producción y Apoyos": ["tema_capacitacion", "tipo_apoyo", "tipo_produccion", "superficie_prod", "volumen_prod", "unidad_medida"]
+        };
 
-    // A. Llenar encabezados y datos fijos
-    $("#reg_id").val(reg.id);
-    $("#spanFolio").text(reg.folio);
-    $("#in_fase").val(reg.fase_proceso || 'EMPADRONADO');
+        for (const [titulo, campos] of Object.entries(gruposConfig)) {
+            let htmlCard = `
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100 border-0 shadow-sm overflow-hidden">
+                        <div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small">
+                            <i class="fas fa-caret-right me-2 text-warning"></i>${titulo.toUpperCase()}
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm table-hover mb-0" style="font-size:0.75rem;">
+                                <tbody>`;
+            
+            campos.forEach(c => {
+                let valor = obtenerDatoFinal(reg, c, json);
+                htmlCard += `
+                    <tr class="border-bottom-light">
+                        <td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td>
+                        <td class="fw-bold py-2 text-dark">${valor || '---'}</td>
+                    </tr>`;
+            });
 
-    // B. Mapeo de Pestaña 2 (Inputs Editables)
-    // Usamos el helper obtenerDatoFinal que ya tenemos para llenar los inputs
-    $("#in_nombre_productor").val(obtenerDatoFinal(reg, "nombre_productor", json));
-    $("#in_curp_edit").val(reg.curp);
-    $("#in_tel_part").val(obtenerDatoFinal(reg, "tel_particular", json));
-    $("#in_email_edit").val(obtenerDatoFinal(reg, "email", json));
-    $("#in_cp_edit").val(obtenerDatoFinal(reg, "cp", json));
-    $("#in_colonia_edit").val(reg.colonia_nombre);
-    
-    $("#in_ocupacion").val(obtenerDatoFinal(reg, "ocupacion", json));
-    $("#in_sup_edit").val(reg.superficie_total);
-    $("#in_vol_edit").val(obtenerDatoFinal(reg, "volumen_prod", json));
-    $("#in_uni_edit").val(obtenerDatoFinal(reg, "unidad_medida", json));
-    $("#in_tipo_prod").val(obtenerDatoFinal(reg, "tipo_produccion", json));
-    $("#in_financia").val(obtenerDatoFinal(reg, "financiamiento", json));
-    $("#in_problema").val(obtenerDatoFinal(reg, "problema_principal", json));
+            htmlCard += `</tbody></table></div></div></div>`;
+            $resumen.append(htmlCard);
+        }
+    }
 
-    // C. Llenar Selects (Estado Civil, Estudios, etc.)
-    // Si el valor viene del JSON, lo seleccionamos
-    $("#in_estado_civil").html(`<option value="${obtenerDatoFinal(reg, "estado_civil", json)}">${obtenerDatoFinal(reg, "estado_civil", json)}</option>`);
-    $("#in_estudios").html(`<option value="${obtenerDatoFinal(reg, "grado_estudios", json)}">${obtenerDatoFinal(reg, "grado_estudios", json)}</option>`);
-    $("#in_ingreso").html(`<option value="${obtenerDatoFinal(reg, "ingreso_mensual", json)}">${obtenerDatoFinal(reg, "ingreso_mensual", json)}</option>`);
-    $("#in_pisos").html(`<option value="${obtenerDatoFinal(reg, "material_pisos", json)}">${obtenerDatoFinal(reg, "material_pisos", json)}</option>`);
-    $("#in_agua").html(`<option value="${obtenerDatoFinal(reg, "tipo_agua", json)}">${obtenerDatoFinal(reg, "tipo_agua", json)}</option>`);
-    $("#in_situacion").html(`<option value="${obtenerDatoFinal(reg, "situacion_unidad", json)}">${obtenerDatoFinal(reg, "situacion_unidad", json)}</option>`);
+    // 7. FUNCIÓN GLOBAL: ABRIR MODAL
+    window.abrirEdicion = function(id) {
+        const reg = rawData.find(i => i.id == id);
+        if (!reg) return;
+        const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-    // D. Pestaña 1 (Resumen Visual - El código que ya tenías)
-    renderTabResumen(reg, json);
+        // A. Llenar encabezados
+        $("#reg_id").val(reg.id);
+        $("#spanFolio").text(reg.folio);
+        $("#in_fase").val(reg.fase_proceso || 'EMPADRONADO');
 
-    $("#modalEdicion").modal('show');
-};
+        // B. Llenar Inputs Editables (Pestaña 2)
+        $("#in_nombre_productor").val(obtenerDatoFinal(reg, "nombre_productor", json));
+        $("#in_curp_edit").val(reg.curp);
+        $("#in_tel_part").val(obtenerDatoFinal(reg, "tel_particular", json));
+        $("#in_email_edit").val(obtenerDatoFinal(reg, "email", json));
+        $("#in_cp_edit").val(obtenerDatoFinal(reg, "cp", json));
+        $("#in_colonia_edit").val(reg.colonia_nombre);
+        $("#in_calle_edit").val(obtenerDatoFinal(reg, "calle_numero", json));
+        
+        $("#in_ocupacion").val(obtenerDatoFinal(reg, "ocupacion", json));
+        $("#in_sup_edit").val(reg.superficie_total);
+        $("#in_vol_edit").val(obtenerDatoFinal(reg, "volumen_prod", json));
+        $("#in_uni_edit").val(obtenerDatoFinal(reg, "unidad_medida", json));
+        $("#in_tipo_prod").val(obtenerDatoFinal(reg, "tipo_produccion", json));
+        $("#in_financia").val(obtenerDatoFinal(reg, "financiamiento", json));
+        $("#in_problema").val(obtenerDatoFinal(reg, "problema_principal", json));
 
-    // 7. BUSCADOR GLOBAL (Folio, Nombre o CURP)
+        // C. Llenar Selects de Pestaña 2
+        const selectValues = ["estado_civil", "grado_estudios", "ingreso_mensual", "material_pisos", "tipo_agua", "situacion_unidad"];
+        selectValues.forEach(key => {
+            let val = obtenerDatoFinal(reg, key, json);
+            $(`#in_${key.replace('grado_', '').replace('material_', '').replace('situacion_', '')}`).html(`<option value="${val}">${val || 'Seleccione...'}</option>`);
+        });
+
+        // D. Llenar Resumen (Pestaña 1)
+        renderTabResumen(reg, json);
+
+        const firstTab = document.querySelector('#tabExpediente li:first-child a');
+        if (firstTab) bootstrap.Tab.getOrCreateInstance(firstTab).show();
+        
+        $("#modalEdicion").modal('show');
+    };
+
+    // 8. BUSCADOR GLOBAL
     $("#tablaSearch").on("keyup", function() {
         const val = $(this).val().toLowerCase();
         filteredData = rawData.filter(e => 
@@ -471,14 +501,14 @@ window.abrirEdicion = function(id) {
     });
 });
 
-// 8. FUNCIÓN: GUARDAR CAMBIOS (AJAX AL CONTROLADOR CAPTURA)
+// 9. GUARDAR CAMBIOS
 function confirmarGuardado() {
     const formElement = document.getElementById('formCaptura');
     const formData = new FormData(formElement);
     
     Swal.fire({
         title: '¿Confirmar cambios?',
-        text: "Se actualizará la fase del proceso y las observaciones del expediente.",
+        text: "Se actualizará la fase del proceso y la información capturada.",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#773357',
@@ -486,7 +516,6 @@ function confirmarGuardado() {
         reverseButtons: true
     }).then((result) => {
         if (result.isConfirmed) {
-            // Mostrar Cargando
             Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
 
             fetch('<?php echo URLROOT; ?>/Captura/actualizar', {
@@ -509,7 +538,6 @@ function confirmarGuardado() {
     });
 }
 
-// 9. FUNCIÓN: CERRAR SESIÓN
 function confirmarSalida() {
     Swal.fire({
         title: '¿Cerrar sesión?',
