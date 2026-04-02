@@ -167,7 +167,7 @@ $(document).ready(function() {
     const pageSize = 10;
     let currentPage = 1;
 
-    // 1. Cargar Datos desde el Servidor
+    // 1. Cargar Datos
     fetch('<?php echo URLROOT; ?>/Encuesta/getEstadisticas')
         .then(res => res.json())
         .then(data => {
@@ -184,7 +184,7 @@ $(document).ready(function() {
         $("#kpi-aprobados").text(data.filter(i => i.fase_proceso === 'APROBADO').length);
     }
 
-    // 2. Renderizado de la Tabla Principal
+    // 2. Render de Tabla Principal
     function renderTable(page) {
         currentPage = page;
         const start = (page - 1) * pageSize;
@@ -214,33 +214,48 @@ $(document).ready(function() {
         const totalPages = Math.ceil(filteredData.length / pageSize);
         const container = $("#paginationControls").empty();
         if (totalPages <= 1) return;
-        
         let start = Math.max(1, currentPage - 2);
         let end = Math.min(totalPages, start + 4);
         if (end - start < 4) start = Math.max(1, end - 4);
-
         for (let i = start; i <= end; i++) {
             container.append(`<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link shadow-sm" href="#" data-page="${i}">${i}</a></li>`);
         }
-        
         container.find('a').on('click', function(e) {
             e.preventDefault();
             renderTable(parseInt($(this).attr('data-page')));
         });
     }
 
-    // 🔥 FUNCIÓN DE EXTRACCIÓN (Crucial para el modal)
-    function extraerValorGlobal(json, campoBuscado) {
+    // 🔥 EXTRACTOR INTELIGENTE: Busca en BD Física y luego en JSON
+    function obtenerDatoFinal(reg, campoBuscado, json) {
+        // Mapeo de columnas físicas de la base de datos
+        const mapaFisico = {
+            "tecnico_nombre": reg.encuestador,
+            "folio": reg.folio,
+            "curp": reg.curp,
+            "nombre_productor": `${reg.nombre} ${reg.paterno} ${reg.materno}`.trim(),
+            "pueblo_colonia": reg.colonia_nombre,
+            "superficie_prod": reg.superficie_total
+        };
+
+        // Si el campo es físico, lo devolvemos de inmediato
+        if (mapaFisico[campoBuscado] !== undefined && mapaFisico[campoBuscado] !== null && mapaFisico[campoBuscado] !== "") {
+            return mapaFisico[campoBuscado];
+        }
+
+        // Si no es físico, buscamos en el JSON de forma agresiva
         if (!json) return '';
+        
         // Caso especial sección 6 (coordenadas/calle)
         if (json["6"] && json["6"][campoBuscado]) return json["6"][campoBuscado];
 
         for (let sec in json) {
-            if (Array.isArray(json[sec])) {
-                const matches = json[sec].filter(i => i.name === campoBuscado || i.name === campoBuscado + '[]');
-                if (matches.length > 0) return matches.map(m => m.value).join('; ');
-            } else if (typeof json[sec] === 'string' && sec === campoBuscado) {
-                return json[sec];
+            let contenido = json[sec];
+            if (Array.isArray(contenido)) {
+                const found = contenido.find(i => i.name === campoBuscado || i.name === campoBuscado + '[]');
+                if (found) return found.value;
+            } else if (typeof contenido === 'object' && contenido !== null) {
+                if (contenido[campoBuscado]) return contenido[campoBuscado];
             }
         }
         return '';
@@ -257,7 +272,7 @@ $(document).ready(function() {
         $("#spanFolio").text(reg.folio);
         $("#in_fase").val(reg.fase_proceso || 'EMPADRONADO');
 
-        // Llenar Pestaña 1 con las 23 columnas (Agrupadas)
+        // Grupos exactos de tus 23 columnas
         const groups = {
             "Identidad y Registro": ["tecnico_nombre", "curp", "nombre_productor", "sexo", "estado_civil", "ocupacion"],
             "Contacto y Ubicación": ["tel_particular", "tel_recados", "email", "cp", "pueblo_colonia"],
@@ -272,14 +287,14 @@ $(document).ready(function() {
                 <div class="col-md-6 mb-3">
                     <div class="card h-100 border-0 shadow-sm overflow-hidden">
                         <div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small">
-                            <i class="fas fa-caret-right me-2 text-warning"></i>${titulo.toUpperCase()}
+                            <i class="fas fa-check-circle me-2 text-warning"></i>${titulo.toUpperCase()}
                         </div>
                         <div class="card-body p-0">
                             <table class="table table-sm table-hover mb-0" style="font-size:0.75rem;">
                                 <tbody>`;
             
             campos.forEach(c => {
-                let valor = extraerValorGlobal(json, c);
+                let valor = obtenerDatoFinal(reg, c, json);
                 html += `
                     <tr class="border-bottom-light">
                         <td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td>
@@ -291,7 +306,6 @@ $(document).ready(function() {
             $resumen.append(html);
         }
 
-        // Resetear a la primera pestaña y abrir modal
         const triggerEl = document.querySelector('#tabExpediente li:first-child a');
         if (triggerEl) bootstrap.Tab.getOrCreateInstance(triggerEl).show();
         $("#modalEdicion").modal('show');
@@ -302,7 +316,8 @@ $(document).ready(function() {
         const val = $(this).val().toLowerCase();
         filteredData = rawData.filter(e => 
             (e.folio || "").toLowerCase().includes(val) || 
-            (e.nombre || "").toLowerCase().includes(val)
+            (e.nombre || "").toLowerCase().includes(val) ||
+            (e.curp || "").toLowerCase().includes(val)
         );
         renderTable(1);
     });
@@ -310,10 +325,8 @@ $(document).ready(function() {
 
 function confirmarGuardado() {
     const formData = new FormData(document.getElementById('formCaptura'));
-    
     Swal.fire({
         title: '¿Guardar Cambios?',
-        text: "Se actualizará la fase del proceso y las observaciones.",
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#773357',
@@ -324,7 +337,7 @@ function confirmarGuardado() {
             .then(res => res.json())
             .then(data => {
                 if(data.status === 'success') {
-                    Swal.fire('¡Actualizado!', data.msg, 'success').then(() => location.reload());
+                    Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload());
                 } else {
                     Swal.fire('Error', data.msg, 'error');
                 }
