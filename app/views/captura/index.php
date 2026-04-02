@@ -231,49 +231,72 @@ $(document).ready(function() {
     }
 
     // 🔥 SOLUCIÓN AL ERROR: Exponer la función al objeto global window
-    window.abrirEdicion = function(id) {
-        const reg = rawData.find(i => i.id == id);
-        if(!reg) return;
+   window.abrirEdicion = function(id) {
+    // 1. Encontrar el registro y parsear el JSON
+    const reg = rawData.find(i => i.id == id);
+    if(!reg) return;
+    const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
+    
+    // 2. Llenar campos ocultos y encabezado
+    $("#reg_id").val(reg.id);
+    $("#spanFolio").text(reg.folio);
+    $("#in_fase").val(reg.fase_proceso || 'EMPADRONADO');
 
-        const json = JSON.parse(reg.respuestas_json || '{}');
-        
-        $("#reg_id").val(reg.id);
-        $("#spanFolio").text(reg.folio);
-        $("#in_fase").val(reg.fase_proceso || 'EMPADRONADO');
-
-        // Llenado de Pestaña 1 (Grupal)
-        const $resumen = $("#resumenCaptura").empty();
-        const grupos = {
-            "Identidad": ["curp", "nombre_productor", "sexo", "estado_civil", "fecha_nacimiento"],
-            "Ubicación": ["cp", "pueblo_colonia", "situacion_unidad", "calle_numero"],
-            "Contacto": ["tel_particular", "tel_recados", "email"],
-            "Producción": ["tipo_produccion", "superficie_prod", "volumen_prod", "unidad_medida", "tipo_agua"]
-        };
-
-        for (const [titulo, campos] of Object.entries(grupos)) {
-            let html = `
-                <div class="col-md-6 mb-3">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-header py-2 bg-white fw-bold small text-guinda">${titulo.toUpperCase()}</div>
-                        <div class="card-body p-0">
-                            <table class="table table-sm mb-0 small">`;
-            campos.forEach(c => {
-                let valor = extraerValor(json, c);
-                html += `
-                    <tr class="border-bottom-light">
-                        <td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td>
-                        <td class="fw-bold py-2">${valor || '---'}</td>
-                    </tr>`;
-            });
-            html += `</table></div></div></div>`;
-            $resumen.append(html);
-        }
-
-        // Volver a la primera pestaña siempre
-        $('#tabExpediente a:first').tab('show');
-        $("#modalEdicion").modal('show');
+    // 3. Definir los Grupos basados en tus 23 columnas del CSV
+    const gruposCaptura = {
+        "Identidad y Registro": ["tecnico_nombre", "curp", "nombre_productor", "sexo", "estado_civil", "ocupacion"],
+        "Contacto y Ubicación": ["tel_particular", "tel_recados", "email", "cp", "pueblo_colonia"],
+        "Situación y Estudios": ["situacion_unidad", "grado_estudios", "tipo_agua", "financiamiento"],
+        "Producción y Apoyos": ["tema_capacitacion", "tipo_apoyo", "tipo_produccion", "superficie_prod", "volumen_prod", "unidad_medida"]
     };
 
+    const $resumen = $("#resumenCaptura").empty();
+
+    // 4. Generar las tarjetas dinámicamente
+    for (const [titulo, campos] of Object.entries(gruposCaptura)) {
+        let cardHtml = `
+            <div class="col-md-6 mb-3">
+                <div class="card h-100 border-0 shadow-sm overflow-hidden" style="border-radius: 12px;">
+                    <div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small">
+                        <i class="fas fa-check-circle me-2 opacity-50"></i>${titulo.toUpperCase()}
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm table-hover mb-0" style="font-size: 0.75rem;">
+                            <tbody>`;
+        
+        // Agregar ID y FOLIO solo a la primera tarjeta para completar las 23 columnas
+        if (titulo === "Identidad y Registro") {
+            cardHtml += `
+                <tr class="border-bottom-light">
+                    <td class="ps-3 text-muted py-2" width="45%">ID_SISTEMA</td>
+                    <td class="fw-bold py-2 text-dark">${reg.id}</td>
+                </tr>
+                <tr class="border-bottom-light">
+                    <td class="ps-3 text-muted py-2">FOLIO_CEDULA</td>
+                    <td class="fw-bold py-2 text-guinda">${reg.folio}</td>
+                </tr>`;
+        }
+
+        // Barrido de los campos definidos en el grupo (vienen del JSON)
+        campos.forEach(campo => {
+            let valor = extraerValorGlobal(json, campo);
+            cardHtml += `
+                <tr class="border-bottom-light">
+                    <td class="ps-3 text-muted py-2">${campo.replace(/_/g, ' ').toUpperCase()}</td>
+                    <td class="fw-bold py-2 text-dark">${valor || '---'}</td>
+                </tr>`;
+        });
+
+        cardHtml += `</tbody></table></div></div></div>`;
+        $resumen.append(cardHtml);
+    }
+
+    // 5. Mostrar Modal y resetear a pestaña 1
+    const firstTabEl = document.querySelector('#tabExpediente li:first-child a');
+    const firstTab = new bootstrap.Tab(firstTabEl);
+    firstTab.show();
+    $("#modalEdicion").modal('show');
+};
     function extraerValor(json, campo) {
         for (let sec in json) {
             if (Array.isArray(json[sec])) {
