@@ -167,7 +167,7 @@ $(document).ready(function() {
     const pageSize = 10;
     let currentPage = 1;
 
-    // 1. Cargar Datos
+    // 1. Cargar Datos desde el Servidor
     fetch('<?php echo URLROOT; ?>/Encuesta/getEstadisticas')
         .then(res => res.json())
         .then(data => {
@@ -184,6 +184,7 @@ $(document).ready(function() {
         $("#kpi-aprobados").text(data.filter(i => i.fase_proceso === 'APROBADO').length);
     }
 
+    // 2. Renderizado de la Tabla Principal
     function renderTable(page) {
         currentPage = page;
         const start = (page - 1) * pageSize;
@@ -195,7 +196,7 @@ $(document).ready(function() {
             tbody.append(`
                 <tr>
                     <td class="ps-3 fw-bold text-guinda">${e.folio}</td>
-                    <td class="small fw-bold">${e.nombre} ${e.paterno}</td>
+                    <td class="small fw-bold">${e.nombre || ''} ${e.paterno || ''}</td>
                     <td><span class="badge badge-fase fase-${e.fase_proceso || 'EMPADRONADO'}">${faseLimpia}</span></td>
                     <td class="text-center fw-bold">${parseFloat(e.superficie_total || 0).toFixed(2)}</td>
                     <td class="text-center">
@@ -213,103 +214,96 @@ $(document).ready(function() {
         const totalPages = Math.ceil(filteredData.length / pageSize);
         const container = $("#paginationControls").empty();
         if (totalPages <= 1) return;
-
+        
         let start = Math.max(1, currentPage - 2);
         let end = Math.min(totalPages, start + 4);
         if (end - start < 4) start = Math.max(1, end - 4);
 
-        if (currentPage > 1) container.append(`<li class="page-item"><a class="page-link" href="#" data-page="${currentPage-1}"><i class="fas fa-chevron-left"></i></a></li>`);
         for (let i = start; i <= end; i++) {
-            container.append(`<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`);
+            container.append(`<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link shadow-sm" href="#" data-page="${i}">${i}</a></li>`);
         }
-        if (currentPage < totalPages) container.append(`<li class="page-item"><a class="page-link" href="#" data-page="${currentPage+1}"><i class="fas fa-chevron-right"></i></a></li>`);
-
+        
         container.find('a').on('click', function(e) {
             e.preventDefault();
             renderTable(parseInt($(this).attr('data-page')));
         });
     }
 
-    // 🔥 SOLUCIÓN AL ERROR: Exponer la función al objeto global window
-   window.abrirEdicion = function(id) {
-    // 1. Encontrar el registro y parsear el JSON
-    const reg = rawData.find(i => i.id == id);
-    if(!reg) return;
-    const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
-    
-    // 2. Llenar campos ocultos y encabezado
-    $("#reg_id").val(reg.id);
-    $("#spanFolio").text(reg.folio);
-    $("#in_fase").val(reg.fase_proceso || 'EMPADRONADO');
+    // 🔥 FUNCIÓN DE EXTRACCIÓN (Crucial para el modal)
+    function extraerValorGlobal(json, campoBuscado) {
+        if (!json) return '';
+        // Caso especial sección 6 (coordenadas/calle)
+        if (json["6"] && json["6"][campoBuscado]) return json["6"][campoBuscado];
 
-    // 3. Definir los Grupos basados en tus 23 columnas del CSV
-    const gruposCaptura = {
-        "Identidad y Registro": ["tecnico_nombre", "curp", "nombre_productor", "sexo", "estado_civil", "ocupacion"],
-        "Contacto y Ubicación": ["tel_particular", "tel_recados", "email", "cp", "pueblo_colonia"],
-        "Situación y Estudios": ["situacion_unidad", "grado_estudios", "tipo_agua", "financiamiento"],
-        "Producción y Apoyos": ["tema_capacitacion", "tipo_apoyo", "tipo_produccion", "superficie_prod", "volumen_prod", "unidad_medida"]
-    };
-
-    const $resumen = $("#resumenCaptura").empty();
-
-    // 4. Generar las tarjetas dinámicamente
-    for (const [titulo, campos] of Object.entries(gruposCaptura)) {
-        let cardHtml = `
-            <div class="col-md-6 mb-3">
-                <div class="card h-100 border-0 shadow-sm overflow-hidden" style="border-radius: 12px;">
-                    <div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small">
-                        <i class="fas fa-check-circle me-2 opacity-50"></i>${titulo.toUpperCase()}
-                    </div>
-                    <div class="card-body p-0">
-                        <table class="table table-sm table-hover mb-0" style="font-size: 0.75rem;">
-                            <tbody>`;
-        
-        // Agregar ID y FOLIO solo a la primera tarjeta para completar las 23 columnas
-        if (titulo === "Identidad y Registro") {
-            cardHtml += `
-                <tr class="border-bottom-light">
-                    <td class="ps-3 text-muted py-2" width="45%">ID_SISTEMA</td>
-                    <td class="fw-bold py-2 text-dark">${reg.id}</td>
-                </tr>
-                <tr class="border-bottom-light">
-                    <td class="ps-3 text-muted py-2">FOLIO_CEDULA</td>
-                    <td class="fw-bold py-2 text-guinda">${reg.folio}</td>
-                </tr>`;
-        }
-
-        // Barrido de los campos definidos en el grupo (vienen del JSON)
-        campos.forEach(campo => {
-            let valor = extraerValorGlobal(json, campo);
-            cardHtml += `
-                <tr class="border-bottom-light">
-                    <td class="ps-3 text-muted py-2">${campo.replace(/_/g, ' ').toUpperCase()}</td>
-                    <td class="fw-bold py-2 text-dark">${valor || '---'}</td>
-                </tr>`;
-        });
-
-        cardHtml += `</tbody></table></div></div></div>`;
-        $resumen.append(cardHtml);
-    }
-
-    // 5. Mostrar Modal y resetear a pestaña 1
-    const firstTabEl = document.querySelector('#tabExpediente li:first-child a');
-    const firstTab = new bootstrap.Tab(firstTabEl);
-    firstTab.show();
-    $("#modalEdicion").modal('show');
-};
-    function extraerValor(json, campo) {
         for (let sec in json) {
             if (Array.isArray(json[sec])) {
-                let found = json[sec].find(i => i.name === campo || i.name === campo + '[]');
-                if (found) return found.value;
+                const matches = json[sec].filter(i => i.name === campoBuscado || i.name === campoBuscado + '[]');
+                if (matches.length > 0) return matches.map(m => m.value).join('; ');
+            } else if (typeof json[sec] === 'string' && sec === campoBuscado) {
+                return json[sec];
             }
         }
         return '';
     }
 
+    // 3. Función del Modal (Expuesta Globalmente)
+    window.abrirEdicion = function(id) {
+        const reg = rawData.find(i => i.id == id);
+        if(!reg) return;
+
+        const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
+        
+        $("#reg_id").val(reg.id);
+        $("#spanFolio").text(reg.folio);
+        $("#in_fase").val(reg.fase_proceso || 'EMPADRONADO');
+
+        // Llenar Pestaña 1 con las 23 columnas (Agrupadas)
+        const groups = {
+            "Identidad y Registro": ["tecnico_nombre", "curp", "nombre_productor", "sexo", "estado_civil", "ocupacion"],
+            "Contacto y Ubicación": ["tel_particular", "tel_recados", "email", "cp", "pueblo_colonia"],
+            "Situación y Estudios": ["situacion_unidad", "grado_estudios", "tipo_agua", "financiamiento"],
+            "Producción y Apoyos": ["tema_capacitacion", "tipo_apoyo", "tipo_produccion", "superficie_prod", "volumen_prod", "unidad_medida"]
+        };
+
+        const $resumen = $("#resumenCaptura").empty();
+
+        for (const [titulo, campos] of Object.entries(groups)) {
+            let html = `
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100 border-0 shadow-sm overflow-hidden">
+                        <div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small">
+                            <i class="fas fa-caret-right me-2 text-warning"></i>${titulo.toUpperCase()}
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm table-hover mb-0" style="font-size:0.75rem;">
+                                <tbody>`;
+            
+            campos.forEach(c => {
+                let valor = extraerValorGlobal(json, c);
+                html += `
+                    <tr class="border-bottom-light">
+                        <td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td>
+                        <td class="fw-bold py-2 text-dark">${valor || '---'}</td>
+                    </tr>`;
+            });
+
+            html += `</tbody></table></div></div></div>`;
+            $resumen.append(html);
+        }
+
+        // Resetear a la primera pestaña y abrir modal
+        const triggerEl = document.querySelector('#tabExpediente li:first-child a');
+        if (triggerEl) bootstrap.Tab.getOrCreateInstance(triggerEl).show();
+        $("#modalEdicion").modal('show');
+    };
+
+    // Buscador
     $("#tablaSearch").on("keyup", function() {
         const val = $(this).val().toLowerCase();
-        filteredData = rawData.filter(e => (e.folio || "").toLowerCase().includes(val) || (e.nombre || "").toLowerCase().includes(val) || (e.curp || "").toLowerCase().includes(val));
+        filteredData = rawData.filter(e => 
+            (e.folio || "").toLowerCase().includes(val) || 
+            (e.nombre || "").toLowerCase().includes(val)
+        );
         renderTable(1);
     });
 });
@@ -318,8 +312,8 @@ function confirmarGuardado() {
     const formData = new FormData(document.getElementById('formCaptura'));
     
     Swal.fire({
-        title: '¿Confirmar cambios?',
-        text: "Se guardará el estatus y las observaciones del expediente.",
+        title: '¿Guardar Cambios?',
+        text: "Se actualizará la fase del proceso y las observaciones.",
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#773357',
@@ -330,7 +324,7 @@ function confirmarGuardado() {
             .then(res => res.json())
             .then(data => {
                 if(data.status === 'success') {
-                    Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload());
+                    Swal.fire('¡Actualizado!', data.msg, 'success').then(() => location.reload());
                 } else {
                     Swal.fire('Error', data.msg, 'error');
                 }
