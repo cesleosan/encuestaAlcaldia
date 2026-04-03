@@ -489,7 +489,7 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 2. UTILIDADES DE PROCESAMIENTO (RESTAURADO)
+    // 2. UTILIDADES DE PROCESAMIENTO
     // ==========================================
     
     function segmentarNombreCompleto(nombreCompleto) {
@@ -511,14 +511,14 @@ $(document).ready(function() {
     }
 
     function getDatoFinal(reg, campoBuscado, json) {
-        // CORRECCIÓN QUIRÚRGICA: Mapeo exacto con nombres de columnas de tu MariaDB
+        // Prioridad: Columnas físicas de la base de datos
         const nombreFisico = `${reg.nombre || ''} ${reg.apellido_paterno || ''} ${reg.apellido_materno || ''}`.trim();
         
         const mapaFisico = {
             "folio": reg.folio,
-            "curp": reg.curp,
+            "curp": reg.curp, // Columna real en MariaDB
             "rfc": reg.rfc,
-            "nombre_productor": nombreFisico, // Ahora sí construye el nombre completo
+            "nombre_productor": nombreFisico,
             "pueblo_colonia": reg.colonia_nombre,
             "superficie_prod": reg.superficie_total,
             "fase_proceso": reg.fase_proceso,
@@ -536,7 +536,7 @@ $(document).ready(function() {
 
         if (!json) return '';
 
-        // Búsqueda en el JSON si no está en la tabla física
+        // Búsqueda en el JSON multinivel
         for (let seccion in json) {
             let contenido = json[seccion];
             if (seccion === "6" && contenido[campoBuscado]) return contenido[campoBuscado];
@@ -555,7 +555,7 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 3. RENDERIZADO DE TABLA (CORREGIDO)
+    // 3. RENDERIZADO DE TABLA
     // ==========================================
     function renderTable(page) {
         currentPage = page;
@@ -565,7 +565,6 @@ $(document).ready(function() {
 
         items.forEach(e => {
             const faseLimpia = (e.fase_proceso || 'EMPADRONADO').replace(/_/g, ' ');
-            // CORRECCIÓN: Acceso correcto a apellido_paterno y apellido_materno
             tbody.append(`
                 <tr>
                     <td class="ps-3 fw-bold text-guinda">${e.folio || 'S/F'}</td>
@@ -585,12 +584,98 @@ $(document).ready(function() {
         renderPaginationUI();
     }
 
+    // ==========================================
+    // 4. LÓGICA DEL MODAL (CORRECCIÓN QUIRÚRGICA)
+    // ==========================================
+    
+    window.controlarDependencias = function() {
+        // Discapacidad
+        if ($("#in_tiene_discap").val() === "SI") {
+            $("#in_cual_discap").prop("disabled", false).removeClass("bg-light");
+        } else {
+            $("#in_cual_discap").val("NA").prop("disabled", true).addClass("bg-light");
+        }
+        
+        // Grupo Étnico (Surgico: Agregamos esta lógica que faltaba)
+        const grupoEtnico = $("#in_grupo_etnico_edit").val();
+        if (grupoEtnico === "SI" || (grupoEtnico && grupoEtnico !== "NO" && grupoEtnico !== "NA")) {
+            $("#in_grupo_cual").prop("disabled", false).removeClass("bg-light");
+        } else {
+            $("#in_grupo_cual").val("NA").prop("disabled", true).addClass("bg-light");
+        }
+    };
+
+    $(document).on("change", "#in_tiene_discap, #in_grupo_etnico_edit", window.controlarDependencias);
+
+    window.abrirEdicion = function(id) {
+        const reg = rawData.find(i => i.id == id);
+        if (!reg) return;
+        const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
+
+        $("#formCaptura")[0].reset();
+        $("#reg_id").val(reg.id);
+        $("#spanFolio").text(reg.folio || 'S/F');
+
+        // 1. Nombre Completo y Segmentación (Surgico: usamos columnas de MariaDB)
+        const fullNombre = getDatoFinal(reg, "nombre_productor", json);
+        const seg = segmentarNombreCompleto(fullNombre);
+        $("#in_nombre_productor").val(seg.nombres); 
+        $("#in_paterno").val(reg.apellido_paterno || seg.paterno); 
+        $("#in_materno").val(reg.apellido_materno || seg.materno);
+
+        // 2. Llenado Automático Masivo
+        $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
+            const el = $(this);
+            const name = el.attr('name');
+            const excluidos = ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'];
+            
+            if (!name || excluidos.includes(name)) return;
+            const cleanName = name.replace('[]', '');
+            const valor = getDatoFinal(reg, cleanName, json);
+
+            if (valor !== undefined && valor !== "") {
+                if (el.is(':checkbox')) {
+                    el.prop('checked', valor === 'SI' || valor === '1' || valor === 1);
+                } else {
+                    el.val(valor);
+                }
+            }
+        });
+
+        // 3. CORRECCIÓN QUIRÚRGICA CURP/RFC: Forzar llenado manual si el loop los saltó
+        const curpFinal = reg.curp || getDatoFinal(reg, "curp", json);
+        $("#in_curp_edit").val(curpFinal); // Asegura que se pinte el CURP en la pestaña 2
+
+        const rfcFinal = reg.rfc || getDatoFinal(reg, "rfc", json);
+        $("#in_rfc").val(rfcFinal);
+
+        if (!$("#in_rfc").val() && curpFinal) {
+            $("#in_rfc").val(curpFinal.substring(0, 10));
+        }
+
+        // 4. Botón PDF
+        if (reg.id) {
+            $("#btnDescargarPDF")
+                .removeClass('d-none')
+                .off('click')
+                .on('click', function() {
+                    window.open(`<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${reg.id}`, '_blank');
+                });
+        }
+
+        renderTabResumen(reg, json);
+        window.controlarDependencias(); 
+        bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
+        $("#modalEdicion").modal('show');
+    };
+
+    // Funciones de tabla y buscador...
     function renderPaginationUI() {
         const totalPages = Math.ceil(filteredData.length / pageSize);
         const container = $("#paginationControls").empty();
         if (totalPages <= 1) return;
         for (let i = 1; i <= totalPages; i++) {
-            container.append(`<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`);
+            container.append(`<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link shadow-sm" href="#" data-page="${i}">${i}</a></li>`);
         }
         container.find('a').on('click', function(e) { e.preventDefault(); renderTable(parseInt($(this).attr('data-page'))); });
     }
@@ -624,83 +709,6 @@ $(document).ready(function() {
         }
     }
 
-    // ==========================================
-    // 4. LÓGICA DEL MODAL
-    // ==========================================
-    window.controlarDependencias = function() {
-        if ($("#in_tiene_discap").val() === "SI") {
-            $("#in_cual_discap").prop("disabled", false).removeClass("bg-light");
-        } else {
-            $("#in_cual_discap").val("NA").prop("disabled", true).addClass("bg-light");
-        }
-    };
-
-    $(document).on("change", "#in_tiene_discap", window.controlarDependencias);
-
-    window.abrirEdicion = function(id) {
-    const reg = rawData.find(i => i.id == id);
-    if (!reg) return;
-    const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
-
-    $("#formCaptura")[0].reset();
-    $("#reg_id").val(reg.id);
-    $("#spanFolio").text(reg.folio || 'S/F');
-
-    // 1. Obtener Nombre Completo Real (Priorizando el capturado originalmente)
-    const fullNombre = getDatoFinal(reg, "nombre_productor", json);
-    const seg = segmentarNombreCompleto(fullNombre);
-    
-    // Llenar campos de edición con segmentación corregida
-    $("#in_nombre_productor").val(seg.nombres); 
-    $("#in_paterno").val(seg.paterno);
-    $("#in_materno").val(seg.materno);
-
-    // 2. Llenado Automático Masivo
-    $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
-        const el = $(this);
-        const name = el.attr('name');
-        const excluidos = ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'];
-        
-        if (!name || excluidos.includes(name)) return;
-        const cleanName = name.replace('[]', '');
-        const valor = getDatoFinal(reg, cleanName, json);
-
-        if (valor !== undefined && valor !== "") {
-            if (el.is(':checkbox')) {
-                el.prop('checked', valor === 'SI' || valor === '1' || valor === 1);
-            } else {
-                el.val(valor);
-            }
-        }
-    });
-    const curpFinal = reg.curp || getDatoFinal(reg, "curp", json);
-    $("#in_curp_edit").val(curpFinal);
-
-    const rfcFinal = reg.rfc || getDatoFinal(reg, "rfc", json);
-    $("#in_rfc").val(rfcFinal);
-
-    // Si el RFC sigue vacío, intentamos sacarlo de los primeros 10 del CURP
-    if (!$("#in_rfc").val() && curpFinal) {
-        $("#in_rfc").val(curpFinal.substring(0, 10));
-    }
-
-    // 3. Mostrar Botón PDF y configurar evento de forma limpia
-    if (reg.id) {
-        $("#btnDescargarPDF")
-            .removeClass('d-none')
-            .off('click') // Prevenir múltiples eventos acumulados
-            .on('click', function() {
-                const url = `<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${reg.id}`;
-                window.open(url, '_blank');
-            });
-    }
-
-    renderTabResumen(reg, json);
-    window.controlarDependencias(); 
-    bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
-    $("#modalEdicion").modal('show');
-};
-
     $("#tablaSearch").on("keyup", function() {
         const val = $(this).val().toLowerCase();
         filteredData = rawData.filter(e => 
@@ -712,16 +720,9 @@ $(document).ready(function() {
     });
 });
 
+// ACCIONES GLOBALES
 function confirmarSalida() {
-    Swal.fire({
-        title: '¿Cerrar sesión?',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#dc3545',
-        confirmButtonText: 'Sí, salir'
-    }).then((result) => {
-        if (result.isConfirmed) window.location.href = '<?php echo URLROOT; ?>/Auth/logout';
-    });
+    Swal.fire({ title: '¿Cerrar sesión?', icon: 'question', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Sí, salir' }).then((result) => { if (result.isConfirmed) window.location.href = '<?php echo URLROOT; ?>/Auth/logout'; });
 }
 
 function confirmarGuardado() {

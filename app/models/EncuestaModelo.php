@@ -197,10 +197,10 @@ class EncuestaModelo {
      * 🔥 ACTUALIZACIÓN INTEGRAL (Versión 1000% Completa)
      * Procesa los 61 campos de la base de datos desde el Modal de Edición
      */
-    public function actualizarExpediente($data) {
+public function actualizarExpediente($data) {
         try {
             $sql = "UPDATE encuestas SET 
-                        -- Identidad (Tabs 1 y 2)
+                        -- Identidad
                         nombre = :nombre, 
                         apellido_paterno = :paterno, 
                         apellido_materno = :materno, 
@@ -215,6 +215,7 @@ class EncuestaModelo {
                         grupo_etnico_cual = :grupo_etnico_cual,
                         escolaridad = :escolaridad, 
                         ocupacion = :ocupacion,
+                        estado_civil = :estado_civil,
                         -- Ubicación y Contacto
                         calle = :calle,
                         colonia_nombre = :colonia,
@@ -222,7 +223,7 @@ class EncuestaModelo {
                         tel_particular = :tel_part,
                         tel_casa = :tel_casa,
                         tel_familiar = :tel_fam,
-                        -- Datos Técnicos de Producción
+                        -- Datos Técnicos
                         linea_ayuda = :linea_ayuda,
                         registro_siniiga = :siniiga,
                         num_total_predios = :num_predios,
@@ -233,7 +234,7 @@ class EncuestaModelo {
                         tenencia_tierra = :tenencia,
                         especie_cultivo_principal = :especie,
                         numero_cabezas_colmenas = :cabezas,
-                        -- Checklist Documentos (Tab 3)
+                        -- Checklist Documentos (TINYINT 0/1)
                         check_solicitud = :check_sol,
                         check_identidad = :check_id,
                         check_domicilio = :check_dom,
@@ -243,7 +244,7 @@ class EncuestaModelo {
                         check_propiedad = :check_prop,
                         check_finiquito = :check_fin,
                         check_siniiga_doc = :check_sin,
-                        -- Control de Proceso
+                        -- Control
                         fase_proceso = :fase, 
                         observaciones_capturista = :obs,
                         respuestas_json = :json 
@@ -251,7 +252,7 @@ class EncuestaModelo {
 
             $this->db->query($sql);
             
-            // Bindeos Identidad (JS -> DB)
+            // Bindeos Identidad
             $this->db->bind(':id', $data['id']);
             $this->db->bind(':nombre', $data['nombre_productor']);
             $this->db->bind(':paterno', $data['paterno']);
@@ -266,8 +267,9 @@ class EncuestaModelo {
             $this->db->bind(':cual_discap', $data['cual_discapacidad'] ?? 'NA');
             $this->db->bind(':grupo_etnico', $data['grupo_etnico'] ?? 'NO');
             $this->db->bind(':grupo_etnico_cual', $data['grupo_etnico_cual'] ?? 'NA');
-            $this->db->bind(':escolaridad', $data['grado_estudios'] ?? null); // Maps to 'escolaridad' in DB
+            $this->db->bind(':escolaridad', $data['grado_estudios'] ?? null); 
             $this->db->bind(':ocupacion', $data['ocupacion'] ?? null);
+            $this->db->bind(':estado_civil', $data['estado_civil'] ?? null);
 
             // Bindeos Ubicación
             $this->db->bind(':calle', $data['calle_numero'] ?? null);
@@ -289,16 +291,16 @@ class EncuestaModelo {
             $this->db->bind(':especie', $data['cultivo_principal'] ?? null);
             $this->db->bind(':cabezas', $data['num_animales'] ?? 0);
 
-            // Bindeos Checklist
-            $this->db->bind(':check_sol', isset($data['check_solicitud']) ? 1 : 0);
-            $this->db->bind(':check_id', isset($data['check_identidad']) ? 1 : 0);
-            $this->db->bind(':check_dom', isset($data['check_domicilio']) ? 1 : 0);
-            $this->db->bind(':check_curp', isset($data['check_curp_doc']) ? 1 : 0);
-            $this->db->bind(':check_rfc', isset($data['check_rfc_doc']) ? 1 : 0);
-            $this->db->bind(':check_man', isset($data['check_manifiesto']) ? 1 : 0);
-            $this->db->bind(':check_prop', isset($data['check_propiedad']) ? 1 : 0);
-            $this->db->bind(':check_fin', isset($data['check_finiquito']) ? 1 : 0);
-            $this->db->bind(':check_sin', isset($data['check_siniiga_doc']) ? 1 : 0);
+            // Bindeos Checklist (Asegura que siempre se bindeen como 0 o 1)
+            $this->db->bind(':check_sol', $data['check_solicitud']);
+            $this->db->bind(':check_id', $data['check_identidad']);
+            $this->db->bind(':check_dom', $data['check_domicilio']);
+            $this->db->bind(':check_curp', $data['check_curp_doc']);
+            $this->db->bind(':check_rfc', $data['check_rfc_doc']);
+            $this->db->bind(':check_man', $data['check_manifiesto']);
+            $this->db->bind(':check_prop', $data['check_propiedad']);
+            $this->db->bind(':check_fin', $data['check_finiquito']);
+            $this->db->bind(':check_sin', $data['check_siniiga_doc']);
 
             // Control
             $this->db->bind(':fase', $data['fase_proceso']);
