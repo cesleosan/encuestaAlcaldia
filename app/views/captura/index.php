@@ -451,7 +451,7 @@ $(document).ready(function() {
     let currentPage = 1;
 
     // ==========================================
-    // 1. CARGA INICIAL Y KPIs
+    // 1. CARGA INICIAL Y DASHBOARD
     // ==========================================
     fetch('<?php echo URLROOT; ?>/Encuesta/getEstadisticas')
         .then(res => res.json())
@@ -461,10 +461,7 @@ $(document).ready(function() {
             actualizarKPIs(rawData);
             renderTable(1);
         })
-        .catch(err => {
-            console.error("Error al obtener datos:", err);
-            // Si ves el error de JSON aquí, revisa la pestaña Network
-        });
+        .catch(err => console.error("Error al obtener datos:", err));
 
     function actualizarKPIs(data) {
         $("#kpi-total").text(data.length);
@@ -474,17 +471,22 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 2. UTILIDADES: SEGMENTACIÓN DE NOMBRES
+    // 2. UTILIDADES DE PROCESAMIENTO (REGEX & LOGIC)
     // ==========================================
+    
+    /**
+     * SEGMENTACIÓN DE NOMBRE: Separa nombres de apellidos siguiendo lógica MX
+     * Ej: "MELINA SANDRA CRUZ AYALA" -> {nombres: "MELINA SANDRA", paterno: "CRUZ", materno: "AYALA"}
+     */
     function segmentarNombreCompleto(nombreCompleto) {
         if (!nombreCompleto) return { nombres: '', paterno: '', materno: '' };
         let palabras = nombreCompleto.trim().toUpperCase().split(/\s+/);
         let result = { nombres: '', paterno: '', materno: '' };
 
         if (palabras.length >= 3) {
-            result.materno = palabras.pop();
-            result.paterno = palabras.pop();
-            result.nombres = palabras.join(' '); 
+            result.materno = palabras.pop(); // Última palabra
+            result.paterno = palabras.pop(); // Penúltima palabra
+            result.nombres = palabras.join(' '); // Todo lo demás
         } else if (palabras.length === 2) {
             result.nombres = palabras[0];
             result.paterno = palabras[1];
@@ -494,7 +496,11 @@ $(document).ready(function() {
         return result;
     }
 
+    /**
+     * EXTRACTOR MULTINIVEL: Prioriza DB física -> Secciones JSON -> Valores directos
+     */
     function getDatoFinal(reg, campoBuscado, json) {
+        // Mapeo de campos que viven directamente en la tabla 'encuestas'
         const mapaFisico = {
             "folio": reg.folio,
             "curp": reg.curp,
@@ -503,12 +509,10 @@ $(document).ready(function() {
             "pueblo_colonia": reg.colonia_nombre,
             "superficie_prod": reg.superficie_total,
             "fase_proceso": reg.fase_proceso,
-            "linea_ayuda": reg.linea_ayuda,
-            "tenencia_tierra": reg.tenencia_tierra,
             "tipo_produccion": reg.actividad_principal,
-            "escolaridad": reg.escolaridad,
-            "ocupacion": reg.ocupacion,
-            "estado_civil": reg.estado_civil
+            "grado_estudios": reg.escolaridad,
+            "linea_ayuda": reg.linea_ayuda,
+            "tenencia_tierra": reg.tenencia_tierra
         };
 
         if (mapaFisico[campoBuscado] !== undefined && mapaFisico[campoBuscado] !== null && mapaFisico[campoBuscado] !== "") {
@@ -517,20 +521,26 @@ $(document).ready(function() {
 
         if (!json) return '';
 
+        // Búsqueda profunda en secciones del JSON (1 al 50)
         for (let seccion in json) {
             let contenido = json[seccion];
+
+            // Caso Sección 6 (Geolocalización directa)
             if (seccion === "6" && contenido[campoBuscado]) return contenido[campoBuscado];
 
+            // Caso estándar: Array de objetos {name, value}
             if (Array.isArray(contenido)) {
                 let resultados = [];
                 contenido.forEach(item => {
-                    if (item.name === campoBuscado || item.name === campoBuscado + '[]') {
-                        if (item.value) resultados.push(item.value);
+                    let cleanName = item.name ? item.name.replace('[]', '') : '';
+                    if (cleanName === campoBuscado && item.value) {
+                        resultados.push(item.value);
                     }
                 });
-                if (resultados.length > 0) return resultados.join(', ').replace(/_/g, ' ');
+                if (resultados.length > 0) return resultados.join(', ');
             } 
-            else if (seccion === campoBuscado && typeof contenido === 'string') {
+            // Caso Valor directo (Secciones SI/NO)
+            else if (seccion === campoBuscado && (typeof contenido === 'string' || typeof contenido === 'number')) {
                 return contenido;
             }
         }
@@ -538,31 +548,9 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 3. LÓGICA DE INTERFAZ (DEPENDENCIAS)
+    // 3. INTERFAZ Y RENDERIZADO
     // ==========================================
-    window.controlarDependencias = function() {
-        // Control Discapacidad
-        const tieneDiscap = $("#in_tiene_discap").val();
-        if (tieneDiscap === "SI") {
-            $("#in_cual_discap").prop("disabled", false).removeClass("bg-light");
-        } else {
-            $("#in_cual_discap").val("NA").prop("disabled", true).addClass("bg-light");
-        }
 
-        // Control Grupo Étnico
-        const esEtnico = $("#in_grupo_etnico_edit").val();
-        if (esEtnico === "SI" || (esEtnico && esEtnico !== "NO")) {
-            $("#in_grupo_cual").prop("disabled", false).removeClass("bg-light");
-        } else {
-            $("#in_grupo_cual").val("NA").prop("disabled", true).addClass("bg-light");
-        }
-    };
-
-    $(document).on("change", "#in_tiene_discap, #in_grupo_etnico_edit", window.controlarDependencias);
-
-    // ==========================================
-    // 4. RENDERIZADO DE TABLA Y RESUMEN
-    // ==========================================
     function renderTable(page) {
         currentPage = page;
         const start = (page - 1) * pageSize;
@@ -597,31 +585,37 @@ $(document).ready(function() {
         const container = $("#paginationControls").empty();
         if (totalPages <= 1) return;
         for (let i = 1; i <= totalPages; i++) {
-            container.append(`<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link shadow-sm" href="#" data-page="${i}">${i}</a></li>`);
+            container.append(`<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`);
         }
         container.find('a').on('click', function(e) { e.preventDefault(); renderTable(parseInt($(this).attr('data-page'))); });
     }
 
+    /**
+     * RENDER DE RESUMEN (PESTAÑA 1): Mapea las 7 categorías del JSON
+     */
     function renderTabResumen(reg, json) {
         const $resumen = $("#resumenCaptura").empty();
-        // Mapeo extendido para ver más campos en el resumen inicial
         const config = {
-            "Identidad": ["folio", "curp", "rfc", "nombre_productor", "sexo", "estado_civil", "ocupacion", "escolaridad"],
-            "Ubicación": ["pueblo_colonia", "calle_numero", "cp", "tel_particular", "tel_casa"],
-            "Técnico": ["tipo_produccion", "tenencia_tierra", "superficie_prod", "linea_ayuda", "siniiga_status"],
-            "Cierre": ["capacitaciones_deseadas", "observaciones"]
+            "1. Identidad": ["folio", "curp", "rfc", "nombre_productor", "sexo", "fecha_nacimiento", "tecnico_nombre"],
+            "2. Ubicación": ["cp", "pueblo_colonia", "calle_numero", "latitud", "longitud"],
+            "3. Socioeconómico": ["grado_estudios", "ocupacion", "estado_civil", "ingreso_mensual", "servicios_salud"],
+            "4. Vivienda": ["material_pisos", "combustible_cocina", "bienes_vivienda", "tipo_agua"],
+            "5. Producción": ["situacion_unidad", "tipo_produccion", "cats_agricola", "detalle_hortalizas", "superficie_prod", "volumen_prod", "unidad_medida"],
+            "6. Economía": ["insumos_agricolas", "maquinaria", "problema_principal", "financiamiento", "dificultades_comercializacion"],
+            "7. Cierre": ["participacion_mujeres", "nuevas_generaciones", "capacitaciones_deseadas", "observaciones"]
         };
 
         for (const [titulo, campos] of Object.entries(config)) {
             let filas = "";
             campos.forEach(c => {
                 let val = getDatoFinal(reg, c, json);
-                filas += `<tr><td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td><td class="fw-bold py-2 text-dark">${val || '---'}</td></tr>`;
+                let displayVal = (val && val !== "") ? val.toString().replace(/_/g, ' ') : '---';
+                filas += `<tr><td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td><td class="fw-bold py-2 text-dark">${displayVal}</td></tr>`;
             });
             $resumen.append(`
                 <div class="col-md-6 mb-3">
-                    <div class="card h-100 border-0 shadow-sm overflow-hidden">
-                        <div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small">${titulo}</div>
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small"><i class="fas fa-caret-right me-2 text-warning"></i>${titulo}</div>
                         <div class="card-body p-0"><table class="table table-sm mb-0" style="font-size:0.75rem;"><tbody>${filas}</tbody></table></div>
                     </div>
                 </div>
@@ -630,26 +624,41 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 5. FUNCIÓN MAESTRA: ABRIR MODAL
+    // 4. LÓGICA DEL MODAL Y AUTO-LLENADO
     // ==========================================
+    
+    window.controlarDependencias = function() {
+        if ($("#in_tiene_discap").val() === "SI") {
+            $("#in_cual_discap").prop("disabled", false).removeClass("bg-light");
+        } else {
+            $("#in_cual_discap").val("NA").prop("disabled", true).addClass("bg-light");
+        }
+        if ($("#in_grupo_etnico_edit").val() === "SI" || ($("#in_grupo_etnico_edit").val() && $("#in_grupo_etnico_edit").val() !== "NO")) {
+            $("#in_grupo_cual").prop("disabled", false).removeClass("bg-light");
+        } else {
+            $("#in_grupo_cual").val("NA").prop("disabled", true).addClass("bg-light");
+        }
+    };
+
+    $(document).on("change", "#in_tiene_discap, #in_grupo_etnico_edit", window.controlarDependencias);
+
     window.abrirEdicion = function(id) {
         const reg = rawData.find(i => i.id == id);
         if (!reg) return;
         const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
         $("#formCaptura")[0].reset();
-        $("#modalEdicion").removeAttr("aria-hidden"); 
         $("#reg_id").val(reg.id);
         $("#spanFolio").text(reg.folio || 'S/F');
 
-        // A. Segmentación de Nombre (Usa la función de arriba para evitar nombres duplicados)
+        // A. Segmentación de Nombre (Regex-like logic)
         const fullNombre = getDatoFinal(reg, "nombre_productor", json);
         const seg = segmentarNombreCompleto(fullNombre);
         $("#in_nombre_productor").val(seg.nombres); 
         $("#in_paterno").val(seg.paterno);
         $("#in_materno").val(seg.materno);
 
-        // B. Llenado automático masivo
+        // B. Llenado automático masivo de inputs por 'name'
         $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
             const el = $(this);
             const name = el.attr('name');
@@ -662,7 +671,6 @@ $(document).ready(function() {
 
             if (valor !== undefined && valor !== "") {
                 if (el.is(':checkbox')) {
-                    // Soporta valores SI, 1 o true guardados en DB
                     el.prop('checked', valor === 'SI' || valor === '1' || valor === 1 || valor === true);
                 } else if (el.is('select')) {
                     if (el.find(`option[value="${valor}"]`).length === 0 && valor !== "") {
@@ -675,23 +683,19 @@ $(document).ready(function() {
             }
         });
 
-        // C. Casos Especiales (CURP y Botón PDF)
+        // C. Casos Especiales y Botón PDF
         $("#in_curp_edit").val(reg.curp || getDatoFinal(reg, "curp", json));
         $("#in_rfc").val(reg.rfc || (getDatoFinal(reg, "curp", json).substring(0, 10)));
         
-        // Configuración del Botón PDF
-        if (reg.id) {
-            $("#btnDescargarPDF")
-                .removeClass('d-none')
-                .off('click')
-                .on('click', function() {
-                    window.open(`<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${reg.id}`, '_blank');
-                });
-        }
+        $("#btnDescargarPDF")
+            .removeClass('d-none')
+            .off('click')
+            .on('click', function() {
+                window.open(`<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${reg.id}`, '_blank');
+            });
 
         renderTabResumen(reg, json);
         window.controlarDependencias(); 
-        
         bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
         $("#modalEdicion").modal('show');
     };
@@ -709,7 +713,7 @@ $(document).ready(function() {
 });
 
 // ==========================================
-// 6. ACCIÓN DE GUARDADO
+// 5. ACCIÓN DE GUARDADO
 // ==========================================
 function confirmarGuardado() {
     const formData = new FormData(document.getElementById('formCaptura'));
@@ -724,26 +728,16 @@ function confirmarGuardado() {
     }).then((result) => {
         if (result.isConfirmed) {
             Swal.fire({ title: 'Guardando...', didOpen: () => { Swal.showLoading() } });
-            
-            fetch('<?php echo URLROOT; ?>/Captura/actualizar', { 
-                method: 'POST', 
-                body: formData 
-            })
+            fetch('<?php echo URLROOT; ?>/Captura/actualizar', { method: 'POST', body: formData })
             .then(res => {
-                if (!res.ok) throw new Error('Error en la red');
+                if (!res.ok) throw new Error('Error de servidor');
                 return res.json();
             })
             .then(data => {
-                if(data.status === 'success') {
-                    Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload());
-                } else {
-                    Swal.fire('Error', data.msg, 'error');
-                }
+                if(data.status === 'success') Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload());
+                else Swal.fire('Error', data.msg, 'error');
             })
-            .catch(err => {
-                console.error(err);
-                Swal.fire('Error crítico', 'El servidor devolvió un error HTML en lugar de JSON. Verifica las columnas en MariaDB.', 'error');
-            });
+            .catch(err => Swal.fire('Error crítico', 'El servidor devolvió un error HTML. Verifica las columnas de la tabla MariaDB.', 'error'));
         }
     });
 }
