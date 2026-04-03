@@ -463,7 +463,7 @@ $(document).ready(function() {
         })
         .catch(err => {
             console.error("Error al obtener datos:", err);
-            // Si ves el error de JSON aquí, revisa la pestaña Network de tu navegador
+            // Si ves el error de JSON aquí, revisa la pestaña Network
         });
 
     function actualizarKPIs(data) {
@@ -474,12 +474,8 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 2. UTILIDADES: PROCESAMIENTO DE DATOS
+    // 2. UTILIDADES: SEGMENTACIÓN DE NOMBRES
     // ==========================================
-    
-    /**
-     * Separa el nombre completo en Nombres, Paterno y Materno
-     */
     function segmentarNombreCompleto(nombreCompleto) {
         if (!nombreCompleto) return { nombres: '', paterno: '', materno: '' };
         let palabras = nombreCompleto.trim().toUpperCase().split(/\s+/);
@@ -498,29 +494,29 @@ $(document).ready(function() {
         return result;
     }
 
-    /**
-     * Extrae datos priorizando campos físicos de la BD y luego el JSON
-     */
     function getDatoFinal(reg, campoBuscado, json) {
         const mapaFisico = {
             "folio": reg.folio,
             "curp": reg.curp,
+            "rfc": reg.rfc,
             "nombre_productor": `${reg.nombre || ''} ${reg.paterno || ''} ${reg.materno || ''}`.trim(),
             "pueblo_colonia": reg.colonia_nombre,
             "superficie_prod": reg.superficie_total,
             "fase_proceso": reg.fase_proceso,
             "linea_ayuda": reg.linea_ayuda,
-            "tenencia_tierra": reg.tenencia_tierra
+            "tenencia_tierra": reg.tenencia_tierra,
+            "tipo_produccion": reg.actividad_principal,
+            "escolaridad": reg.escolaridad,
+            "ocupacion": reg.ocupacion,
+            "estado_civil": reg.estado_civil
         };
 
-        // Si el dato está en la raíz de la tabla, lo devolvemos
         if (mapaFisico[campoBuscado] !== undefined && mapaFisico[campoBuscado] !== null && mapaFisico[campoBuscado] !== "") {
             return mapaFisico[campoBuscado];
         }
 
         if (!json) return '';
 
-        // Si no, buscamos dentro de las secciones del JSON de la encuesta
         for (let seccion in json) {
             let contenido = json[seccion];
             if (seccion === "6" && contenido[campoBuscado]) return contenido[campoBuscado];
@@ -555,14 +551,13 @@ $(document).ready(function() {
 
         // Control Grupo Étnico
         const esEtnico = $("#in_grupo_etnico_edit").val();
-        if (esEtnico === "SI") {
+        if (esEtnico === "SI" || (esEtnico && esEtnico !== "NO")) {
             $("#in_grupo_cual").prop("disabled", false).removeClass("bg-light");
         } else {
             $("#in_grupo_cual").val("NA").prop("disabled", true).addClass("bg-light");
         }
     };
 
-    // Escuchar cambios en los selects de vulnerabilidad
     $(document).on("change", "#in_tiene_discap, #in_grupo_etnico_edit", window.controlarDependencias);
 
     // ==========================================
@@ -573,11 +568,6 @@ $(document).ready(function() {
         const start = (page - 1) * pageSize;
         const items = filteredData.slice(start, start + pageSize);
         const tbody = $("#tablaCaptura tbody").empty();
-
-        if (items.length === 0) {
-            tbody.append('<tr><td colspan="5" class="text-center py-4">No hay registros</td></tr>');
-            return;
-        }
 
         items.forEach(e => {
             const faseLimpia = (e.fase_proceso || 'EMPADRONADO').replace(/_/g, ' ');
@@ -598,6 +588,7 @@ $(document).ready(function() {
                 </tr>
             `);
         });
+        $("#tableInfo").html(`Mostrando <b>${items.length}</b> de <b>${filteredData.length}</b> registros`);
         renderPaginationUI();
     }
 
@@ -613,9 +604,11 @@ $(document).ready(function() {
 
     function renderTabResumen(reg, json) {
         const $resumen = $("#resumenCaptura").empty();
+        // Mapeo extendido para ver más campos en el resumen inicial
         const config = {
-            "Identidad": ["folio", "curp", "nombre_productor", "sexo", "estado_civil", "ocupacion"],
-            "Técnico": ["tipo_produccion", "tenencia_tierra", "superficie_prod", "linea_ayuda"],
+            "Identidad": ["folio", "curp", "rfc", "nombre_productor", "sexo", "estado_civil", "ocupacion", "escolaridad"],
+            "Ubicación": ["pueblo_colonia", "calle_numero", "cp", "tel_particular", "tel_casa"],
+            "Técnico": ["tipo_produccion", "tenencia_tierra", "superficie_prod", "linea_ayuda", "siniiga_status"],
             "Cierre": ["capacitaciones_deseadas", "observaciones"]
         };
 
@@ -623,7 +616,7 @@ $(document).ready(function() {
             let filas = "";
             campos.forEach(c => {
                 let val = getDatoFinal(reg, c, json);
-                filas += `<tr><td class="ps-3 text-muted py-2" width="40%">${c.toUpperCase()}</td><td class="fw-bold py-2 text-dark">${val || '---'}</td></tr>`;
+                filas += `<tr><td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td><td class="fw-bold py-2 text-dark">${val || '---'}</td></tr>`;
             });
             $resumen.append(`
                 <div class="col-md-6 mb-3">
@@ -644,24 +637,22 @@ $(document).ready(function() {
         if (!reg) return;
         const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-        // A. Reset del Formulario y Accesibilidad
         $("#formCaptura")[0].reset();
         $("#modalEdicion").removeAttr("aria-hidden"); 
         $("#reg_id").val(reg.id);
         $("#spanFolio").text(reg.folio || 'S/F');
 
-        // B. Segmentación de Nombre (Evitar duplicidad en Nombre del Productor)
+        // A. Segmentación de Nombre (Usa la función de arriba para evitar nombres duplicados)
         const fullNombre = getDatoFinal(reg, "nombre_productor", json);
         const seg = segmentarNombreCompleto(fullNombre);
         $("#in_nombre_productor").val(seg.nombres); 
         $("#in_paterno").val(seg.paterno);
         $("#in_materno").val(seg.materno);
 
-        // C. Llenado automático masivo por atributo 'name'
+        // B. Llenado automático masivo
         $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
             const el = $(this);
             const name = el.attr('name');
-            // Excluimos campos ya procesados manualmente o IDs
             const excluidos = ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'];
             
             if (!name || excluidos.includes(name)) return;
@@ -671,11 +662,9 @@ $(document).ready(function() {
 
             if (valor !== undefined && valor !== "") {
                 if (el.is(':checkbox')) {
-                    // Soporta valores SI, 1 o coincidencia en lista
-                    const vals = valor.toString().split(', ');
-                    el.prop('checked', vals.includes(el.val()) || valor === 'SI' || valor === '1' || valor === 1);
+                    // Soporta valores SI, 1 o true guardados en DB
+                    el.prop('checked', valor === 'SI' || valor === '1' || valor === 1 || valor === true);
                 } else if (el.is('select')) {
-                    // Si el valor no existe en el select, lo agregamos como opción de emergencia
                     if (el.find(`option[value="${valor}"]`).length === 0 && valor !== "") {
                         el.append(`<option value="${valor}">${valor}</option>`);
                     }
@@ -686,36 +675,28 @@ $(document).ready(function() {
             }
         });
 
-        // D. Casos Especiales (CURP, RFC sugerido y Botón PDF)
+        // C. Casos Especiales (CURP y Botón PDF)
         $("#in_curp_edit").val(reg.curp || getDatoFinal(reg, "curp", json));
+        $("#in_rfc").val(reg.rfc || (getDatoFinal(reg, "curp", json).substring(0, 10)));
         
-        // Sugerencia de RFC si está vacío
-        if ($("#in_rfc").val() === "") {
-            const curpVal = $("#in_curp_edit").val();
-            if(curpVal && curpVal.length >= 10) $("#in_rfc").val(curpVal.substring(0, 10));
-        }
-
-        // Configuración Quirúrgica del Botón de PDF
+        // Configuración del Botón PDF
         if (reg.id) {
             $("#btnDescargarPDF")
                 .removeClass('d-none')
                 .off('click')
                 .on('click', function() {
-                    const url = `<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${reg.id}`;
-                    window.open(url, '_blank');
+                    window.open(`<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${reg.id}`, '_blank');
                 });
         }
 
-        // E. Renderizar Resumen y Validar Dependencias de UI
         renderTabResumen(reg, json);
         window.controlarDependencias(); 
         
-        // Mostrar primera pestaña y abrir modal
         bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
         $("#modalEdicion").modal('show');
     };
 
-    // 6. BUSCADOR GLOBAL
+    // Buscador
     $("#tablaSearch").on("keyup", function() {
         const val = $(this).val().toLowerCase();
         filteredData = rawData.filter(e => 
@@ -728,49 +709,40 @@ $(document).ready(function() {
 });
 
 // ==========================================
-// 7. FUNCIÓN GLOBAL: GUARDADO DE EXPEDIENTE
+// 6. ACCIÓN DE GUARDADO
 // ==========================================
 function confirmarGuardado() {
-    const formElement = document.getElementById('formCaptura');
-    const formData = new FormData(formElement);
+    const formData = new FormData(document.getElementById('formCaptura'));
     
-    // Aseguramos que el ID esté presente
-    if (!formData.get('id')) {
-        Swal.fire('Error', 'No se detectó el ID del registro', 'error');
-        return;
-    }
-
     Swal.fire({
         title: '¿Confirmar cambios?',
-        text: "Se actualizará el expediente oficial y la fase del proceso.",
+        text: "Se actualizará el expediente oficial en la base de datos.",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#773357',
         confirmButtonText: 'Sí, guardar'
     }).then((result) => {
         if (result.isConfirmed) {
-            Swal.fire({ title: 'Guardando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+            Swal.fire({ title: 'Guardando...', didOpen: () => { Swal.showLoading() } });
             
             fetch('<?php echo URLROOT; ?>/Captura/actualizar', { 
                 method: 'POST', 
                 body: formData 
             })
             .then(res => {
-                // Si la respuesta no es JSON (error de PHP), esto lanzará un error capturable
-                if (!res.ok) throw new Error('Respuesta del servidor no válida');
+                if (!res.ok) throw new Error('Error en la red');
                 return res.json();
             })
             .then(data => {
                 if(data.status === 'success') {
-                    Swal.fire('¡Éxito!', data.msg || 'Expediente actualizado', 'success')
-                        .then(() => location.reload());
+                    Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload());
                 } else {
-                    Swal.fire('Error', data.msg || 'No se pudo actualizar', 'error');
+                    Swal.fire('Error', data.msg, 'error');
                 }
             })
             .catch(err => {
                 console.error(err);
-                Swal.fire('Error crítico', 'El servidor devolvió un error HTML. Revisa los logs de MariaDB y las columnas de tu tabla.', 'error');
+                Swal.fire('Error crítico', 'El servidor devolvió un error HTML en lugar de JSON. Verifica las columnas en MariaDB.', 'error');
             });
         }
     });
