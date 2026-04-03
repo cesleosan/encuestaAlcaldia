@@ -607,68 +607,49 @@ $(document).ready(function() {
 
     $(document).on("change", "#in_tiene_discap, #in_grupo_etnico_edit", window.controlarDependencias);
 
-    window.abrirEdicion = function(id) {
-        const reg = rawData.find(i => i.id == id);
-        if (!reg) return;
-        const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
+window.abrirEdicion = function(id) {
+    const reg = rawData.find(i => i.id == id);
+    if (!reg) return;
+    const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-        $("#formCaptura")[0].reset();
-        $("#reg_id").val(reg.id);
-        $("#spanFolio").text(reg.folio || 'S/F');
+    $("#formCaptura")[0].reset();
+    $("#reg_id").val(reg.id);
+    $("#spanFolio").text(reg.folio || 'S/F');
 
-        // 1. Nombre Completo y Segmentación (Surgico: usamos columnas de MariaDB)
-        const fullNombre = getDatoFinal(reg, "nombre_productor", json);
-        const seg = segmentarNombreCompleto(fullNombre);
-        $("#in_nombre_productor").val(seg.nombres); 
-        $("#in_paterno").val(reg.apellido_paterno || seg.paterno); 
-        $("#in_materno").val(reg.apellido_materno || seg.materno);
+    // 1. Identidad y CURP/RFC (Forzado manual)
+    const fullNombre = getDatoFinal(reg, "nombre_productor", json);
+    const seg = segmentarNombreCompleto(fullNombre);
+    $("#in_nombre_productor").val(seg.nombres); 
+    $("#in_paterno").val(reg.apellido_paterno || seg.paterno); 
+    $("#in_materno").val(reg.apellido_materno || seg.materno);
+    $("#in_curp_edit").val(reg.curp || getDatoFinal(reg, "curp", json));
+    $("#in_rfc").val(reg.rfc || getDatoFinal(reg, "rfc", json));
 
-        // 2. Llenado Automático Masivo
-        $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
-            const el = $(this);
-            const name = el.attr('name');
-            const excluidos = ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'];
-            
-            if (!name || excluidos.includes(name)) return;
-            const cleanName = name.replace('[]', '');
-            const valor = getDatoFinal(reg, cleanName, json);
+    // 2. Llenado Automático de TODO el resto (Inputs, Selects, Checkboxes)
+    $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
+        const el = $(this);
+        const name = el.attr('name');
+        const excluidos = ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'];
+        
+        if (!name || excluidos.includes(name)) return;
 
-            if (valor !== undefined && valor !== "") {
-                if (el.is(':checkbox')) {
-                    el.prop('checked', valor === 'SI' || valor === '1' || valor === 1);
-                } else {
-                    el.val(valor);
-                }
+        // Buscamos el valor en DB física o JSON
+        const valor = getDatoFinal(reg, name.replace('[]', ''), json);
+
+        if (valor !== undefined && valor !== "") {
+            if (el.is(':checkbox')) {
+                el.prop('checked', valor == 1 || valor === 'SI');
+            } else {
+                el.val(valor); // Aquí llena automáticamente Selects y Textos
             }
-        });
-
-        // 3. CORRECCIÓN QUIRÚRGICA CURP/RFC: Forzar llenado manual si el loop los saltó
-        const curpFinal = reg.curp || getDatoFinal(reg, "curp", json);
-        $("#in_curp_edit").val(curpFinal); // Asegura que se pinte el CURP en la pestaña 2
-
-        const rfcFinal = reg.rfc || getDatoFinal(reg, "rfc", json);
-        $("#in_rfc").val(rfcFinal);
-
-        if (!$("#in_rfc").val() && curpFinal) {
-            $("#in_rfc").val(curpFinal.substring(0, 10));
         }
+    });
 
-        // 4. Botón PDF
-        if (reg.id) {
-            $("#btnDescargarPDF")
-                .removeClass('d-none')
-                .off('click')
-                .on('click', function() {
-                    window.open(`<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${reg.id}`, '_blank');
-                });
-        }
-
-        renderTabResumen(reg, json);
-        window.controlarDependencias(); 
-        bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
-        $("#modalEdicion").modal('show');
-    };
-
+    renderTabResumen(reg, json);
+    window.controlarDependencias(); 
+    bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
+    $("#modalEdicion").modal('show');
+};
     // Funciones de tabla y buscador...
     function renderPaginationUI() {
         const totalPages = Math.ceil(filteredData.length / pageSize);
