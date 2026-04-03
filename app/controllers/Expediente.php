@@ -39,7 +39,7 @@ class Expediente extends Controller {
         // A. Encabezado (Folio y Fecha)
         $pdf->SetXY(155, 43); $pdf->Write(0, $datos->folio ?? '');
         $fecha = ($datos->fecha_inicio) ? date('d/m/Y', strtotime($datos->fecha_inicio)) : date('d/m/Y');
-        $pdf->SetXY(155, 61); $pdf->Write(0, $fecha);
+        $pdf->SetXY(140, 55); $pdf->Write(0, $fecha);
 
         // B. Identidad del Solicitante (Ajuste de altura para centrar en fila)
         $pdf->SetXY(22, 105); $pdf->Write(0, $this->toLatin1($datos->nombre ?? ''));
