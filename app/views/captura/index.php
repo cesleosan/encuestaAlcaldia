@@ -451,7 +451,7 @@ $(document).ready(function() {
     let currentPage = 1;
 
     // ==========================================
-    // 1. CARGA INICIAL Y DASHBOARD
+    // 1. CARGA INICIAL
     // ==========================================
     fetch('<?php echo URLROOT; ?>/Encuesta/getEstadisticas')
         .then(res => res.json())
@@ -471,22 +471,18 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 2. UTILIDADES DE PROCESAMIENTO (REGEX & LOGIC)
+    // 2. UTILIDADES DE PROCESAMIENTO (RESTAURADO)
     // ==========================================
     
-    /**
-     * SEGMENTACIÓN DE NOMBRE: Separa nombres de apellidos siguiendo lógica MX
-     * Ej: "MELINA SANDRA CRUZ AYALA" -> {nombres: "MELINA SANDRA", paterno: "CRUZ", materno: "AYALA"}
-     */
     function segmentarNombreCompleto(nombreCompleto) {
         if (!nombreCompleto) return { nombres: '', paterno: '', materno: '' };
         let palabras = nombreCompleto.trim().toUpperCase().split(/\s+/);
         let result = { nombres: '', paterno: '', materno: '' };
 
         if (palabras.length >= 3) {
-            result.materno = palabras.pop(); // Última palabra
-            result.paterno = palabras.pop(); // Penúltima palabra
-            result.nombres = palabras.join(' '); // Todo lo demás
+            result.materno = palabras.pop();
+            result.paterno = palabras.pop();
+            result.nombres = palabras.join(' '); 
         } else if (palabras.length === 2) {
             result.nombres = palabras[0];
             result.paterno = palabras[1];
@@ -496,23 +492,24 @@ $(document).ready(function() {
         return result;
     }
 
-    /**
-     * EXTRACTOR MULTINIVEL: Prioriza DB física -> Secciones JSON -> Valores directos
-     */
     function getDatoFinal(reg, campoBuscado, json) {
-        // Mapeo de campos que viven directamente en la tabla 'encuestas'
+        // CORRECCIÓN QUIRÚRGICA: Mapeo exacto con nombres de columnas de tu MariaDB
+        const nombreFisico = `${reg.nombre || ''} ${reg.apellido_paterno || ''} ${reg.apellido_materno || ''}`.trim();
+        
         const mapaFisico = {
             "folio": reg.folio,
             "curp": reg.curp,
             "rfc": reg.rfc,
-            "nombre_productor": `${reg.nombre || ''} ${reg.paterno || ''} ${reg.materno || ''}`.trim(),
+            "nombre_productor": nombreFisico, // Ahora sí construye el nombre completo
             "pueblo_colonia": reg.colonia_nombre,
             "superficie_prod": reg.superficie_total,
             "fase_proceso": reg.fase_proceso,
             "tipo_produccion": reg.actividad_principal,
             "grado_estudios": reg.escolaridad,
-            "linea_ayuda": reg.linea_ayuda,
-            "tenencia_tierra": reg.tenencia_tierra
+            "ocupacion": reg.ocupacion,
+            "estado_civil": reg.estado_civil,
+            "calle_numero": reg.calle,
+            "cp": reg.codigo_postal
         };
 
         if (mapaFisico[campoBuscado] !== undefined && mapaFisico[campoBuscado] !== null && mapaFisico[campoBuscado] !== "") {
@@ -521,26 +518,18 @@ $(document).ready(function() {
 
         if (!json) return '';
 
-        // Búsqueda profunda en secciones del JSON (1 al 50)
+        // Búsqueda en el JSON si no está en la tabla física
         for (let seccion in json) {
             let contenido = json[seccion];
-
-            // Caso Sección 6 (Geolocalización directa)
             if (seccion === "6" && contenido[campoBuscado]) return contenido[campoBuscado];
-
-            // Caso estándar: Array de objetos {name, value}
             if (Array.isArray(contenido)) {
                 let resultados = [];
                 contenido.forEach(item => {
-                    let cleanName = item.name ? item.name.replace('[]', '') : '';
-                    if (cleanName === campoBuscado && item.value) {
-                        resultados.push(item.value);
-                    }
+                    let clean = item.name ? item.name.replace('[]', '') : '';
+                    if (clean === campoBuscado && item.value) resultados.push(item.value);
                 });
                 if (resultados.length > 0) return resultados.join(', ');
-            } 
-            // Caso Valor directo (Secciones SI/NO)
-            else if (seccion === campoBuscado && (typeof contenido === 'string' || typeof contenido === 'number')) {
+            } else if (seccion === campoBuscado) {
                 return contenido;
             }
         }
@@ -548,9 +537,8 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 3. INTERFAZ Y RENDERIZADO
+    // 3. RENDERIZADO DE TABLA (CORREGIDO)
     // ==========================================
-
     function renderTable(page) {
         currentPage = page;
         const start = (page - 1) * pageSize;
@@ -559,19 +547,18 @@ $(document).ready(function() {
 
         items.forEach(e => {
             const faseLimpia = (e.fase_proceso || 'EMPADRONADO').replace(/_/g, ' ');
+            // CORRECCIÓN: Acceso correcto a apellido_paterno y apellido_materno
             tbody.append(`
                 <tr>
                     <td class="ps-3 fw-bold text-guinda">${e.folio || 'S/F'}</td>
                     <td class="small">
-                        <div class="fw-bold text-dark">${e.nombre || ''} ${e.paterno || ''} ${e.materno || ''}</div>
+                        <div class="fw-bold text-dark">${e.nombre || ''} ${e.apellido_paterno || ''} ${e.apellido_materno || ''}</div>
                         <div class="text-muted" style="font-size: 0.7rem;">${e.curp || 'SIN CURP'}</div>
                     </td>
                     <td><span class="badge badge-fase fase-${e.fase_proceso || 'EMPADRONADO'}">${faseLimpia}</span></td>
                     <td class="text-center fw-bold text-secondary">${parseFloat(e.superficie_total || 0).toFixed(2)} ha</td>
                     <td class="text-center">
-                        <button onclick="abrirEdicion(${e.id})" class="btn btn-sm btn-guinda rounded-circle shadow-sm">
-                            <i class="fas fa-user-edit"></i>
-                        </button>
+                        <button onclick="abrirEdicion(${e.id})" class="btn btn-sm btn-guinda rounded-circle shadow-sm"><i class="fas fa-user-edit"></i></button>
                     </td>
                 </tr>
             `);
@@ -590,19 +577,15 @@ $(document).ready(function() {
         container.find('a').on('click', function(e) { e.preventDefault(); renderTable(parseInt($(this).attr('data-page'))); });
     }
 
-    /**
-     * RENDER DE RESUMEN (PESTAÑA 1): Mapea las 7 categorías del JSON
-     */
     function renderTabResumen(reg, json) {
         const $resumen = $("#resumenCaptura").empty();
         const config = {
             "1. Identidad": ["folio", "curp", "rfc", "nombre_productor", "sexo", "fecha_nacimiento", "tecnico_nombre"],
             "2. Ubicación": ["cp", "pueblo_colonia", "calle_numero", "latitud", "longitud"],
-            "3. Socioeconómico": ["grado_estudios", "ocupacion", "estado_civil", "ingreso_mensual", "servicios_salud"],
-            "4. Vivienda": ["material_pisos", "combustible_cocina", "bienes_vivienda", "tipo_agua"],
-            "5. Producción": ["situacion_unidad", "tipo_produccion", "cats_agricola", "detalle_hortalizas", "superficie_prod", "volumen_prod", "unidad_medida"],
-            "6. Economía": ["insumos_agricolas", "maquinaria", "problema_principal", "financiamiento", "dificultades_comercializacion"],
-            "7. Cierre": ["participacion_mujeres", "nuevas_generaciones", "capacitaciones_deseadas", "observaciones"]
+            "3. Perfil": ["grado_estudios", "ocupacion", "estado_civil", "ingreso_mensual", "servicios_salud"],
+            "4. Técnica": ["situacion_unidad", "tipo_produccion", "cats_agricola", "detalle_hortalizas", "superficie_prod", "volumen_prod", "unidad_medida"],
+            "5. Economía": ["insumos_agricolas", "maquinaria", "problema_principal", "destino_produccion", "financiamiento"],
+            "6. Cierre": ["participacion_mujeres", "nuevas_generaciones", "capacitaciones_deseadas", "observaciones"]
         };
 
         for (const [titulo, campos] of Object.entries(config)) {
@@ -624,23 +607,17 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 4. LÓGICA DEL MODAL Y AUTO-LLENADO
+    // 4. LÓGICA DEL MODAL
     // ==========================================
-    
     window.controlarDependencias = function() {
         if ($("#in_tiene_discap").val() === "SI") {
             $("#in_cual_discap").prop("disabled", false).removeClass("bg-light");
         } else {
             $("#in_cual_discap").val("NA").prop("disabled", true).addClass("bg-light");
         }
-        if ($("#in_grupo_etnico_edit").val() === "SI" || ($("#in_grupo_etnico_edit").val() && $("#in_grupo_etnico_edit").val() !== "NO")) {
-            $("#in_grupo_cual").prop("disabled", false).removeClass("bg-light");
-        } else {
-            $("#in_grupo_cual").val("NA").prop("disabled", true).addClass("bg-light");
-        }
     };
 
-    $(document).on("change", "#in_tiene_discap, #in_grupo_etnico_edit", window.controlarDependencias);
+    $(document).on("change", "#in_tiene_discap", window.controlarDependencias);
 
     window.abrirEdicion = function(id) {
         const reg = rawData.find(i => i.id == id);
@@ -651,48 +628,32 @@ $(document).ready(function() {
         $("#reg_id").val(reg.id);
         $("#spanFolio").text(reg.folio || 'S/F');
 
-        // A. Segmentación de Nombre (Regex-like logic)
         const fullNombre = getDatoFinal(reg, "nombre_productor", json);
         const seg = segmentarNombreCompleto(fullNombre);
         $("#in_nombre_productor").val(seg.nombres); 
         $("#in_paterno").val(seg.paterno);
         $("#in_materno").val(seg.materno);
 
-        // B. Llenado automático masivo de inputs por 'name'
         $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
             const el = $(this);
             const name = el.attr('name');
             const excluidos = ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'];
-            
             if (!name || excluidos.includes(name)) return;
-
             const cleanName = name.replace('[]', '');
             const valor = getDatoFinal(reg, cleanName, json);
-
             if (valor !== undefined && valor !== "") {
                 if (el.is(':checkbox')) {
-                    el.prop('checked', valor === 'SI' || valor === '1' || valor === 1 || valor === true);
-                } else if (el.is('select')) {
-                    if (el.find(`option[value="${valor}"]`).length === 0 && valor !== "") {
-                        el.append(`<option value="${valor}">${valor}</option>`);
-                    }
-                    el.val(valor);
+                    el.prop('checked', valor === 'SI' || valor === '1' || valor === 1);
                 } else {
                     el.val(valor);
                 }
             }
         });
 
-        // C. Casos Especiales y Botón PDF
         $("#in_curp_edit").val(reg.curp || getDatoFinal(reg, "curp", json));
-        $("#in_rfc").val(reg.rfc || (getDatoFinal(reg, "curp", json).substring(0, 10)));
-        
-        $("#btnDescargarPDF")
-            .removeClass('d-none')
-            .off('click')
-            .on('click', function() {
-                window.open(`<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${reg.id}`, '_blank');
-            });
+        $("#btnDescargarPDF").off('click').on('click', function() {
+            window.open(`<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${reg.id}`, '_blank');
+        });
 
         renderTabResumen(reg, json);
         window.controlarDependencias(); 
@@ -700,7 +661,6 @@ $(document).ready(function() {
         $("#modalEdicion").modal('show');
     };
 
-    // Buscador
     $("#tablaSearch").on("keyup", function() {
         const val = $(this).val().toLowerCase();
         filteredData = rawData.filter(e => 
@@ -712,32 +672,35 @@ $(document).ready(function() {
     });
 });
 
-// ==========================================
-// 5. ACCIÓN DE GUARDADO
-// ==========================================
+function confirmarSalida() {
+    Swal.fire({
+        title: '¿Cerrar sesión?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Sí, salir'
+    }).then((result) => {
+        if (result.isConfirmed) window.location.href = '<?php echo URLROOT; ?>/Auth/logout';
+    });
+}
+
 function confirmarGuardado() {
     const formData = new FormData(document.getElementById('formCaptura'));
-    
     Swal.fire({
-        title: '¿Confirmar cambios?',
-        text: "Se actualizará el expediente oficial en la base de datos.",
+        title: '¿Guardar cambios?',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#773357',
-        confirmButtonText: 'Sí, guardar'
+        confirmButtonText: 'Guardar'
     }).then((result) => {
         if (result.isConfirmed) {
             Swal.fire({ title: 'Guardando...', didOpen: () => { Swal.showLoading() } });
             fetch('<?php echo URLROOT; ?>/Captura/actualizar', { method: 'POST', body: formData })
-            .then(res => {
-                if (!res.ok) throw new Error('Error de servidor');
-                return res.json();
-            })
+            .then(res => res.json())
             .then(data => {
                 if(data.status === 'success') Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload());
                 else Swal.fire('Error', data.msg, 'error');
-            })
-            .catch(err => Swal.fire('Error crítico', 'El servidor devolvió un error HTML. Verifica las columnas de la tabla MariaDB.', 'error'));
+            });
         }
     });
 }
