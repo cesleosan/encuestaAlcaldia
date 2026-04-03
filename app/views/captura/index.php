@@ -461,7 +461,10 @@ $(document).ready(function() {
             actualizarKPIs(rawData);
             renderTable(1);
         })
-        .catch(err => console.error("Error al obtener datos:", err));
+        .catch(err => {
+            console.error("Error al obtener datos:", err);
+            // Si ves el error de JSON aquí, revisa la pestaña Network de tu navegador
+        });
 
     function actualizarKPIs(data) {
         $("#kpi-total").text(data.length);
@@ -473,6 +476,10 @@ $(document).ready(function() {
     // ==========================================
     // 2. UTILIDADES: PROCESAMIENTO DE DATOS
     // ==========================================
+    
+    /**
+     * Separa el nombre completo en Nombres, Paterno y Materno
+     */
     function segmentarNombreCompleto(nombreCompleto) {
         if (!nombreCompleto) return { nombres: '', paterno: '', materno: '' };
         let palabras = nombreCompleto.trim().toUpperCase().split(/\s+/);
@@ -491,6 +498,9 @@ $(document).ready(function() {
         return result;
     }
 
+    /**
+     * Extrae datos priorizando campos físicos de la BD y luego el JSON
+     */
     function getDatoFinal(reg, campoBuscado, json) {
         const mapaFisico = {
             "folio": reg.folio,
@@ -498,15 +508,19 @@ $(document).ready(function() {
             "nombre_productor": `${reg.nombre || ''} ${reg.paterno || ''} ${reg.materno || ''}`.trim(),
             "pueblo_colonia": reg.colonia_nombre,
             "superficie_prod": reg.superficie_total,
-            "fase_proceso": reg.fase_proceso
+            "fase_proceso": reg.fase_proceso,
+            "linea_ayuda": reg.linea_ayuda,
+            "tenencia_tierra": reg.tenencia_tierra
         };
 
+        // Si el dato está en la raíz de la tabla, lo devolvemos
         if (mapaFisico[campoBuscado] !== undefined && mapaFisico[campoBuscado] !== null && mapaFisico[campoBuscado] !== "") {
             return mapaFisico[campoBuscado];
         }
 
         if (!json) return '';
 
+        // Si no, buscamos dentro de las secciones del JSON de la encuesta
         for (let seccion in json) {
             let contenido = json[seccion];
             if (seccion === "6" && contenido[campoBuscado]) return contenido[campoBuscado];
@@ -528,7 +542,7 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 3. LÓGICA DE INTERFAZ Y DEPENDENCIAS
+    // 3. LÓGICA DE INTERFAZ (DEPENDENCIAS)
     // ==========================================
     window.controlarDependencias = function() {
         // Control Discapacidad
@@ -548,6 +562,7 @@ $(document).ready(function() {
         }
     };
 
+    // Escuchar cambios en los selects de vulnerabilidad
     $(document).on("change", "#in_tiene_discap, #in_grupo_etnico_edit", window.controlarDependencias);
 
     // ==========================================
@@ -558,6 +573,11 @@ $(document).ready(function() {
         const start = (page - 1) * pageSize;
         const items = filteredData.slice(start, start + pageSize);
         const tbody = $("#tablaCaptura tbody").empty();
+
+        if (items.length === 0) {
+            tbody.append('<tr><td colspan="5" class="text-center py-4">No hay registros</td></tr>');
+            return;
+        }
 
         items.forEach(e => {
             const faseLimpia = (e.fase_proceso || 'EMPADRONADO').replace(/_/g, ' ');
@@ -571,7 +591,9 @@ $(document).ready(function() {
                     <td><span class="badge badge-fase fase-${e.fase_proceso || 'EMPADRONADO'}">${faseLimpia}</span></td>
                     <td class="text-center fw-bold text-secondary">${parseFloat(e.superficie_total || 0).toFixed(2)} ha</td>
                     <td class="text-center">
-                        <button onclick="abrirEdicion(${e.id})" class="btn btn-sm btn-guinda rounded-circle shadow-sm"><i class="fas fa-user-edit"></i></button>
+                        <button onclick="abrirEdicion(${e.id})" class="btn btn-sm btn-guinda rounded-circle shadow-sm">
+                            <i class="fas fa-user-edit"></i>
+                        </button>
                     </td>
                 </tr>
             `);
@@ -622,58 +644,78 @@ $(document).ready(function() {
         if (!reg) return;
         const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
+        // A. Reset del Formulario y Accesibilidad
         $("#formCaptura")[0].reset();
         $("#modalEdicion").removeAttr("aria-hidden"); 
         $("#reg_id").val(reg.id);
         $("#spanFolio").text(reg.folio || 'S/F');
 
-        // A. Segmentación y RFC (Excluidos del bucle automático)
+        // B. Segmentación de Nombre (Evitar duplicidad en Nombre del Productor)
         const fullNombre = getDatoFinal(reg, "nombre_productor", json);
         const seg = segmentarNombreCompleto(fullNombre);
         $("#in_nombre_productor").val(seg.nombres); 
         $("#in_paterno").val(seg.paterno);
         $("#in_materno").val(seg.materno);
 
-        // B. Llenado automático de inputs
+        // C. Llenado automático masivo por atributo 'name'
         $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
             const el = $(this);
             const name = el.attr('name');
+            // Excluimos campos ya procesados manualmente o IDs
             const excluidos = ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'];
             
             if (!name || excluidos.includes(name)) return;
 
-            const valor = getDatoFinal(reg, name.replace('[]', ''), json);
+            const cleanName = name.replace('[]', '');
+            const valor = getDatoFinal(reg, cleanName, json);
 
-            if (valor && valor !== "") {
+            if (valor !== undefined && valor !== "") {
                 if (el.is(':checkbox')) {
-                    const vals = valor.split(', ');
-                    el.prop('checked', vals.includes(el.val()) || valor === 'SI' || valor === '1');
+                    // Soporta valores SI, 1 o coincidencia en lista
+                    const vals = valor.toString().split(', ');
+                    el.prop('checked', vals.includes(el.val()) || valor === 'SI' || valor === '1' || valor === 1);
+                } else if (el.is('select')) {
+                    // Si el valor no existe en el select, lo agregamos como opción de emergencia
+                    if (el.find(`option[value="${valor}"]`).length === 0 && valor !== "") {
+                        el.append(`<option value="${valor}">${valor}</option>`);
+                    }
+                    el.val(valor);
                 } else {
                     el.val(valor);
                 }
             }
         });
 
-        // C. Casos Especiales (CURP y Lógica del Botón PDF)
+        // D. Casos Especiales (CURP, RFC sugerido y Botón PDF)
         $("#in_curp_edit").val(reg.curp || getDatoFinal(reg, "curp", json));
         
+        // Sugerencia de RFC si está vacío
+        if ($("#in_rfc").val() === "") {
+            const curpVal = $("#in_curp_edit").val();
+            if(curpVal && curpVal.length >= 10) $("#in_rfc").val(curpVal.substring(0, 10));
+        }
+
+        // Configuración Quirúrgica del Botón de PDF
         if (reg.id) {
             $("#btnDescargarPDF")
                 .removeClass('d-none')
                 .off('click')
                 .on('click', function() {
-                    window.open(`<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${reg.id}`, '_blank');
+                    const url = `<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${reg.id}`;
+                    window.open(url, '_blank');
                 });
         }
 
+        // E. Renderizar Resumen y Validar Dependencias de UI
         renderTabResumen(reg, json);
-        window.controlarDependencias(); // Validar campos bloqueados al cargar
+        window.controlarDependencias(); 
         
+        // Mostrar primera pestaña y abrir modal
         bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
         $("#modalEdicion").modal('show');
     };
 
-    // Buscador
+    // 6. BUSCADOR GLOBAL
     $("#tablaSearch").on("keyup", function() {
         const val = $(this).val().toLowerCase();
         filteredData = rawData.filter(e => 
@@ -686,35 +728,50 @@ $(document).ready(function() {
 });
 
 // ==========================================
-// 6. ACCIÓN DE GUARDADO
+// 7. FUNCIÓN GLOBAL: GUARDADO DE EXPEDIENTE
 // ==========================================
 function confirmarGuardado() {
-    const formData = new FormData(document.getElementById('formCaptura'));
+    const formElement = document.getElementById('formCaptura');
+    const formData = new FormData(formElement);
     
+    // Aseguramos que el ID esté presente
+    if (!formData.get('id')) {
+        Swal.fire('Error', 'No se detectó el ID del registro', 'error');
+        return;
+    }
+
     Swal.fire({
         title: '¿Confirmar cambios?',
-        text: "Se actualizará el expediente oficial en la base de datos.",
+        text: "Se actualizará el expediente oficial y la fase del proceso.",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#773357',
         confirmButtonText: 'Sí, guardar'
     }).then((result) => {
         if (result.isConfirmed) {
-            Swal.fire({ title: 'Guardando...', didOpen: () => { Swal.showLoading() } });
+            Swal.fire({ title: 'Guardando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
             
             fetch('<?php echo URLROOT; ?>/Captura/actualizar', { 
                 method: 'POST', 
                 body: formData 
             })
-            .then(res => res.json())
+            .then(res => {
+                // Si la respuesta no es JSON (error de PHP), esto lanzará un error capturable
+                if (!res.ok) throw new Error('Respuesta del servidor no válida');
+                return res.json();
+            })
             .then(data => {
                 if(data.status === 'success') {
-                    Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload());
+                    Swal.fire('¡Éxito!', data.msg || 'Expediente actualizado', 'success')
+                        .then(() => location.reload());
                 } else {
-                    Swal.fire('Error', data.msg, 'error');
+                    Swal.fire('Error', data.msg || 'No se pudo actualizar', 'error');
                 }
             })
-            .catch(err => Swal.fire('Error', 'No se pudo conectar con el servidor', 'error'));
+            .catch(err => {
+                console.error(err);
+                Swal.fire('Error crítico', 'El servidor devolvió un error HTML. Revisa los logs de MariaDB y las columnas de tu tabla.', 'error');
+            });
         }
     });
 }
