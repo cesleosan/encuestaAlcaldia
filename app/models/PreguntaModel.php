@@ -250,6 +250,7 @@ class PreguntaModel {
                     ['val' => 'SIN_ESTUDIOS', 'texto' => 'Sin estudios'],
                     ['val' => 'PRIMARIA', 'texto' => 'Primaria'],
                     ['val' => 'SECUNDARIA', 'texto' => 'Secundaria'],
+                    ['val' => 'BACHILLERATO', 'texto' => 'Bachillerato/Preparatoria'],
                     ['val' => 'CARRERA_TECNICA', 'texto' => 'Carrera Técnica'],
                     ['val' => 'LICENCIATURA', 'texto' => 'Licenciatura'],
                     ['val' => 'POSGRADO', 'texto' => 'Posgrado']

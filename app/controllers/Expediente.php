@@ -1,0 +1,121 @@
+<?php
+// Carga del autoloader de Composer para FPDI y FPDF
+require_once '../vendor/autoload.php'; 
+
+use setasign\Fpdi\Fpdi;
+
+class Expediente extends Controller {
+    // Propiedad para el modelo
+    protected $encuestaModel;
+
+    public function __construct() {
+        // Cargamos el modelo EncuestaModelo (asegúrate que el nombre coincida con tu archivo)
+        $this->encuestaModel = $this->model('EncuestaModelo'); 
+    }
+
+    public function imprimirSolicitud($id) {
+        // 1. Obtener todos los datos del expediente (incluyendo las columnas nuevas)
+        $datos = $this->encuestaModel->getExpedienteCompleto($id);
+        
+        if(!$datos) {
+            die("Error: Expediente no encontrado en la base de datos.");
+        }
+        
+        // 2. Inicializar Fpdi
+        $pdf = new Fpdi();
+        $pdf->SetAutoPageBreak(false);
+        $pdf->SetTitle("Solicitud_" . $datos->folio);
+
+        // --- PÁGINA 1: DATOS GENERALES Y TÉCNICOS ---
+        $rutaTemplate = APPROOT . '/views/formatos/formatoProductores2026.pdf'; 
+        
+        try {
+            $pdf->setSourceFile($rutaTemplate);
+        } catch (Exception $e) {
+            die("Error al abrir la plantilla PDF: " . $e->getMessage());
+        }
+
+        $tplId = $pdf->importPage(1);
+        $pdf->addPage();
+        $pdf->useTemplate($tplId);
+
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->SetTextColor(0, 0, 0);
+
+        // A. Encabezado: Folio y Fecha [cite: 3, 10]
+        $pdf->SetXY(160, 23); $pdf->Write(0, $datos->folio);
+        $pdf->SetXY(160, 48); $pdf->Write(0, date('d/m/Y', strtotime($datos->fecha_inicio)));
+
+        // B. Tabla 1: Identidad del solicitante [cite: 15]
+        $pdf->SetXY(20, 68);  $pdf->Write(0, utf8_decode($datos->nombre));
+        $pdf->SetXY(80, 68);  $pdf->Write(0, utf8_decode($datos->apellido_paterno));
+        $pdf->SetXY(140, 68); $pdf->Write(0, utf8_decode($datos->apellido_materno));
+        $pdf->SetXY(20, 78);  $pdf->Write(0, $datos->curp);
+        $pdf->SetXY(140, 78); $pdf->Write(0, $datos->rfc);
+
+        // C. Datos Generales [cite: 16, 17, 18, 19, 23, 24, 25, 26]
+        $pdf->SetXY(20, 88);  $pdf->Write(0, $datos->tipo_id);
+        $pdf->SetXY(110, 88); $pdf->Write(0, $datos->numero_id);
+        
+        $pdf->SetXY(20, 98);  $pdf->Write(0, $datos->estado_civil);
+        $pdf->SetXY(80, 98);  $pdf->Write(0, $datos->grado_estudios); // escolaridad
+        $pdf->SetXY(140, 98); $pdf->Write(0, utf8_decode($datos->ocupacion));
+
+        // Discapacidad y Etnia
+        $pdf->SetXY(55, 103); $pdf->Write(0, $datos->tiene_discapacidad . " / " . utf8_decode($datos->cual_discapacidad));
+        $pdf->SetXY(55, 108); $pdf->Write(0, $datos->grupo_etnico . " / " . utf8_decode($datos->grupo_etnico_cual));
+
+        // D. Domicilio y Contacto [cite: 20, 21, 27, 28, 30, 31]
+        $pdf->SetXY(20, 118); $pdf->Write(0, utf8_decode($datos->calle));
+        $pdf->SetXY(80, 118); $pdf->Write(0, utf8_decode($datos->colonia_nombre));
+        $pdf->SetXY(175, 118); $pdf->Write(0, $datos->cp);
+        
+        $pdf->SetXY(20, 128); $pdf->Write(0, $datos->tel_particular);
+        $pdf->SetXY(80, 128); $pdf->Write(0, $datos->tel_casa);
+        $pdf->SetXY(140, 128); $pdf->Write(0, $datos->tel_familiar);
+
+        // E. Checklist de Requisitos (Mapeo de TINYINT 0/1 a 'X') 
+        // Se posiciona una 'X' si el valor en la BD es 1
+        $baseY = 138;
+        if($datos->check_identidad) { $pdf->SetXY(192, $baseY); $pdf->Write(0, 'X'); }
+        if($datos->check_domicilio) { $pdf->SetXY(192, $baseY + 7); $pdf->Write(0, 'X'); }
+        if($datos->check_curp_doc)  { $pdf->SetXY(192, $baseY + 14); $pdf->Write(0, 'X'); }
+        if($datos->check_rfc_doc)   { $pdf->SetXY(192, $baseY + 21); $pdf->Write(0, 'X'); }
+        if($datos->check_propiedad) { $pdf->SetXY(192, $baseY + 28); $pdf->Write(0, 'X'); }
+        if($datos->check_siniiga_doc){ $pdf->SetXY(192, $baseY + 35); $pdf->Write(0, 'X'); }
+        if($datos->check_finiquito) { $pdf->SetXY(192, $baseY + 42); $pdf->Write(0, 'X'); }
+
+        // F. Componente Producción Primaria 
+        $pdf->SetXY(35, 195); $pdf->Write(0, $datos->num_total_predios);
+        $pdf->SetXY(135, 195); $pdf->Write(0, $datos->superficie_total . ' ha');
+        $pdf->SetXY(35, 205); $pdf->Write(0, utf8_decode($datos->tipo_documento_propiedad));
+        $pdf->SetXY(35, 215); $pdf->Write(0, utf8_decode($datos->pueblo_colonia_up));
+        $pdf->SetXY(135, 215); $pdf->Write(0, utf8_decode($datos->parajes));
+        $pdf->SetXY(35, 225); $pdf->Write(0, utf8_decode($datos->tenencia_tierra));
+        $pdf->SetXY(35, 235); $pdf->Write(0, utf8_decode($datos->especie_cultivo_principal));
+        $pdf->SetXY(160, 235); $pdf->Write(0, $datos->numero_cabezas_colmenas);
+
+        // --- PÁGINA 2: COMPROMISOS Y FIRMAS ---
+        $tplId2 = $pdf->importPage(2);
+        $pdf->addPage();
+        $pdf->useTemplate($tplId2);
+        
+        // Firma del solicitante [cite: 70]
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->SetXY(110, 258); 
+        $nombreCompleto = $datos->nombre . ' ' . $datos->apellido_paterno . ' ' . $datos->apellido_materno;
+        $pdf->Cell(80, 0, utf8_decode($nombreCompleto), 0, 0, 'C');
+
+        // --- PÁGINA 3: AVISO DE PRIVACIDAD [cite: 86] ---
+        $tplId3 = $pdf->importPage(3);
+        $pdf->addPage();
+        $pdf->useTemplate($tplId3);
+        
+        // Firma del solicitante en la página 3 [cite: 96]
+        $pdf->SetXY(20, 258); 
+        $pdf->Cell(80, 0, utf8_decode($nombreCompleto), 0, 0, 'C');
+
+        // 3. Salida del PDF al navegador
+        $pdf->Output('I', "Solicitud_{$datos->folio}.pdf");
+    }
+}

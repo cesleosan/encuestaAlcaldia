@@ -40,6 +40,8 @@
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
+
+        
 }
 </style>
 
@@ -114,225 +116,301 @@
                                 </div>
                         </div>
 
-<div class="tab-pane fade" id="tab-extra">
-    <div class="alert alert-warning border-0 shadow-sm small mb-3">
-        <i class="fas fa-edit me-2"></i> <b>Modo Edición:</b> Los campos en azul se recuperaron de la encuesta. Los campos en blanco son para completar el expediente oficial.
-    </div>
+            <div class="tab-pane fade" id="tab-extra">
+                <div class="alert alert-warning border-0 shadow-sm small mb-3">
+                    <i class="fas fa-edit me-2"></i> <b>Modo Edición:</b> Los campos en azul se recuperaron de la encuesta. Los campos en blanco son para completar el expediente oficial.
+                </div>
 
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white"><h6 class="mb-0 fw-bold text-guinda"><i class="fas fa-id-card me-2"></i>1. Identidad y Registro Oficial</h6></div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="small fw-bold">Nombre del Productor</label>
-                    <input type="text" class="form-control form-control-sm bg-aliceblue" name="nombre_productor" id="in_nombre_productor">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white"><h6 class="mb-0 fw-bold text-guinda"><i class="fas fa-id-card me-2"></i>1. Identidad y Registro Oficial</h6></div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="small fw-bold">Nombre del Productor</label>
+                                <input type="text" class="form-control form-control-sm bg-aliceblue" name="nombre_productor" id="in_nombre_productor">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small fw-bold">Apellido Paterno</label>
+                                <input type="text" class="form-control form-control-sm" name="paterno" id="in_paterno">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small fw-bold">Apellido Materno</label>
+                                <input type="text" class="form-control form-control-sm" name="materno" id="in_materno">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small fw-bold text-primary">CURP (Validado)</label>
+                                <input type="text" class="form-control form-control-sm" name="curp" id="in_curp_edit" maxlength="18">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small fw-bold">RFC</label>
+                                <input type="text" class="form-control form-control-sm" name="rfc" id="in_rfc" placeholder="ABCD123456XYZ">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="small fw-bold">Tipo de ID</label>
+                                <select class="form-select form-select-sm" name="tipo_id" id="in_tipo_id">
+                                    <option value="INE">INE</option>
+                                    <option value="PASAPORTE">Pasaporte</option>
+                                    <option value="CARTILLA_MILITAR">Cartilla Militar</option>
+                                    <option value="CEDULA_PROFESIONAL">Cédula Profesional</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="small fw-bold">Num. Identificación</label>
+                                <input type="text" class="form-control form-control-sm" name="numero_id" id="in_numero_id">
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Apellido Paterno</label>
-                    <input type="text" class="form-control form-control-sm" name="paterno" id="in_paterno">
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white"><h6 class="mb-0 fw-bold text-guinda"><i class="fas fa-users me-2"></i>2. Perfil y Vulnerabilidad</h6></div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="small fw-bold">Estado Civil</label>
+                                <select class="form-select form-select-sm" name="estado_civil" id="in_estado_civil">
+                                    <option value="" selected disabled>Seleccione...</option>
+                                    <option value="SOLTERA">Soltera (o)</option>
+                                    <option value="CASADA">Casada (o)</option>
+                                    <option value="DIVORCIADA">Divorciada (o)</option>
+                                    <option value="VIUDA">Viuda (o)</option>
+                                    <option value="UNION_LIBRE">Unión libre</option>
+                                    <option value="NA">NA</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="small fw-bold">Grado de Estudios</label>
+                                <select class="form-select form-select-sm" name="grado_estudios" id="in_estudios">
+                                    <option value="" selected disabled>Seleccione...</option>
+                                    <option value="SIN_ESTUDIOS">Sin estudios</option>
+                                    <option value="PRIMARIA">Primaria</option>
+                                    <option value="SECUNDARIA">Secundaria</option>
+                                    <option value="BACHILLERATO">Bachillerato/Preparatoria</option>
+                                    <option value="CARRERA_TECNICA">Carrera Técnica</option>
+                                    <option value="LICENCIATURA">Licenciatura</option>
+                                    <option value="POSGRADO">Posgrado</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="small fw-bold">Ocupación</label>
+                                <input type="text" class="form-control form-control-sm" name="ocupacion" id="in_ocupacion">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="small fw-bold">¿Tiene alguna discapacidad?</label>
+                                <select class="form-select form-select-sm" name="tiene_discapacidad" id="in_tiene_discap">
+                                    <option value="NO">NO</option>
+                                    <option value="SI">SÍ</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="small fw-bold">¿Cuál discapacidad?</label>
+                                <input type="text" class="form-control form-control-sm" name="cual_discapacidad" id="in_cual_discap" placeholder="Especifique o NA">
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="small fw-bold">¿Pertenece a algún grupo étnico?</label>
+                                <select class="form-select form-select-sm" name="grupo_etnico" id="in_grupo_etnico_edit">
+                                    <option value="NO">NO</option>
+                                    <option value="SI">SÍ</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="small fw-bold">¿Cuál grupo étnico?</label>
+                                <input type="text" class="form-control form-control-sm" name="grupo_etnico_cual" id="in_grupo_cual" placeholder="Especifique o NA">
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Apellido Materno</label>
-                    <input type="text" class="form-control form-control-sm" name="materno" id="in_materno">
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white"><h6 class="mb-0 fw-bold text-guinda"><i class="fas fa-map-marked-alt me-2"></i>3. Domicilio y Contacto</h6></div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-5">
+                                <label class="small fw-bold">Calle y Número</label>
+                                <input type="text" class="form-control form-control-sm" name="calle_numero" id="in_calle">
+                            </div>
+                            <div class="col-md-5">
+                                <label class="small fw-bold">Colonia o Poblado</label>
+                                <input type="text" class="form-control form-control-sm" name="pueblo_colonia" id="in_colonia_edit">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="small fw-bold">C.P.</label>
+                                <input type="text" class="form-control form-control-sm" name="cp" id="in_cp_edit">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small fw-bold">Tel. Particular (Cel)</label>
+                                <input type="text" class="form-control form-control-sm" name="tel_particular" id="in_tel_part">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small fw-bold">Tel. Casa</label>
+                                <input type="text" class="form-control form-control-sm" name="tel_casa" id="in_tel_casa">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small fw-bold">Tel. Familiar / Recados</label>
+                                <input type="text" class="form-control form-control-sm" name="tel_recados" id="in_tel_fam">
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold text-primary">CURP (Validado)</label>
-                    <input type="text" class="form-control form-control-sm" name="curp" id="in_curp_edit" maxlength="18">
+
+                <div class="card border-0 shadow-sm mb-4 border-start border-4 border-success">
+                    <div class="card-header bg-white"><h6 class="mb-0 fw-bold text-success"><i class="fas fa-seedling me-2"></i>4. Acreditación y Producción Técnica</h6></div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="small fw-bold">Línea de ayuda a la cual corresponde la solicitud</label>
+                                <select class="form-select form-select-sm" name="linea_ayuda" id="in_linea_ayuda">
+                                    <option value="" selected disabled>Elegir...</option>
+                                    <option value="AGRICOLA">Agrícola</option>
+                                    <option value="PECUARIA">Pecuaria</option>
+                                    <option value="GRANJA_INTEGRAL">Granja integral</option>
+                                    <option value="HUERTO_URBANO">Huerto urbano</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="small fw-bold">¿Inscrito en SINIIGA?</label>
+                                <select class="form-select form-select-sm" name="siniiga_status" id="in_siniiga">
+                                    <option value="NO">NO</option>
+                                    <option value="SI">SÍ</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="small fw-bold">Total de Predios</label>
+                                <input type="number" class="form-control form-control-sm" name="num_total_predios" id="in_total_predios">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small fw-bold">Superficie Total (ha)</label>
+                                <input type="number" step="0.0001" class="form-control form-control-sm" name="superficie_prod" id="in_sup_edit">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small fw-bold">Tipo de documento con el que acredita la propiedad o posesión</label>
+                                <input type="text" class="form-control form-control-sm" 
+                                    name="tipo_documento_prop" 
+                                    id="in_tipo_doc" 
+                                    placeholder="Ej. Título de Propiedad, Certificado, etc.">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small fw-bold">Poblado/Colonia de la U.P.</label>
+                                <input type="text" class="form-control form-control-sm" name="pueblo_colonia_up" id="in_pueblo_up">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small fw-bold">Parajes</label>
+                                <input type="text" class="form-control form-control-sm" 
+                                    name="parajes" 
+                                    id="in_parajes" 
+                                    placeholder="Especifique paraje o escriba NA">
+                                <div class="form-text" style="font-size: 0.65rem;">Indique el nombre de la zona o paraje específico.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small fw-bold">Tenencia de la Tierra</label>
+                                <select class="form-select form-select-sm" name="tenencia_tierra" id="in_tenencia">
+                                    <option value="" selected disabled>Elegir...</option>
+                                    <option value="EJIDO">Ejido</option>
+                                    <option value="COMUNIDAD">Comunidad</option>
+                                    <option value="PEQUENA_PROPIEDAD">Pequeña propiedad</option>
+                                    <option value="NA">NA</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small fw-bold">Especie o Cultivo Principal</label>
+                                <input type="text" class="form-control form-control-sm" name="cultivo_principal" id="in_cultivo">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small fw-bold">Num. Cabezas / Colmenas</label>
+                                <input type="number" class="form-control form-control-sm" name="num_animales" id="in_num_animales">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small fw-bold text-muted">Tipo de Producción (Origen)</label>
+                                <input type="text" class="form-control form-control-sm bg-light" name="tipo_produccion" readonly>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">RFC</label>
-                    <input type="text" class="form-control form-control-sm" name="rfc" id="in_rfc" placeholder="ABCD123456XYZ">
-                </div>
-                <div class="col-md-2">
-                    <label class="small fw-bold">Tipo de ID</label>
-                    <select class="form-select form-select-sm" name="tipo_id" id="in_tipo_id">
-                        <option value="INE">INE</option>
-                        <option value="PASAPORTE">Pasaporte</option>
-                        <option value="OTRO">Otro</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="small fw-bold">Num. Identificación</label>
-                    <input type="text" class="form-control form-control-sm" name="numero_id" id="in_numero_id">
+
+                <div class="card border-0 shadow-sm mb-4 bg-guinda-light">
+                    <div class="card-body text-end">
+                        <div class="row align-items-center">
+                            <div class="col-md-8 text-start small">
+                                <i class="fas fa-info-circle me-1"></i> Verifique que los apellidos y RFC coincidan con la identificación oficial del productor.
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small fw-bold text-danger d-block text-start text-uppercase">Fase del proceso</label>
+                                <select class="form-select fw-bold border-danger" name="fase_proceso" id="in_fase">
+                                    <option value="EMPADRONADO">1. EMPADRONADO</option>
+                                    <option value="VALIDACION_DOCS">2. VALIDACIÓN DE DOCS</option>
+                                    <option value="EN_REVISION">3. EN REVISIÓN TÉCNICA</option>
+                                    <option value="APROBADO">4. APROBADO</option>
+                                    <option value="RECHAZADO">5. RECHAZADO</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white"><h6 class="mb-0 fw-bold text-guinda"><i class="fas fa-users me-2"></i>2. Perfil y Vulnerabilidad</h6></div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label class="small fw-bold">Estado Civil</label>
-                    <select class="form-select form-select-sm" name="estado_civil" id="in_estado_civil"></select>
-                </div>
-                <div class="col-md-3">
-                    <label class="small fw-bold">Grado de Estudios</label>
-                    <select class="form-select form-select-sm" name="grado_estudios" id="in_estudios"></select>
-                </div>
-                <div class="col-md-3">
-                    <label class="small fw-bold">Ocupación</label>
-                    <input type="text" class="form-control form-control-sm" name="ocupacion" id="in_ocupacion">
-                </div>
-                <div class="col-md-3">
-                    <label class="small fw-bold">¿Alguna Discapacidad?</label>
-                    <select class="form-select form-select-sm" name="tiene_discapacidad" id="in_tiene_discap">
-                        <option value="NO">NO</option>
-                        <option value="SI">SÍ</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Cual discapacidad?</label>
-                    <input type="text" class="form-control form-control-sm" name="cual_discapacidad" id="in_cual_discap">
-                </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Grupo Étnico</label>
-                    <input type="text" class="form-control form-control-sm" name="grupo_etnico" id="in_grupo_etnico_edit">
-                </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Cual grupo étnico?</label>
-                    <input type="text" class="form-control form-control-sm" name="grupo_etnico_cual" id="in_grupo_cual">
-                </div>
-            </div>
-        </div>
-    </div>
+                       <div class="tab-pane fade" id="tab-docs">
+                            <div class="alert alert-info border-0 shadow-sm small mb-3">
+                                <i class="fas fa-file-invoice me-2"></i> <b>Cotejo de Documentos:</b> Marque los documentos entregados que cumplen con los requisitos.
+                            </div>
 
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white"><h6 class="mb-0 fw-bold text-guinda"><i class="fas fa-map-marked-alt me-2"></i>3. Domicilio y Contacto</h6></div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-5">
-                    <label class="small fw-bold">Calle y Número</label>
-                    <input type="text" class="form-control form-control-sm" name="calle_numero" id="in_calle">
-                </div>
-                <div class="col-md-5">
-                    <label class="small fw-bold">Colonia o Poblado</label>
-                    <input type="text" class="form-control form-control-sm" name="pueblo_colonia" id="in_colonia_edit">
-                </div>
-                <div class="col-md-2">
-                    <label class="small fw-bold">C.P.</label>
-                    <input type="text" class="form-control form-control-sm" name="cp" id="in_cp_edit">
-                </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Tel. Particular (Cel)</label>
-                    <input type="text" class="form-control form-control-sm" name="tel_particular" id="in_tel_part">
-                </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Tel. Casa</label>
-                    <input type="text" class="form-control form-control-sm" name="tel_casa" id="in_tel_casa">
-                </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Tel. Familiar / Recados</label>
-                    <input type="text" class="form-control form-control-sm" name="tel_recados" id="in_tel_fam">
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card border-0 shadow-sm mb-4 border-start border-4 border-success">
-        <div class="card-header bg-white"><h6 class="mb-0 fw-bold text-success"><i class="fas fa-seedling me-2"></i>4. Acreditación y Producción Técnica</h6></div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="small fw-bold">Línea de ayuda solicitada</label>
-                    <input type="text" class="form-control form-control-sm" name="linea_ayuda" id="in_linea_ayuda">
-                </div>
-                <div class="col-md-3">
-                    <label class="small fw-bold">¿Inscrito en SINIIGA?</label>
-                    <select class="form-select form-select-sm" name="siniiga_status" id="in_siniiga">
-                        <option value="NO">NO</option>
-                        <option value="SI">SÍ</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="small fw-bold">Total de Predios</label>
-                    <input type="number" class="form-control form-control-sm" name="num_total_predios" id="in_total_predios">
-                </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Superficie Total (ha)</label>
-                    <input type="number" step="0.0001" class="form-control form-control-sm" name="superficie_prod" id="in_sup_edit">
-                </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Documento de Propiedad</label>
-                    <select class="form-select form-select-sm" name="tipo_documento_prop" id="in_tipo_doc">
-                        <option value="TITULO_PROPIEDAD">Título de Propiedad</option>
-                        <option value="CERTIFICADO_PARCELARIO">Certificado Parcelario</option>
-                        <option value="CONSTANCIA_POSESION">Constancia de Posesión</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Poblado/Colonia de la U.P.</label>
-                    <input type="text" class="form-control form-control-sm" name="pueblo_colonia_up" id="in_pueblo_up">
-                </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Parajes</label>
-                    <input type="text" class="form-control form-control-sm" name="parajes" id="in_parajes">
-                </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Tenencia de la Tierra</label>
-                    <select class="form-select form-select-sm" name="tenencia_tierra" id="in_tenencia">
-                        <option value="COMUNAL">Comunal</option>
-                        <option value="EJIDAL">Ejidal</option>
-                        <option value="PRIVADA">Propiedad Privada</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Especie o Cultivo Principal</label>
-                    <input type="text" class="form-control form-control-sm" name="cultivo_principal" id="in_cultivo">
-                </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Num. Cabezas / Colmenas</label>
-                    <input type="number" class="form-control form-control-sm" name="num_animales" id="in_num_animales">
-                </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold text-muted">Tipo de Producción (Origen)</label>
-                    <input type="text" class="form-control form-control-sm bg-light" name="tipo_produccion" readonly>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card border-0 shadow-sm mb-4 bg-guinda-light">
-        <div class="card-body text-end">
-            <div class="row align-items-center">
-                <div class="col-md-8 text-start small">
-                    <i class="fas fa-info-circle me-1"></i> Verifique que los apellidos y RFC coincidan con la identificación oficial del productor.
-                </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold text-danger d-block text-start text-uppercase">Fase del proceso</label>
-                    <select class="form-select fw-bold border-danger" name="fase_proceso" id="in_fase">
-                        <option value="EMPADRONADO">1. EMPADRONADO</option>
-                        <option value="VALIDACION_DOCS">2. VALIDACIÓN DE DOCS</option>
-                        <option value="EN_REVISION">3. EN REVISIÓN TÉCNICA</option>
-                        <option value="APROBADO">4. APROBADO</option>
-                        <option value="RECHAZADO">5. RECHAZADO</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-                        <div class="tab-pane fade" id="tab-docs">
                             <div class="card shadow-sm border-0">
-                                <div class="list-group list-group-flush">
-                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3">
-                                        <span><i class="fas fa-id-card text-guinda me-3"></i> <b>Identificación Oficial (INE/Pasaporte)</b></span>
-                                        <input type="checkbox" name="check_ine" class="form-check-input h5 mb-0">
+                                <div class="list-group list-group-flush" id="checkListDocs">
+                                    
+                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3 doc-row">
+                                        <span><i class="fas fa-file-signature text-guinda me-3"></i> <b>Formato de solicitud (Firmado)</b><br>
+                                        <small class="text-muted ms-5">Ante la J.U.D. de Desarrollo Rural</small></span>
+                                        <input type="checkbox" name="check_solicitud" value="1" class="form-check-input h5 mb-0 doc-check">
                                     </label>
-                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3">
-                                        <span><i class="fas fa-home text-guinda me-3"></i> <b>Comprobante de Domicilio (Luz/Agua/Predial)</b></span>
-                                        <input type="checkbox" name="check_dom" class="form-check-input h5 mb-0">
+
+                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3 doc-row">
+                                        <span><i class="fas fa-id-card text-guinda me-3"></i> <b>Acreditación de identidad vigente</b><br>
+                                        <small class="text-muted ms-5">INE, Pasaporte, Cédula o Cartilla Militar</small></span>
+                                        <input type="checkbox" name="check_identidad" value="1" class="form-check-input h5 mb-0 doc-check">
                                     </label>
-                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3">
-                                        <span><i class="fas fa-fingerprint text-guinda me-3"></i> <b>CURP Certificada (Actualizada)</b></span>
-                                        <input type="checkbox" name="check_curp" class="form-check-input h5 mb-0">
+
+                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3 doc-row">
+                                        <span><i class="fas fa-home text-guinda me-3"></i> <b>Comprobante de Domicilio</b><br>
+                                        <small class="text-muted ms-5">No mayor a 3 meses de antigüedad</small></span>
+                                        <input type="checkbox" name="check_domicilio" value="1" class="form-check-input h5 mb-0 doc-check">
                                     </label>
-                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3">
-                                        <span><i class="fas fa-map-marked text-guinda me-3"></i> <b>Certificado de Producción / Tierra</b></span>
-                                        <input type="checkbox" name="check_tierra" class="form-check-input h5 mb-0">
+
+                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3 doc-row">
+                                        <span><i class="fas fa-fingerprint text-guinda me-3"></i> <b>Copia de la CURP</b><br>
+                                        <small class="text-muted ms-5">Clave Única de Registro de Población actualizada</small></span>
+                                        <input type="checkbox" name="check_curp_doc" value="1" class="form-check-input h5 mb-0 doc-check">
                                     </label>
+
+                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3 doc-row">
+                                        <span><i class="fas fa-university text-guinda me-3"></i> <b>R.F.C. (Si aplica)</b><br>
+                                        <small class="text-muted ms-5">Registro Federal de Contribuyentes</small></span>
+                                        <input type="checkbox" name="check_rfc_doc" value="1" class="form-check-input h5 mb-0 doc-check">
+                                    </label>
+
+                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3 doc-row">
+                                        <span><i class="fas fa-gavel text-guinda me-3"></i> <b>Manifiesto Bajo Protesta de decir verdad</b><br>
+                                        <small class="text-muted ms-5">No desempeñar cargo en la Alcaldía Tlalpan</small></span>
+                                        <input type="checkbox" name="check_manifiesto" value="1" class="form-check-input h5 mb-0 doc-check">
+                                    </label>
+
+                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3 doc-row">
+                                        <span><i class="fas fa-map-marked-alt text-guinda me-3"></i> <b>Acreditación de propiedad o posesión legal</b><br>
+                                        <small class="text-muted ms-5">Documento técnico-legal del predio</small></span>
+                                        <input type="checkbox" name="check_propiedad" value="1" class="form-check-input h5 mb-0 doc-check">
+                                    </label>
+
+                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3 doc-row">
+                                        <span><i class="fas fa-file-contract text-guinda me-3"></i> <b>Carta Finiquito</b><br>
+                                        <small class="text-muted ms-5">Para ex-beneficiarios de programas anteriores</small></span>
+                                        <input type="checkbox" name="check_finiquito" value="1" class="form-check-input h5 mb-0 doc-check">
+                                    </label>
+
+                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3 doc-row">
+                                        <span><i class="fas fa-cow text-guinda me-3"></i> <b>Registro SINIIGA (Si aplica)</b><br>
+                                        <small class="text-muted ms-5">Únicamente para Unidades Pecuarias</small></span>
+                                        <input type="checkbox" name="check_siniiga_doc" value="1" class="form-check-input h5 mb-0 doc-check">
+                                    </label>
+
                                 </div>
                             </div>
                         </div>
@@ -340,10 +418,23 @@
                     </div>
                 </form>
             </div>
-            <div class="modal-footer bg-white border-0">
-                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" onclick="confirmarGuardado()" class="btn btn-guinda px-5 shadow"><i class="fas fa-save me-2"></i>GUARDAR EXPEDIENTE</button>
-            </div>
+                <div class="modal-footer bg-white border-top shadow-sm">
+                    <div class="d-flex w-100 justify-content-between align-items-center">
+                        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+                            Cancelar
+                        </button>
+
+                        <div class="d-flex gap-2">
+                            <button type="button" id="btnDescargarPDF" class="btn btn-primary px-4 shadow-sm d-none">
+                                <i class="fas fa-file-pdf me-2"></i>GENERAR SOLICITUD 2026
+                            </button>
+
+                            <button type="button" onclick="confirmarGuardado()" class="btn btn-guinda px-5 shadow">
+                                <i class="fas fa-save me-2"></i>GUARDAR EXPEDIENTE
+                            </button>
+                        </div>
+                    </div>
+                </div>
         </div>
     </div>
 </div>
@@ -380,20 +471,17 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 2. LÓGICA DE SEGMENTACIÓN (CORREGIDA)
+    // 2. UTILIDADES: PROCESAMIENTO DE DATOS
     // ==========================================
     function segmentarNombreCompleto(nombreCompleto) {
         if (!nombreCompleto) return { nombres: '', paterno: '', materno: '' };
-        
-        // Limpiamos espacios y pasamos a mayúsculas
         let palabras = nombreCompleto.trim().toUpperCase().split(/\s+/);
         let result = { nombres: '', paterno: '', materno: '' };
 
-        // Lógica: Los últimos dos son Apellidos, el resto son Nombres
         if (palabras.length >= 3) {
             result.materno = palabras.pop();
             result.paterno = palabras.pop();
-            result.nombres = palabras.join(' '); // Aquí solo quedan los nombres
+            result.nombres = palabras.join(' '); 
         } else if (palabras.length === 2) {
             result.nombres = palabras[0];
             result.paterno = palabras[1];
@@ -403,9 +491,6 @@ $(document).ready(function() {
         return result;
     }
 
-    // ==========================================
-    // 3. EXTRACTOR DE DATOS MULTINIVEL
-    // ==========================================
     function getDatoFinal(reg, campoBuscado, json) {
         const mapaFisico = {
             "folio": reg.folio,
@@ -443,7 +528,30 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 4. RENDERIZADO DE TABLA Y PAGINACIÓN
+    // 3. LÓGICA DE INTERFAZ Y DEPENDENCIAS
+    // ==========================================
+    window.controlarDependencias = function() {
+        // Control Discapacidad
+        const tieneDiscap = $("#in_tiene_discap").val();
+        if (tieneDiscap === "SI") {
+            $("#in_cual_discap").prop("disabled", false).removeClass("bg-light");
+        } else {
+            $("#in_cual_discap").val("NA").prop("disabled", true).addClass("bg-light");
+        }
+
+        // Control Grupo Étnico
+        const esEtnico = $("#in_grupo_etnico_edit").val();
+        if (esEtnico === "SI") {
+            $("#in_grupo_cual").prop("disabled", false).removeClass("bg-light");
+        } else {
+            $("#in_grupo_cual").val("NA").prop("disabled", true).addClass("bg-light");
+        }
+    };
+
+    $(document).on("change", "#in_tiene_discap, #in_grupo_etnico_edit", window.controlarDependencias);
+
+    // ==========================================
+    // 4. RENDERIZADO DE TABLA Y RESUMEN
     // ==========================================
     function renderTable(page) {
         currentPage = page;
@@ -468,7 +576,6 @@ $(document).ready(function() {
                 </tr>
             `);
         });
-        $("#tableInfo").html(`Mostrando <b>${items.length}</b> de <b>${filteredData.length}</b> registros`);
         renderPaginationUI();
     }
 
@@ -482,29 +589,25 @@ $(document).ready(function() {
         container.find('a').on('click', function(e) { e.preventDefault(); renderTable(parseInt($(this).attr('data-page'))); });
     }
 
-    // ==========================================
-    // 5. PESTAÑA 1: RESUMEN VISUAL
-    // ==========================================
     function renderTabResumen(reg, json) {
         const $resumen = $("#resumenCaptura").empty();
         const config = {
-            "Identidad y Registro": ["folio", "curp", "nombre_productor", "sexo", "fecha_nacimiento", "estado_civil", "ocupacion"],
-            "Ubicación Predio": ["cp", "pueblo_colonia", "calle_numero", "latitud", "longitud"],
-            "Producción y Técnica": ["situacion_unidad", "tipo_produccion", "cats_agricola", "superficie_prod", "volumen_prod", "unidad_medida", "insumos_agricolas", "problema_principal"],
-            "Social y Apoyos": ["grado_estudios", "tipo_apoyo", "capacitaciones_deseadas", "participacion_mujeres", "observaciones"]
+            "Identidad": ["folio", "curp", "nombre_productor", "sexo", "estado_civil", "ocupacion"],
+            "Técnico": ["tipo_produccion", "tenencia_tierra", "superficie_prod", "linea_ayuda"],
+            "Cierre": ["capacitaciones_deseadas", "observaciones"]
         };
 
         for (const [titulo, campos] of Object.entries(config)) {
             let filas = "";
             campos.forEach(c => {
                 let val = getDatoFinal(reg, c, json);
-                filas += `<tr><td class="ps-3 text-muted py-2" width="40%">${c.replace(/_/g, ' ').toUpperCase()}</td><td class="fw-bold py-2 text-dark">${val || '---'}</td></tr>`;
+                filas += `<tr><td class="ps-3 text-muted py-2" width="40%">${c.toUpperCase()}</td><td class="fw-bold py-2 text-dark">${val || '---'}</td></tr>`;
             });
             $resumen.append(`
                 <div class="col-md-6 mb-3">
                     <div class="card h-100 border-0 shadow-sm overflow-hidden">
-                        <div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small"><i class="fas fa-caret-right me-2 text-warning"></i>${titulo}</div>
-                        <div class="card-body p-0"><table class="table table-sm table-hover mb-0" style="font-size:0.75rem;"><tbody>${filas}</tbody></table></div>
+                        <div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small">${titulo}</div>
+                        <div class="card-body p-0"><table class="table table-sm mb-0" style="font-size:0.75rem;"><tbody>${filas}</tbody></table></div>
                     </div>
                 </div>
             `);
@@ -512,76 +615,65 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 6. FUNCIÓN MAESTRA: ABRIR MODAL (CORREGIDA)
+    // 5. FUNCIÓN MAESTRA: ABRIR MODAL
     // ==========================================
     window.abrirEdicion = function(id) {
         const reg = rawData.find(i => i.id == id);
         if (!reg) return;
         const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-        // A. Reset UI
         $("#formCaptura")[0].reset();
         $("#modalEdicion").removeAttr("aria-hidden"); 
         $("#reg_id").val(reg.id);
         $("#spanFolio").text(reg.folio || 'S/F');
 
-        // B. TRATAMIENTO DEL NOMBRE (LA CLAVE)
+        // A. Segmentación y RFC (Excluidos del bucle automático)
         const fullNombre = getDatoFinal(reg, "nombre_productor", json);
         const seg = segmentarNombreCompleto(fullNombre);
-        
-        // Asignamos solo las partes correspondientes
-        $("#in_nombre_productor").val(seg.nombres); // <-- SOLO NOMBRE(S)
+        $("#in_nombre_productor").val(seg.nombres); 
         $("#in_paterno").val(seg.paterno);
         $("#in_materno").val(seg.materno);
 
-        // RFC Sugerido
-        const curpVal = getDatoFinal(reg, "curp", json);
-        if (curpVal && curpVal.length >= 10) {
-            $("#in_rfc").val(curpVal.substring(0, 10));
-        }
-
-        // C. LLENADO DINÁMICO (EXCLUYENDO CAMPOS YA TRATADOS)
+        // B. Llenado automático de inputs
         $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
             const el = $(this);
             const name = el.attr('name');
-            
-            // CRÍTICO: No sobreescribir los nombres ni CURP que ya pusimos arriba
             const excluidos = ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'];
+            
             if (!name || excluidos.includes(name)) return;
 
-            const cleanName = name.replace('[]', '');
-            const valor = getDatoFinal(reg, cleanName, json);
+            const valor = getDatoFinal(reg, name.replace('[]', ''), json);
 
             if (valor && valor !== "") {
                 if (el.is(':checkbox')) {
                     const vals = valor.split(', ');
-                    el.prop('checked', vals.includes(el.val()) || valor === 'SI');
-                } 
-                else if (el.is('select')) {
-                    if (el.find(`option[value="${valor}"]`).length === 0) {
-                        el.append(`<option value="${valor}">${valor}</option>`);
-                    }
-                    el.val(valor);
-                } 
-                else {
+                    el.prop('checked', vals.includes(el.val()) || valor === 'SI' || valor === '1');
+                } else {
                     el.val(valor);
                 }
             }
         });
 
-        // Caso especial CURP (usar ID específico para edición para evitar conflictos)
+        // C. Casos Especiales (CURP y Lógica del Botón PDF)
         $("#in_curp_edit").val(reg.curp || getDatoFinal(reg, "curp", json));
+        
+        if (reg.id) {
+            $("#btnDescargarPDF")
+                .removeClass('d-none')
+                .off('click')
+                .on('click', function() {
+                    window.open(`<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${reg.id}`, '_blank');
+                });
+        }
 
-        // D. Renderizar Resumen y Mostrar
         renderTabResumen(reg, json);
-        const firstTab = document.querySelector('#tabExpediente li:first-child a');
-        bootstrap.Tab.getOrCreateInstance(firstTab).show();
+        window.controlarDependencias(); // Validar campos bloqueados al cargar
+        
+        bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
         $("#modalEdicion").modal('show');
     };
 
-    // ==========================================
-    // 7. BUSCADOR GLOBAL
-    // ==========================================
+    // Buscador
     $("#tablaSearch").on("keyup", function() {
         const val = $(this).val().toLowerCase();
         filteredData = rawData.filter(e => 
@@ -593,11 +685,15 @@ $(document).ready(function() {
     });
 });
 
+// ==========================================
+// 6. ACCIÓN DE GUARDADO
+// ==========================================
 function confirmarGuardado() {
     const formData = new FormData(document.getElementById('formCaptura'));
+    
     Swal.fire({
         title: '¿Confirmar cambios?',
-        text: "Se actualizará la fase y la información del expediente.",
+        text: "Se actualizará el expediente oficial en la base de datos.",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#773357',
@@ -605,12 +701,20 @@ function confirmarGuardado() {
     }).then((result) => {
         if (result.isConfirmed) {
             Swal.fire({ title: 'Guardando...', didOpen: () => { Swal.showLoading() } });
-            fetch('<?php echo URLROOT; ?>/Captura/actualizar', { method: 'POST', body: formData })
+            
+            fetch('<?php echo URLROOT; ?>/Captura/actualizar', { 
+                method: 'POST', 
+                body: formData 
+            })
             .then(res => res.json())
             .then(data => {
-                if(data.status === 'success') Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload());
-                else Swal.fire('Error', data.msg, 'error');
-            });
+                if(data.status === 'success') {
+                    Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Error', data.msg, 'error');
+                }
+            })
+            .catch(err => Swal.fire('Error', 'No se pudo conectar con el servidor', 'error'));
         }
     });
 }
