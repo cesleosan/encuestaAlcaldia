@@ -119,4 +119,52 @@ class Expediente extends Controller {
         // Salida del PDF
         $pdf->Output('I', "Solicitud_{$datos->folio}.pdf");
     }
+
+    public function calibrar($id) {
+    if (ob_get_level()) ob_end_clean();
+
+    // 1. Cargar el PDF base
+    $pdf = new Fpdi();
+    $pdf->SetAutoPageBreak(false);
+    $rutaTemplate = APPROOT . '/views/formatos/formatoProductores2026.pdf'; 
+    $pdf->setSourceFile($rutaTemplate);
+    $tplId = $pdf->importPage(1);
+    $pdf->addPage();
+    $pdf->useTemplate($tplId);
+
+    // 2. Configurar estilo de la cuadrícula
+    $pdf->SetFont('Arial', '', 7);
+    $pdf->SetDrawColor(255, 0, 0); // Rojo para las líneas
+    $pdf->SetTextColor(255, 0, 0); // Rojo para los números
+
+    // 3. Dibujar Guías Horizontales (Eje Y) cada 5mm
+    for ($y = 0; $y <= 297; $y += 5) {
+        $pdf->Line(0, $y, 210, $y);
+        // Escribir el número cada 10mm para no saturar
+        if ($y % 10 == 0) {
+            $pdf->SetXY(2, $y - 2);
+            $pdf->Write(0, "Y=$y");
+        }
+    }
+
+    // 4. Dibujar Guías Verticales (Eje X) cada 5mm
+    for ($x = 0; $x <= 210; $x += 5) {
+        $pdf->Line($x, 0, $x, 297);
+        if ($x % 10 == 0) {
+            $pdf->SetXY($x + 1, 2);
+            $pdf->Write(0, "X=$x");
+        }
+    }
+
+    // 5. Opcional: Imprimir un dato real para ver cómo queda
+    $datos = $this->encuestaModel->getExpedienteCompleto($id);
+    if($datos){
+        $pdf->SetFont('Arial', 'B', 12);
+        $pdf->SetTextColor(0, 0, 255); // Azul para el dato de prueba
+        $pdf->SetXY(22, 105); 
+        $pdf->Write(0, "PRUEBA: " . $this->toLatin1($datos->nombre));
+    }
+
+    $pdf->Output('I', 'CALIBRACION_COORDENADAS.pdf');
+}
 }
