@@ -380,34 +380,33 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 2. UTILIDADES DE PROCESAMIENTO (Lógica de Identidad)
+    // 2. LÓGICA DE SEGMENTACIÓN (CORREGIDA)
     // ==========================================
-    
-    // Función para segmentar nombre completo en partes
     function segmentarNombreCompleto(nombreCompleto) {
         if (!nombreCompleto) return { nombres: '', paterno: '', materno: '' };
+        
+        // Limpiamos espacios y pasamos a mayúsculas
         let palabras = nombreCompleto.trim().toUpperCase().split(/\s+/);
         let result = { nombres: '', paterno: '', materno: '' };
 
-        if (palabras.length === 1) {
-            result.nombres = palabras[0];
+        // Lógica: Los últimos dos son Apellidos, el resto son Nombres
+        if (palabras.length >= 3) {
+            result.materno = palabras.pop();
+            result.paterno = palabras.pop();
+            result.nombres = palabras.join(' '); // Aquí solo quedan los nombres
         } else if (palabras.length === 2) {
             result.nombres = palabras[0];
             result.paterno = palabras[1];
         } else {
-            // Asumimos que los últimos dos son los apellidos (estándar MX)
-            result.materno = palabras.pop();
-            result.paterno = palabras.pop();
-            result.nombres = palabras.join(' ');
+            result.nombres = palabras[0];
         }
         return result;
     }
 
     // ==========================================
-    // 3. EXTRACTOR DE DATOS MULTINIVEL (EL CEREBRO)
+    // 3. EXTRACTOR DE DATOS MULTINIVEL
     // ==========================================
     function getDatoFinal(reg, campoBuscado, json) {
-        // A. Prioridad 1: Datos directos de la BD (Raíz del objeto)
         const mapaFisico = {
             "folio": reg.folio,
             "curp": reg.curp,
@@ -423,25 +422,24 @@ $(document).ready(function() {
 
         if (!json) return '';
 
-        // B. Prioridad 2: Buscar en el JSON (Secciones 1 a 50)
-        let resultados = [];
         for (let seccion in json) {
             let contenido = json[seccion];
-
             if (seccion === "6" && contenido[campoBuscado]) return contenido[campoBuscado];
 
             if (Array.isArray(contenido)) {
+                let resultados = [];
                 contenido.forEach(item => {
                     if (item.name === campoBuscado || item.name === campoBuscado + '[]') {
                         if (item.value) resultados.push(item.value);
                     }
                 });
+                if (resultados.length > 0) return resultados.join(', ').replace(/_/g, ' ');
             } 
             else if (seccion === campoBuscado && typeof contenido === 'string') {
                 return contenido;
             }
         }
-        return resultados.length > 0 ? resultados.join(', ').replace(/_/g, ' ') : '';
+        return '';
     }
 
     // ==========================================
@@ -452,11 +450,6 @@ $(document).ready(function() {
         const start = (page - 1) * pageSize;
         const items = filteredData.slice(start, start + pageSize);
         const tbody = $("#tablaCaptura tbody").empty();
-
-        if (items.length === 0) {
-            tbody.append('<tr><td colspan="5" class="text-center py-4 text-muted">No se encontraron registros</td></tr>');
-            return;
-        }
 
         items.forEach(e => {
             const faseLimpia = (e.fase_proceso || 'EMPADRONADO').replace(/_/g, ' ');
@@ -475,7 +468,6 @@ $(document).ready(function() {
                 </tr>
             `);
         });
-
         $("#tableInfo").html(`Mostrando <b>${items.length}</b> de <b>${filteredData.length}</b> registros`);
         renderPaginationUI();
     }
@@ -491,7 +483,7 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 5. PESTAÑA 1: RESUMEN VISUAL (UI/UX)
+    // 5. PESTAÑA 1: RESUMEN VISUAL
     // ==========================================
     function renderTabResumen(reg, json) {
         const $resumen = $("#resumenCaptura").empty();
@@ -520,36 +512,42 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 6. FUNCIÓN MAESTRA: ABRIR MODAL (DATA BINDING)
+    // 6. FUNCIÓN MAESTRA: ABRIR MODAL (CORREGIDA)
     // ==========================================
     window.abrirEdicion = function(id) {
         const reg = rawData.find(i => i.id == id);
         if (!reg) return;
         const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-        // A. Limpieza de UI y Accesibilidad
+        // A. Reset UI
         $("#formCaptura")[0].reset();
         $("#modalEdicion").removeAttr("aria-hidden"); 
         $("#reg_id").val(reg.id);
         $("#spanFolio").text(reg.folio || 'S/F');
 
-        // B. Lógica Especial de Identidad (Segmentación y RFC)
+        // B. TRATAMIENTO DEL NOMBRE (LA CLAVE)
         const fullNombre = getDatoFinal(reg, "nombre_productor", json);
         const seg = segmentarNombreCompleto(fullNombre);
-        $("#in_nombre").val(seg.nombres);
+        
+        // Asignamos solo las partes correspondientes
+        $("#in_nombre_productor").val(seg.nombres); // <-- SOLO NOMBRE(S)
         $("#in_paterno").val(seg.paterno);
         $("#in_materno").val(seg.materno);
 
+        // RFC Sugerido
         const curpVal = getDatoFinal(reg, "curp", json);
         if (curpVal && curpVal.length >= 10) {
-            $("#in_rfc").val(curpVal.substring(0, 10)); // Pre-llenado sugerido de RFC
+            $("#in_rfc").val(curpVal.substring(0, 10));
         }
 
-        // C. Llenado Dinámico de Todos los Inputs por Atributo 'Name'
+        // C. LLENADO DINÁMICO (EXCLUYENDO CAMPOS YA TRATADOS)
         $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
             const el = $(this);
             const name = el.attr('name');
-            if (!name || ['id', 'nombre', 'paterno', 'materno', 'rfc'].includes(name)) return;
+            
+            // CRÍTICO: No sobreescribir los nombres ni CURP que ya pusimos arriba
+            const excluidos = ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'];
+            if (!name || excluidos.includes(name)) return;
 
             const cleanName = name.replace('[]', '');
             const valor = getDatoFinal(reg, cleanName, json);
@@ -567,12 +565,14 @@ $(document).ready(function() {
                 } 
                 else {
                     el.val(valor);
-                    if (el.prop('readonly')) el.addClass('bg-light');
                 }
             }
         });
 
-        // D. Renderizar Resumen y Mostrar Modal
+        // Caso especial CURP (usar ID específico para edición para evitar conflictos)
+        $("#in_curp_edit").val(reg.curp || getDatoFinal(reg, "curp", json));
+
+        // D. Renderizar Resumen y Mostrar
         renderTabResumen(reg, json);
         const firstTab = document.querySelector('#tabExpediente li:first-child a');
         bootstrap.Tab.getOrCreateInstance(firstTab).show();
@@ -593,31 +593,24 @@ $(document).ready(function() {
     });
 });
 
-// ==========================================
-// 8. GUARDADO DE EXPEDIENTE
-// ==========================================
 function confirmarGuardado() {
     const formData = new FormData(document.getElementById('formCaptura'));
     Swal.fire({
         title: '¿Confirmar cambios?',
-        text: "Se actualizará la fase y la información capturada en el expediente.",
+        text: "Se actualizará la fase y la información del expediente.",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#773357',
-        confirmButtonText: 'Sí, guardar expediente'
+        confirmButtonText: 'Sí, guardar'
     }).then((result) => {
         if (result.isConfirmed) {
-            Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+            Swal.fire({ title: 'Guardando...', didOpen: () => { Swal.showLoading() } });
             fetch('<?php echo URLROOT; ?>/Captura/actualizar', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
-                if(data.status === 'success') {
-                    Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload());
-                } else {
-                    Swal.fire('Error', data.msg, 'error');
-                }
-            })
-            .catch(err => Swal.fire('Error', 'No se pudo conectar con el servidor', 'error'));
+                if(data.status === 'success') Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload());
+                else Swal.fire('Error', data.msg, 'error');
+            });
         }
     });
 }
