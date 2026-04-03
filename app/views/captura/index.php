@@ -3,16 +3,33 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800&display=swap" rel="stylesheet">
 
 <style>
-    :root { --guinda: #773357; --guinda-light: #fdf2f7; --guinda-hover: #5a2642; --gris-fondo: #f4f6f9; }
+    :root { 
+        --guinda: #773357; 
+        --guinda-light: #fdf2f7; 
+        --guinda-hover: #5a2642; 
+        --gris-fondo: #f4f6f9; 
+        --azul-pdf: #0d6efd;
+    }
+    
     body { background-color: var(--gris-fondo); font-family: 'Montserrat', sans-serif; }
     
+    /* Tarjetas y Contenedores */
     .card { border: none; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 1.5rem; }
     .card-header { background-color: white !important; border-bottom: 1px solid var(--guinda-light); padding: 1.25rem; border-radius: 15px 15px 0 0 !important; }
-    .text-guinda { color: var(--guinda); }
-    .btn-guinda { background-color: var(--guinda); color: white; border-radius: 10px; font-weight: 600; padding: 8px 18px; border: none; }
     
+    /* Tipografía y Colores */
+    .text-guinda { color: var(--guinda); }
+    .bg-aliceblue { background-color: #f0f8ff !important; }
+    
+    /* Botones Profesionales */
+    .btn-guinda { background-color: var(--guinda); color: white; border-radius: 10px; font-weight: 600; padding: 10px 22px; border: none; transition: 0.3s; }
+    .btn-guinda:hover { background-color: var(--guinda-hover); color: white; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+    
+    .btn-primary-custom { background-color: var(--azul-pdf); color: white; border-radius: 10px; font-weight: 600; padding: 10px 22px; border: none; transition: 0.3s; }
+    .btn-primary-custom:hover { background-color: #0b5ed7; color: white; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3); }
+
     /* Tablas y Fases */
-    .table thead th { background-color: var(--guinda) !important; color: white !important; text-transform: uppercase; font-size: 0.7rem; padding: 12px; }
+    .table thead th { background-color: var(--guinda) !important; color: white !important; text-transform: uppercase; font-size: 0.7rem; padding: 12px; border: none; }
     .badge-fase { border-radius: 50px; padding: 6px 12px; font-weight: 700; font-size: 0.65rem; text-transform: uppercase; }
     .fase-EMPADRONADO { background-color: #6c757d; color: white; }
     .fase-VALIDACION_DOCS { background-color: #17a2b8; color: white; }
@@ -20,29 +37,30 @@
     .fase-APROBADO { background-color: #28a745; color: white; }
     .fase-RECHAZADO { background-color: #dc3545; color: white; }
 
-    /* Estilo de Pestañas (Tabs) */
-    .nav-tabs .nav-link { border: none; color: #666; font-weight: 600; padding: 1rem; transition: 0.3s; }
+    /* Modal y Footer Quirúrgico */
+    .modal-content { border-radius: 20px; overflow: hidden; }
+    .modal-header { border-bottom: none; padding: 1.5rem; }
+    .modal-footer { 
+        padding: 1.25rem 1.5rem; 
+        border-top: 1px solid #eee; 
+        background: #fcfcfc !important; 
+        z-index: 1055; /* Asegura que esté sobre el contenido */
+    }
+
+    /* Pestañas (Tabs) */
+    .nav-tabs { border-bottom: 2px solid #eee; }
+    .nav-tabs .nav-link { border: none; color: #888; font-weight: 700; padding: 1.2rem; font-size: 0.85rem; border-bottom: 3px solid transparent; }
     .nav-tabs .nav-link.active { color: var(--guinda); border-bottom: 3px solid var(--guinda); background: transparent; }
     .nav-tabs .nav-link:hover { color: var(--guinda); background: var(--guinda-light); }
     
-    .border-bottom-light { border-bottom: 1px solid #f1f1f1; }
+    /* Utilidades */
     .pagination .page-link { color: var(--guinda); border: none; margin: 0 3px; border-radius: 8px !important; font-weight: 600; }
     .pagination .page-item.active .page-link { background-color: var(--guinda) !important; color: white !important; }
-    .bg-guinda-light { background-color: #fdf2f7 !important; }
-    .list-group-item { transition: background 0.2s; }
-    .list-group-item:hover { background-color: #fafafa; }
-    .border-bottom-light { border-bottom: 1px solid #f1f1f1; }
     
-    /* Animación suave al abrir tarjetas */
-    #resumenCaptura .card {
-        animation: fadeIn 0.4s ease-in-out;
-    }
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
-
-        
-}
+    }
 </style>
 
 <div class="container-fluid py-4">
@@ -418,18 +436,18 @@
                     </div>
                 </form>
             </div>
-                <div class="modal-footer bg-white border-top shadow-sm">
+                <div class="modal-footer">
                     <div class="d-flex w-100 justify-content-between align-items-center">
-                        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
-                            Cancelar
+                        <button type="button" class="btn btn-outline-secondary px-4 fw-bold" style="border-radius:10px;" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>CANCELAR
                         </button>
 
                         <div class="d-flex gap-2">
-                            <button type="button" id="btnDescargarPDF" class="btn btn-primary px-4 shadow-sm d-none">
+                            <button type="button" id="btnDescargarPDF" class="btn btn-primary-custom shadow-sm d-none">
                                 <i class="fas fa-file-pdf me-2"></i>GENERAR SOLICITUD 2026
                             </button>
 
-                            <button type="button" onclick="confirmarGuardado()" class="btn btn-guinda px-5 shadow">
+                            <button type="button" onclick="confirmarGuardado()" class="btn btn-guinda shadow">
                                 <i class="fas fa-save me-2"></i>GUARDAR EXPEDIENTE
                             </button>
                         </div>
@@ -620,46 +638,58 @@ $(document).ready(function() {
     $(document).on("change", "#in_tiene_discap", window.controlarDependencias);
 
     window.abrirEdicion = function(id) {
-        const reg = rawData.find(i => i.id == id);
-        if (!reg) return;
-        const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
+    const reg = rawData.find(i => i.id == id);
+    if (!reg) return;
+    const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-        $("#formCaptura")[0].reset();
-        $("#reg_id").val(reg.id);
-        $("#spanFolio").text(reg.folio || 'S/F');
+    $("#formCaptura")[0].reset();
+    $("#reg_id").val(reg.id);
+    $("#spanFolio").text(reg.folio || 'S/F');
 
-        const fullNombre = getDatoFinal(reg, "nombre_productor", json);
-        const seg = segmentarNombreCompleto(fullNombre);
-        $("#in_nombre_productor").val(seg.nombres); 
-        $("#in_paterno").val(seg.paterno);
-        $("#in_materno").val(seg.materno);
+    // 1. Obtener Nombre Completo Real (Priorizando el capturado originalmente)
+    const fullNombre = getDatoFinal(reg, "nombre_productor", json);
+    const seg = segmentarNombreCompleto(fullNombre);
+    
+    // Llenar campos de edición con segmentación corregida
+    $("#in_nombre_productor").val(seg.nombres); 
+    $("#in_paterno").val(seg.paterno);
+    $("#in_materno").val(seg.materno);
 
-        $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
-            const el = $(this);
-            const name = el.attr('name');
-            const excluidos = ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'];
-            if (!name || excluidos.includes(name)) return;
-            const cleanName = name.replace('[]', '');
-            const valor = getDatoFinal(reg, cleanName, json);
-            if (valor !== undefined && valor !== "") {
-                if (el.is(':checkbox')) {
-                    el.prop('checked', valor === 'SI' || valor === '1' || valor === 1);
-                } else {
-                    el.val(valor);
-                }
+    // 2. Llenado Automático Masivo
+    $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
+        const el = $(this);
+        const name = el.attr('name');
+        const excluidos = ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'];
+        
+        if (!name || excluidos.includes(name)) return;
+        const cleanName = name.replace('[]', '');
+        const valor = getDatoFinal(reg, cleanName, json);
+
+        if (valor !== undefined && valor !== "") {
+            if (el.is(':checkbox')) {
+                el.prop('checked', valor === 'SI' || valor === '1' || valor === 1);
+            } else {
+                el.val(valor);
             }
-        });
+        }
+    });
 
-        $("#in_curp_edit").val(reg.curp || getDatoFinal(reg, "curp", json));
-        $("#btnDescargarPDF").off('click').on('click', function() {
-            window.open(`<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${reg.id}`, '_blank');
-        });
+    // 3. Mostrar Botón PDF y configurar evento de forma limpia
+    if (reg.id) {
+        $("#btnDescargarPDF")
+            .removeClass('d-none')
+            .off('click') // Prevenir múltiples eventos acumulados
+            .on('click', function() {
+                const url = `<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${reg.id}`;
+                window.open(url, '_blank');
+            });
+    }
 
-        renderTabResumen(reg, json);
-        window.controlarDependencias(); 
-        bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
-        $("#modalEdicion").modal('show');
-    };
+    renderTabResumen(reg, json);
+    window.controlarDependencias(); 
+    bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
+    $("#modalEdicion").modal('show');
+};
 
     $("#tablaSearch").on("keyup", function() {
         const val = $(this).val().toLowerCase();
