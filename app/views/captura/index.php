@@ -377,37 +377,44 @@ $(document).ready(function() {
     }
 
     // 5. EXTRACTOR INTELIGENTE
-    function obtenerDatoFinal(reg, campoBuscado, json) {
-        const mapaFisico = {
-            "tecnico_nombre": reg.encuestador,
-            "folio": reg.folio,
-            "curp": reg.curp,
-            "nombre_productor": `${reg.nombre} ${reg.paterno} ${reg.materno}`.trim(),
-            "pueblo_colonia": reg.colonia_nombre,
-            "superficie_prod": reg.superficie_total
-        };
+    function extractorMejorado(reg, campoBuscado, json) {
+    // 1. Prioridad: Datos directos del registro (BD principal)
+    const mapaDirecto = {
+        "folio": reg.folio,
+        "curp": reg.curp,
+        "nombre_productor": `${reg.nombre || ''} ${reg.paterno || ''} ${reg.materno || ''}`.trim(),
+        "pueblo_colonia": reg.colonia_nombre,
+        "superficie_prod": reg.superficie_total
+    };
+    if (mapaDirecto[campoBuscado]) return mapaDirecto[campoBuscado];
 
-        if (mapaFisico[campoBuscado] !== undefined && mapaFisico[campoBuscado] !== null && mapaFisico[campoBuscado] !== "") {
-            return mapaFisico[campoBuscado];
+    if (!json) return '---';
+
+    // 2. Buscar en el JSON (incluyendo manejo de arrays para checkboxes)
+    let valoresEncontrados = [];
+
+    for (let seccion in json) {
+        let contenido = json[seccion];
+        
+        // Si la sección es el objeto de coordenadas (Sección 6)
+        if (seccion === "6" && contenido[campoBuscado]) return contenido[campoBuscado];
+
+        // Si es un arreglo de {name, value}
+        if (Array.isArray(contenido)) {
+            contenido.forEach(item => {
+                if (item.name === campoBuscado || item.name === `${campoBuscado}[]`) {
+                    valoresEncontrados.push(item.value);
+                }
+            });
+        } 
+        // Si es un valor directo (como sección 14 o 16)
+        else if (seccion === campoBuscado && typeof contenido === 'string') {
+            return contenido;
         }
-
-        if (!json) return '';
-
-        if (json["6"] && json["6"][campoBuscado]) return json["6"][campoBuscado];
-
-        for (let sec in json) {
-            let contenido = json[sec];
-            if (Array.isArray(contenido)) {
-                const found = contenido.find(i => i.name === campoBuscado || i.name === campoBuscado + '[]');
-                if (found) return found.value;
-            } else if (typeof contenido === 'object' && contenido !== null) {
-                if (contenido[campoBuscado]) return contenido[campoBuscado];
-            } else if (typeof contenido === 'string' && sec === campoBuscado) {
-                return contenido;
-            }
-        }
-        return '';
     }
+
+    return valoresEncontrados.length > 0 ? valoresEncontrados.join(', ') : '---';
+}
 
     // 🔥 6. FUNCIÓN PARA RENDERIZAR EL RESUMEN VISUAL (PESTAÑA 1)
     function renderTabResumen(reg, json) {
@@ -446,47 +453,51 @@ $(document).ready(function() {
 
     // 7. FUNCIÓN GLOBAL: ABRIR MODAL
     window.abrirEdicion = function(id) {
-        const reg = rawData.find(i => i.id == id);
-        if (!reg) return;
-        const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
+    const reg = rawData.find(i => i.id == id);
+    if (!reg) return;
+    const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-        // A. Llenar encabezados
-        $("#reg_id").val(reg.id);
-        $("#spanFolio").text(reg.folio);
-        $("#in_fase").val(reg.fase_proceso || 'EMPADRONADO');
+    // --- PARTE A: ENCABEZADOS ---
+    $("#reg_id").val(reg.id);
+    $("#spanFolio").text(reg.folio || 'SIN FOLIO');
 
-        // B. Llenar Inputs Editables (Pestaña 2)
-        $("#in_nombre_productor").val(obtenerDatoFinal(reg, "nombre_productor", json));
-        $("#in_curp_edit").val(reg.curp);
-        $("#in_tel_part").val(obtenerDatoFinal(reg, "tel_particular", json));
-        $("#in_email_edit").val(obtenerDatoFinal(reg, "email", json));
-        $("#in_cp_edit").val(obtenerDatoFinal(reg, "cp", json));
-        $("#in_colonia_edit").val(reg.colonia_nombre);
-        $("#in_calle_edit").val(obtenerDatoFinal(reg, "calle_numero", json));
-        
-        $("#in_ocupacion").val(obtenerDatoFinal(reg, "ocupacion", json));
-        $("#in_sup_edit").val(reg.superficie_total);
-        $("#in_vol_edit").val(obtenerDatoFinal(reg, "volumen_prod", json));
-        $("#in_uni_edit").val(obtenerDatoFinal(reg, "unidad_medida", json));
-        $("#in_tipo_prod").val(obtenerDatoFinal(reg, "tipo_produccion", json));
-        $("#in_financia").val(obtenerDatoFinal(reg, "financiamiento", json));
-        $("#in_problema").val(obtenerDatoFinal(reg, "problema_principal", json));
+    // --- PARTE B: LLENADO DINÁMICO DE PESTAÑA 2 (EDICIÓN) ---
+    // Buscamos todos los inputs, selects y textareas del form
+    $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
+        const input = $(this);
+        const name = input.attr('name');
+        if (!name || name === 'id') return;
 
-        // C. Llenar Selects de Pestaña 2
-        const selectValues = ["estado_civil", "grado_estudios", "ingreso_mensual", "material_pisos", "tipo_agua", "situacion_unidad"];
-        selectValues.forEach(key => {
-            let val = obtenerDatoFinal(reg, key, json);
-            $(`#in_${key.replace('grado_', '').replace('material_', '').replace('situacion_', '')}`).html(`<option value="${val}">${val || 'Seleccione...'}</option>`);
-        });
+        const valor = extractorMejorado(reg, name.replace('[]', ''), json);
 
-        // D. Llenar Resumen (Pestaña 1)
-        renderTabResumen(reg, json);
+        if (input.is(':checkbox')) {
+            // Lógica para checkboxes (Documentación o Multiselección)
+            const valoresArray = valor.split(', ');
+            input.prop('checked', valoresArray.includes(input.val()) || valor === 'SI');
+        } 
+        else if (input.is('select')) {
+            // Si el select no tiene la opción, la agregamos temporalmente (o podrías cargar el catálogo)
+            if (valor !== '---') {
+                if (input.find(`option[value="${valor}"]`).length === 0) {
+                    input.append(`<option value="${valor}">${valor}</option>`);
+                }
+                input.val(valor);
+            }
+        } 
+        else {
+            // Inputs de texto, date, hidden, etc.
+            if (valor !== '---') input.val(valor);
+        }
+    });
 
-        const firstTab = document.querySelector('#tabExpediente li:first-child a');
-        if (firstTab) bootstrap.Tab.getOrCreateInstance(firstTab).show();
-        
-        $("#modalEdicion").modal('show');
-    };
+    // --- PARTE C: RENDERIZADO DE RESUMEN (PESTAÑA 1) ---
+    renderTabResumen(reg, json);
+
+    // Abrir el modal y resetear a la primera pestaña
+    const firstTab = document.querySelector('#tabExpediente li:first-child a');
+    bootstrap.Tab.getOrCreateInstance(firstTab).show();
+    $("#modalEdicion").modal('show');
+};
 
     // 8. BUSCADOR GLOBAL
     $("#tablaSearch").on("keyup", function() {
