@@ -118,101 +118,182 @@
     <div class="alert alert-warning border-0 shadow-sm small mb-3">
         <i class="fas fa-edit me-2"></i> <b>Modo Edición:</b> Los cambios realizados aquí actualizarán el expediente y el reporte final.
     </div>
-    
+
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white"><h6 class="mb-0 fw-bold text-guinda"><i class="fas fa-id-card me-2"></i>1. Identidad y Localización</h6></div>
+        <div class="card-header bg-white"><h6 class="mb-0 fw-bold text-guinda"><i class="fas fa-user-check me-2"></i>1. Datos de Identidad</h6></div>
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-4">
-                    <label class="small fw-bold">Nombre del Productor</label>
-                    <input type="text" class="form-control form-control-sm" name="nombre_productor" id="in_nombre_productor">
+                    <label class="small fw-bold">Nombre(s)</label>
+                    <input type="text" class="form-control form-control-sm" name="nombre" id="in_nombre">
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold">Apellido Paterno</label>
+                    <input type="text" class="form-control form-control-sm" name="paterno" id="in_paterno">
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold">Apellido Materno</label>
+                    <input type="text" class="form-control form-control-sm" name="materno" id="in_materno">
                 </div>
                 <div class="col-md-4">
                     <label class="small fw-bold">CURP</label>
-                    <input type="text" class="form-control form-control-sm" name="curp" id="in_curp_edit">
+                    <input type="text" class="form-control form-control-sm" name="curp" id="in_curp_edit" maxlength="18">
                 </div>
                 <div class="col-md-4">
+                    <label class="small fw-bold">RFC (con homoclave)</label>
+                    <input type="text" class="form-control form-control-sm" name="rfc" id="in_rfc" maxlength="13">
+                </div>
+                <div class="col-md-2">
+                    <label class="small fw-bold">Tipo de ID</label>
+                    <select class="form-select form-select-sm" name="tipo_id" id="in_tipo_id">
+                        <option value="">Seleccione...</option>
+                        <option value="INE">INE</option>
+                        <option value="PASAPORTE">PASAPORTE</option>
+                        <option value="CARTILLA">CARTILLA</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="small fw-bold">Número de ID</label>
+                    <input type="text" class="form-control form-control-sm" name="numero_id" id="in_num_id">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white"><h6 class="mb-0 fw-bold text-guinda"><i class="fas fa-users me-2"></i>2. Perfil Socioeconómico y Salud</h6></div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
                     <label class="small fw-bold">Estado Civil</label>
                     <select class="form-select form-select-sm" name="estado_civil" id="in_estado_civil"></select>
                 </div>
                 <div class="col-md-3">
-                    <label class="small fw-bold">Tel. Particular</label>
-                    <input type="text" class="form-control form-control-sm" name="tel_particular" id="in_tel_part">
+                    <label class="small fw-bold">Grado de Estudios</label>
+                    <select class="form-select form-select-sm" name="grado_estudios" id="in_estudios"></select>
+                </div>
+                <div class="col-md-6">
+                    <label class="small fw-bold">Ocupación Principal</label>
+                    <input type="text" class="form-control form-control-sm" name="ocupacion" id="in_ocupacion">
                 </div>
                 <div class="col-md-3">
-                    <label class="small fw-bold">Correo Electrónico</label>
-                    <input type="email" class="form-control form-control-sm" name="email" id="in_email_edit">
+                    <label class="small fw-bold">¿Tiene alguna discapacidad?</label>
+                    <select class="form-select form-select-sm" name="tiene_discapacidad" id="in_tiene_discapacidad">
+                        <option value="NO">NO</option>
+                        <option value="SI">SÍ</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="small fw-bold">¿Cuál discapacidad?</label>
+                    <input type="text" class="form-control form-control-sm" name="cual_discapacidad" id="in_cual_discapacidad">
+                </div>
+                <div class="col-md-3">
+                    <label class="small fw-bold">¿Pertenece a grupo étnico?</label>
+                    <select class="form-select form-select-sm" name="grupo_etnico" id="in_grupo_etnico">
+                        <option value="NO">NO</option>
+                        <option value="SI">SÍ</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="small fw-bold">¿Cuál grupo étnico?</label>
+                    <input type="text" class="form-control form-control-sm" name="cual_grupo_etnico" id="in_cual_grupo_etnico">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4 border-start border-4 border-primary">
+        <div class="card-header bg-white"><h6 class="mb-0 fw-bold text-primary"><i class="fas fa-map-marker-alt me-2"></i>3. Ubicación y Contacto</h6></div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <label class="small fw-bold">Calle y Número</label>
+                    <input type="text" class="form-control form-control-sm" name="calle_numero" id="in_calle">
+                </div>
+                <div class="col-md-5">
+                    <label class="small fw-bold">Colonia o Poblado</label>
+                    <input type="text" class="form-control form-control-sm" name="pueblo_colonia" id="in_colonia_edit">
                 </div>
                 <div class="col-md-2">
                     <label class="small fw-bold">C.P.</label>
                     <input type="text" class="form-control form-control-sm" name="cp" id="in_cp_edit">
                 </div>
                 <div class="col-md-4">
-                    <label class="small fw-bold">Pueblo / Colonia</label>
-                    <input type="text" class="form-control form-control-sm" name="pueblo_colonia" id="in_colonia_edit">
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white"><h6 class="mb-0 fw-bold text-guinda"><i class="fas fa-users me-2"></i>2. Perfil Socioeconómico y Vivienda</h6></div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="small fw-bold">Grado de Estudios</label>
-                    <select class="form-select form-select-sm" name="grado_estudios" id="in_estudios"></select>
+                    <label class="small fw-bold">Teléfono Particular (Celular)</label>
+                    <input type="text" class="form-control form-control-sm" name="tel_particular" id="in_tel_part">
                 </div>
                 <div class="col-md-4">
-                    <label class="small fw-bold">Ocupación Principal</label>
-                    <input type="text" class="form-control form-control-sm" name="ocupacion" id="in_ocupacion">
+                    <label class="small fw-bold">Teléfono de Casa</label>
+                    <input type="text" class="form-control form-control-sm" name="tel_casa" id="in_tel_casa">
                 </div>
                 <div class="col-md-4">
-                    <label class="small fw-bold">Ingreso Mensual aprox.</label>
-                    <select class="form-select form-select-sm" name="ingreso_mensual" id="in_ingreso"></select>
-                </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Material de Pisos</label>
-                    <select class="form-select form-select-sm" name="material_pisos" id="in_pisos"></select>
-                </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Fuente de Agua</label>
-                    <select class="form-select form-select-sm" name="tipo_agua" id="in_agua"></select>
-                </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Situación de la Unidad</label>
-                    <select class="form-select form-select-sm" name="situacion_unidad" id="in_situacion"></select>
+                    <label class="small fw-bold">Teléfono Familiar/Recados</label>
+                    <input type="text" class="form-control form-control-sm" name="tel_familiar" id="in_tel_familiar">
                 </div>
             </div>
         </div>
     </div>
 
     <div class="card border-0 shadow-sm mb-4 border-start border-4 border-success">
-        <div class="card-header bg-white"><h6 class="mb-0 fw-bold text-success"><i class="fas fa-seedling me-2"></i>3. Datos Técnicos de Producción</h6></div>
+        <div class="card-header bg-white"><h6 class="mb-0 fw-bold text-success"><i class="fas fa-seedling me-2"></i>4. Datos Técnicos de la Unidad de Producción</h6></div>
         <div class="card-body">
             <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="small fw-bold">Línea de ayuda a la que corresponde la solicitud</label>
+                    <input type="text" class="form-control form-control-sm" name="linea_ayuda" id="in_linea_ayuda">
+                </div>
+                <div class="col-md-3">
+                    <label class="small fw-bold">¿Inscrito en el SINIIGA?</label>
+                    <select class="form-select form-select-sm" name="registro_siniiga" id="in_siniiga">
+                        <option value="NO">NO</option>
+                        <option value="SI">SÍ</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="small fw-bold">Número total de predios</label>
+                    <input type="number" class="form-control form-control-sm" name="num_total_predios" id="in_num_predios">
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold">Superficie Total (Documental ha)</label>
+                    <input type="number" step="0.0001" class="form-control form-control-sm" name="superficie_documental" id="in_sup_doc">
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold">Tipo de documento de propiedad</label>
+                    <select class="form-select form-select-sm" name="tipo_documento_propiedad" id="in_tipo_doc_prop">
+                        <option value="">Seleccione...</option>
+                        <option value="TITULO_PROPIEDAD">Título de Propiedad</option>
+                        <option value="CERTIFICADO_PARCELARIO">Certificado Parcelario</option>
+                        <option value="CONSTANCIA_POSESION">Constancia de Posesión</option>
+                        <option value="ESCRITURA">Escritura Pública</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold">Poblado/Colonia (U.P.)</label>
+                    <input type="text" class="form-control form-control-sm" name="pueblo_colonia_up" id="in_colonia_up">
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold">Parajes</label>
+                    <input type="text" class="form-control form-control-sm" name="parajes" id="in_parajes" placeholder="Ubicación específica">
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold">Tenencia de la tierra</label>
+                    <select class="form-select form-select-sm" name="tenencia_tierra" id="in_tenencia">
+                        <option value="EJIDAL">Ejidal</option>
+                        <option value="COMUNAL">Comunal</option>
+                        <option value="PEQUENA_PROPIEDAD">Pequeña Propiedad</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold">Especie o Cultivo Principal</label>
+                    <input type="text" class="form-control form-control-sm" name="especie_cultivo_principal" id="in_especie">
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold">Número de cabezas / colmenas</label>
+                    <input type="number" class="form-control form-control-sm" name="numero_cabezas_colmenas" id="in_cabezas">
+                </div>
                 <div class="col-md-4">
                     <label class="small fw-bold">Tipo de Producción</label>
                     <input type="text" class="form-control form-control-sm bg-light" name="tipo_produccion" id="in_tipo_prod" readonly>
-                </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Superficie Total (ha)</label>
-                    <input type="number" step="0.01" class="form-control form-control-sm" name="superficie_prod" id="in_sup_edit">
-                </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Volumen Producción</label>
-                    <div class="input-group input-group-sm">
-                        <input type="number" class="form-control" name="volumen_prod" id="in_vol_edit">
-                        <input type="text" class="form-control w-25" name="unidad_medida" id="in_uni_edit" placeholder="Unidad">
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <label class="small fw-bold">Financiamiento</label>
-                    <input type="text" class="form-control form-control-sm" name="financiamiento" id="in_financia">
-                </div>
-                <div class="col-md-6">
-                    <label class="small fw-bold">Problema Principal</label>
-                    <input type="text" class="form-control form-control-sm" name="problema_principal" id="in_problema">
                 </div>
             </div>
         </div>
