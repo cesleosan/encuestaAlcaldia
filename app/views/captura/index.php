@@ -380,10 +380,34 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 2. EXTRACTOR DE DATOS MULTINIVEL (EL CEREBRO)
+    // 2. UTILIDADES DE PROCESAMIENTO (Lógica de Identidad)
+    // ==========================================
+    
+    // Función para segmentar nombre completo en partes
+    function segmentarNombreCompleto(nombreCompleto) {
+        if (!nombreCompleto) return { nombres: '', paterno: '', materno: '' };
+        let palabras = nombreCompleto.trim().toUpperCase().split(/\s+/);
+        let result = { nombres: '', paterno: '', materno: '' };
+
+        if (palabras.length === 1) {
+            result.nombres = palabras[0];
+        } else if (palabras.length === 2) {
+            result.nombres = palabras[0];
+            result.paterno = palabras[1];
+        } else {
+            // Asumimos que los últimos dos son los apellidos (estándar MX)
+            result.materno = palabras.pop();
+            result.paterno = palabras.pop();
+            result.nombres = palabras.join(' ');
+        }
+        return result;
+    }
+
+    // ==========================================
+    // 3. EXTRACTOR DE DATOS MULTINIVEL (EL CEREBRO)
     // ==========================================
     function getDatoFinal(reg, campoBuscado, json) {
-        // A. Prioridad 1: Datos directos de la base de datos (Raíz del objeto)
+        // A. Prioridad 1: Datos directos de la BD (Raíz del objeto)
         const mapaFisico = {
             "folio": reg.folio,
             "curp": reg.curp,
@@ -404,10 +428,8 @@ $(document).ready(function() {
         for (let seccion in json) {
             let contenido = json[seccion];
 
-            // Caso Especial: Coordenadas (Sección 6)
             if (seccion === "6" && contenido[campoBuscado]) return contenido[campoBuscado];
 
-            // Caso General: Arreglos de {name, value}
             if (Array.isArray(contenido)) {
                 contenido.forEach(item => {
                     if (item.name === campoBuscado || item.name === campoBuscado + '[]') {
@@ -415,18 +437,15 @@ $(document).ready(function() {
                     }
                 });
             } 
-            // Caso: Valores directos (Secciones 14, 16, etc. que son solo "SI/NO")
             else if (seccion === campoBuscado && typeof contenido === 'string') {
                 return contenido;
             }
         }
-
-        // Devolver string plano (si es multiselección, los junta con comas)
         return resultados.length > 0 ? resultados.join(', ').replace(/_/g, ' ') : '';
     }
 
     // ==========================================
-    // 3. RENDERIZADO DE TABLA Y PAGINACIÓN
+    // 4. RENDERIZADO DE TABLA Y PAGINACIÓN
     // ==========================================
     function renderTable(page) {
         currentPage = page;
@@ -472,7 +491,7 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 4. PESTAÑA 1: RESUMEN VISUAL (UI/UX)
+    // 5. PESTAÑA 1: RESUMEN VISUAL (UI/UX)
     // ==========================================
     function renderTabResumen(reg, json) {
         const $resumen = $("#resumenCaptura").empty();
@@ -501,55 +520,67 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 5. FUNCIÓN MAESTRA: ABRIR MODAL (DATA BINDING)
+    // 6. FUNCIÓN MAESTRA: ABRIR MODAL (DATA BINDING)
     // ==========================================
     window.abrirEdicion = function(id) {
         const reg = rawData.find(i => i.id == id);
         if (!reg) return;
         const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-        // A. Reset Form y Header
+        // A. Limpieza de UI y Accesibilidad
         $("#formCaptura")[0].reset();
+        $("#modalEdicion").removeAttr("aria-hidden"); 
         $("#reg_id").val(reg.id);
         $("#spanFolio").text(reg.folio || 'S/F');
 
-        // B. Llenado Dinámico de Inputs (Pestaña 2 y 3)
+        // B. Lógica Especial de Identidad (Segmentación y RFC)
+        const fullNombre = getDatoFinal(reg, "nombre_productor", json);
+        const seg = segmentarNombreCompleto(fullNombre);
+        $("#in_nombre").val(seg.nombres);
+        $("#in_paterno").val(seg.paterno);
+        $("#in_materno").val(seg.materno);
+
+        const curpVal = getDatoFinal(reg, "curp", json);
+        if (curpVal && curpVal.length >= 10) {
+            $("#in_rfc").val(curpVal.substring(0, 10)); // Pre-llenado sugerido de RFC
+        }
+
+        // C. Llenado Dinámico de Todos los Inputs por Atributo 'Name'
         $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
             const el = $(this);
             const name = el.attr('name');
-            if (!name || name === 'id') return;
+            if (!name || ['id', 'nombre', 'paterno', 'materno', 'rfc'].includes(name)) return;
 
             const cleanName = name.replace('[]', '');
             const valor = getDatoFinal(reg, cleanName, json);
 
-            if (el.is(':checkbox')) {
-                // Checkboxes de documentos o multiselección
-                const vals = valor.split(', ');
-                el.prop('checked', vals.includes(el.val()) || valor === 'SI');
-            } 
-            else if (el.is('select')) {
-                // Poblado dinámico si la opción no existe
-                if (valor && el.find(`option[value="${valor}"]`).length === 0) {
-                    el.append(`<option value="${valor}">${valor}</option>`);
+            if (valor && valor !== "") {
+                if (el.is(':checkbox')) {
+                    const vals = valor.split(', ');
+                    el.prop('checked', vals.includes(el.val()) || valor === 'SI');
+                } 
+                else if (el.is('select')) {
+                    if (el.find(`option[value="${valor}"]`).length === 0) {
+                        el.append(`<option value="${valor}">${valor}</option>`);
+                    }
+                    el.val(valor);
+                } 
+                else {
+                    el.val(valor);
+                    if (el.prop('readonly')) el.addClass('bg-light');
                 }
-                el.val(valor);
-            } 
-            else {
-                // Texto, Date, Email, Textarea
-                el.val(valor);
-                // UX: Si es readonly en PHP, aplicar fondo gris
-                if (el.prop('readonly')) el.addClass('bg-light');
             }
         });
 
-        // C. Renderizar Resumen y Mostrar
+        // D. Renderizar Resumen y Mostrar Modal
         renderTabResumen(reg, json);
-        bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
+        const firstTab = document.querySelector('#tabExpediente li:first-child a');
+        bootstrap.Tab.getOrCreateInstance(firstTab).show();
         $("#modalEdicion").modal('show');
     };
 
     // ==========================================
-    // 6. BUSCADOR Y ACCIONES FINALES
+    // 7. BUSCADOR GLOBAL
     // ==========================================
     $("#tablaSearch").on("keyup", function() {
         const val = $(this).val().toLowerCase();
@@ -562,24 +593,31 @@ $(document).ready(function() {
     });
 });
 
+// ==========================================
+// 8. GUARDADO DE EXPEDIENTE
+// ==========================================
 function confirmarGuardado() {
     const formData = new FormData(document.getElementById('formCaptura'));
     Swal.fire({
         title: '¿Confirmar cambios?',
-        text: "Se actualizará la fase y la información del expediente.",
+        text: "Se actualizará la fase y la información capturada en el expediente.",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#773357',
-        confirmButtonText: 'Sí, guardar'
+        confirmButtonText: 'Sí, guardar expediente'
     }).then((result) => {
         if (result.isConfirmed) {
-            Swal.fire({ title: 'Guardando...', didOpen: () => { Swal.showLoading() } });
+            Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
             fetch('<?php echo URLROOT; ?>/Captura/actualizar', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
-                if(data.status === 'success') Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload());
-                else Swal.fire('Error', data.msg, 'error');
-            });
+                if(data.status === 'success') {
+                    Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Error', data.msg, 'error');
+                }
+            })
+            .catch(err => Swal.fire('Error', 'No se pudo conectar con el servidor', 'error'));
         }
     });
 }
