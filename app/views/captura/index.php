@@ -285,7 +285,9 @@ $(document).ready(function() {
     const pageSize = 10;
     let currentPage = 1;
 
-    // 1. CARGA INICIAL DE DATOS
+    // ==========================================
+    // 1. CARGA INICIAL Y KPIs
+    // ==========================================
     fetch('<?php echo URLROOT; ?>/Encuesta/getEstadisticas')
         .then(res => res.json())
         .then(data => {
@@ -296,7 +298,6 @@ $(document).ready(function() {
         })
         .catch(err => console.error("Error al obtener datos:", err));
 
-    // 2. ACTUALIZACIÓN DE INDICADORES (KPIs)
     function actualizarKPIs(data) {
         $("#kpi-total").text(data.length);
         $("#kpi-pendientes").text(data.filter(i => i.fase_proceso === 'VALIDACION_DOCS').length);
@@ -304,7 +305,55 @@ $(document).ready(function() {
         $("#kpi-aprobados").text(data.filter(i => i.fase_proceso === 'APROBADO').length);
     }
 
-    // 3. RENDERIZADO DE LA TABLA PRINCIPAL
+    // ==========================================
+    // 2. EXTRACTOR DE DATOS MULTINIVEL (EL CEREBRO)
+    // ==========================================
+    function getDatoFinal(reg, campoBuscado, json) {
+        // A. Prioridad 1: Datos directos de la base de datos (Raíz del objeto)
+        const mapaFisico = {
+            "folio": reg.folio,
+            "curp": reg.curp,
+            "nombre_productor": `${reg.nombre || ''} ${reg.paterno || ''} ${reg.materno || ''}`.trim(),
+            "pueblo_colonia": reg.colonia_nombre,
+            "superficie_prod": reg.superficie_total,
+            "fase_proceso": reg.fase_proceso
+        };
+
+        if (mapaFisico[campoBuscado] !== undefined && mapaFisico[campoBuscado] !== null && mapaFisico[campoBuscado] !== "") {
+            return mapaFisico[campoBuscado];
+        }
+
+        if (!json) return '';
+
+        // B. Prioridad 2: Buscar en el JSON (Secciones 1 a 50)
+        let resultados = [];
+        for (let seccion in json) {
+            let contenido = json[seccion];
+
+            // Caso Especial: Coordenadas (Sección 6)
+            if (seccion === "6" && contenido[campoBuscado]) return contenido[campoBuscado];
+
+            // Caso General: Arreglos de {name, value}
+            if (Array.isArray(contenido)) {
+                contenido.forEach(item => {
+                    if (item.name === campoBuscado || item.name === campoBuscado + '[]') {
+                        if (item.value) resultados.push(item.value);
+                    }
+                });
+            } 
+            // Caso: Valores directos (Secciones 14, 16, etc. que son solo "SI/NO")
+            else if (seccion === campoBuscado && typeof contenido === 'string') {
+                return contenido;
+            }
+        }
+
+        // Devolver string plano (si es multiselección, los junta con comas)
+        return resultados.length > 0 ? resultados.join(', ').replace(/_/g, ' ') : '';
+    }
+
+    // ==========================================
+    // 3. RENDERIZADO DE TABLA Y PAGINACIÓN
+    // ==========================================
     function renderTable(page) {
         currentPage = page;
         const start = (page - 1) * pageSize;
@@ -325,16 +374,10 @@ $(document).ready(function() {
                         <div class="fw-bold text-dark">${e.nombre || ''} ${e.paterno || ''} ${e.materno || ''}</div>
                         <div class="text-muted" style="font-size: 0.7rem;">${e.curp || 'SIN CURP'}</div>
                     </td>
-                    <td>
-                        <span class="badge badge-fase fase-${e.fase_proceso || 'EMPADRONADO'}">
-                            ${faseLimpia}
-                        </span>
-                    </td>
+                    <td><span class="badge badge-fase fase-${e.fase_proceso || 'EMPADRONADO'}">${faseLimpia}</span></td>
                     <td class="text-center fw-bold text-secondary">${parseFloat(e.superficie_total || 0).toFixed(2)} ha</td>
                     <td class="text-center">
-                        <button onclick="abrirEdicion(${e.id})" class="btn btn-sm btn-guinda rounded-circle shadow-sm" title="Editar Expediente">
-                            <i class="fas fa-user-edit"></i>
-                        </button>
+                        <button onclick="abrirEdicion(${e.id})" class="btn btn-sm btn-guinda rounded-circle shadow-sm"><i class="fas fa-user-edit"></i></button>
                     </td>
                 </tr>
             `);
@@ -344,222 +387,125 @@ $(document).ready(function() {
         renderPaginationUI();
     }
 
-    // 4. LÓGICA DE PAGINACIÓN
     function renderPaginationUI() {
         const totalPages = Math.ceil(filteredData.length / pageSize);
         const container = $("#paginationControls").empty();
         if (totalPages <= 1) return;
-
-        let start = Math.max(1, currentPage - 2);
-        let end = Math.min(totalPages, start + 4);
-        if (end - start < 4) start = Math.max(1, end - 4);
-
-        if (currentPage > 1) {
-            container.append(`<li class="page-item"><a class="page-link" href="#" data-page="${currentPage - 1}"><i class="fas fa-chevron-left"></i></a></li>`);
+        for (let i = 1; i <= totalPages; i++) {
+            container.append(`<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link shadow-sm" href="#" data-page="${i}">${i}</a></li>`);
         }
-
-        for (let i = start; i <= end; i++) {
-            container.append(`
-                <li class="page-item ${i === currentPage ? 'active' : ''}">
-                    <a class="page-link shadow-sm" href="#" data-page="${i}">${i}</a>
-                </li>
-            `);
-        }
-
-        if (currentPage < totalPages) {
-            container.append(`<li class="page-item"><a class="page-link" href="#" data-page="${currentPage + 1}"><i class="fas fa-chevron-right"></i></a></li>`);
-        }
-
-        container.find('a').on('click', function(e) {
-            e.preventDefault();
-            renderTable(parseInt($(this).attr('data-page')));
-        });
+        container.find('a').on('click', function(e) { e.preventDefault(); renderTable(parseInt($(this).attr('data-page'))); });
     }
 
-    // 5. EXTRACTOR INTELIGENTE
-    function extractorMejorado(reg, campoBuscado, json) {
-    // 1. Prioridad: Datos directos del registro (BD principal)
-    const mapaDirecto = {
-        "folio": reg.folio,
-        "curp": reg.curp,
-        "nombre_productor": `${reg.nombre || ''} ${reg.paterno || ''} ${reg.materno || ''}`.trim(),
-        "pueblo_colonia": reg.colonia_nombre,
-        "superficie_prod": reg.superficie_total
-    };
-    if (mapaDirecto[campoBuscado]) return mapaDirecto[campoBuscado];
-
-    if (!json) return '---';
-
-    // 2. Buscar en el JSON (incluyendo manejo de arrays para checkboxes)
-    let valoresEncontrados = [];
-
-    for (let seccion in json) {
-        let contenido = json[seccion];
-        
-        // Si la sección es el objeto de coordenadas (Sección 6)
-        if (seccion === "6" && contenido[campoBuscado]) return contenido[campoBuscado];
-
-        // Si es un arreglo de {name, value}
-        if (Array.isArray(contenido)) {
-            contenido.forEach(item => {
-                if (item.name === campoBuscado || item.name === `${campoBuscado}[]`) {
-                    valoresEncontrados.push(item.value);
-                }
-            });
-        } 
-        // Si es un valor directo (como sección 14 o 16)
-        else if (seccion === campoBuscado && typeof contenido === 'string') {
-            return contenido;
-        }
-    }
-
-    return valoresEncontrados.length > 0 ? valoresEncontrados.join(', ') : '---';
-}
-
-    // 🔥 6. FUNCIÓN PARA RENDERIZAR EL RESUMEN VISUAL (PESTAÑA 1)
+    // ==========================================
+    // 4. PESTAÑA 1: RESUMEN VISUAL (UI/UX)
+    // ==========================================
     function renderTabResumen(reg, json) {
         const $resumen = $("#resumenCaptura").empty();
-        const gruposConfig = {
-            "Identidad y Registro": ["tecnico_nombre", "curp", "nombre_productor", "sexo", "estado_civil", "ocupacion"],
-            "Contacto y Ubicación": ["tel_particular", "tel_recados", "email", "cp", "pueblo_colonia", "calle_numero"],
-            "Situación y Estudios": ["situacion_unidad", "grado_estudios", "tipo_agua", "financiamiento"],
-            "Producción y Apoyos": ["tema_capacitacion", "tipo_apoyo", "tipo_produccion", "superficie_prod", "volumen_prod", "unidad_medida"]
+        const config = {
+            "Identidad y Registro": ["folio", "curp", "nombre_productor", "sexo", "fecha_nacimiento", "estado_civil", "ocupacion"],
+            "Ubicación Predio": ["cp", "pueblo_colonia", "calle_numero", "latitud", "longitud"],
+            "Producción y Técnica": ["situacion_unidad", "tipo_produccion", "cats_agricola", "superficie_prod", "volumen_prod", "unidad_medida", "insumos_agricolas", "problema_principal"],
+            "Social y Apoyos": ["grado_estudios", "tipo_apoyo", "capacitaciones_deseadas", "participacion_mujeres", "observaciones"]
         };
 
-        for (const [titulo, campos] of Object.entries(gruposConfig)) {
-            let htmlCard = `
+        for (const [titulo, campos] of Object.entries(config)) {
+            let filas = "";
+            campos.forEach(c => {
+                let val = getDatoFinal(reg, c, json);
+                filas += `<tr><td class="ps-3 text-muted py-2" width="40%">${c.replace(/_/g, ' ').toUpperCase()}</td><td class="fw-bold py-2 text-dark">${val || '---'}</td></tr>`;
+            });
+            $resumen.append(`
                 <div class="col-md-6 mb-3">
                     <div class="card h-100 border-0 shadow-sm overflow-hidden">
-                        <div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small">
-                            <i class="fas fa-caret-right me-2 text-warning"></i>${titulo.toUpperCase()}
-                        </div>
-                        <div class="card-body p-0">
-                            <table class="table table-sm table-hover mb-0" style="font-size:0.75rem;">
-                                <tbody>`;
-            
-            campos.forEach(c => {
-                let valor = extractorMejorado(reg, c, json);
-                htmlCard += `
-                    <tr class="border-bottom-light">
-                        <td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td>
-                        <td class="fw-bold py-2 text-dark">${valor || '---'}</td>
-                    </tr>`;
-            });
-
-            htmlCard += `</tbody></table></div></div></div>`;
-            $resumen.append(htmlCard);
+                        <div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small"><i class="fas fa-caret-right me-2 text-warning"></i>${titulo}</div>
+                        <div class="card-body p-0"><table class="table table-sm table-hover mb-0" style="font-size:0.75rem;"><tbody>${filas}</tbody></table></div>
+                    </div>
+                </div>
+            `);
         }
     }
 
-    // 7. FUNCIÓN GLOBAL: ABRIR MODAL
+    // ==========================================
+    // 5. FUNCIÓN MAESTRA: ABRIR MODAL (DATA BINDING)
+    // ==========================================
     window.abrirEdicion = function(id) {
-    const reg = rawData.find(i => i.id == id);
-    if (!reg) return;
-    const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
+        const reg = rawData.find(i => i.id == id);
+        if (!reg) return;
+        const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-    // --- PARTE A: ENCABEZADOS ---
-    $("#reg_id").val(reg.id);
-    $("#spanFolio").text(reg.folio || 'SIN FOLIO');
+        // A. Reset Form y Header
+        $("#formCaptura")[0].reset();
+        $("#reg_id").val(reg.id);
+        $("#spanFolio").text(reg.folio || 'S/F');
 
-    // --- PARTE B: LLENADO DINÁMICO DE PESTAÑA 2 (EDICIÓN) ---
-    // Buscamos todos los inputs, selects y textareas del form
-    $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
-        const input = $(this);
-        const name = input.attr('name');
-        if (!name || name === 'id') return;
+        // B. Llenado Dinámico de Inputs (Pestaña 2 y 3)
+        $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
+            const el = $(this);
+            const name = el.attr('name');
+            if (!name || name === 'id') return;
 
-        const valor = extractorMejorado(reg, name.replace('[]', ''), json);
+            const cleanName = name.replace('[]', '');
+            const valor = getDatoFinal(reg, cleanName, json);
 
-        if (input.is(':checkbox')) {
-            // Lógica para checkboxes (Documentación o Multiselección)
-            const valoresArray = valor.split(', ');
-            input.prop('checked', valoresArray.includes(input.val()) || valor === 'SI');
-        } 
-        else if (input.is('select')) {
-            // Si el select no tiene la opción, la agregamos temporalmente (o podrías cargar el catálogo)
-            if (valor !== '---') {
-                if (input.find(`option[value="${valor}"]`).length === 0) {
-                    input.append(`<option value="${valor}">${valor}</option>`);
+            if (el.is(':checkbox')) {
+                // Checkboxes de documentos o multiselección
+                const vals = valor.split(', ');
+                el.prop('checked', vals.includes(el.val()) || valor === 'SI');
+            } 
+            else if (el.is('select')) {
+                // Poblado dinámico si la opción no existe
+                if (valor && el.find(`option[value="${valor}"]`).length === 0) {
+                    el.append(`<option value="${valor}">${valor}</option>`);
                 }
-                input.val(valor);
+                el.val(valor);
+            } 
+            else {
+                // Texto, Date, Email, Textarea
+                el.val(valor);
+                // UX: Si es readonly en PHP, aplicar fondo gris
+                if (el.prop('readonly')) el.addClass('bg-light');
             }
-        } 
-        else {
-            // Inputs de texto, date, hidden, etc.
-            if (valor !== '---') input.val(valor);
-        }
-    });
+        });
 
-    // --- PARTE C: RENDERIZADO DE RESUMEN (PESTAÑA 1) ---
-    renderTabResumen(reg, json);
+        // C. Renderizar Resumen y Mostrar
+        renderTabResumen(reg, json);
+        bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
+        $("#modalEdicion").modal('show');
+    };
 
-    // Abrir el modal y resetear a la primera pestaña
-    const firstTab = document.querySelector('#tabExpediente li:first-child a');
-    bootstrap.Tab.getOrCreateInstance(firstTab).show();
-    $("#modalEdicion").modal('show');
-};
-
-    // 8. BUSCADOR GLOBAL
+    // ==========================================
+    // 6. BUSCADOR Y ACCIONES FINALES
+    // ==========================================
     $("#tablaSearch").on("keyup", function() {
         const val = $(this).val().toLowerCase();
         filteredData = rawData.filter(e => 
             (e.folio || "").toLowerCase().includes(val) || 
             (e.nombre || "").toLowerCase().includes(val) ||
-            (e.paterno || "").toLowerCase().includes(val) ||
             (e.curp || "").toLowerCase().includes(val)
         );
         renderTable(1);
     });
 });
 
-// 9. GUARDAR CAMBIOS
 function confirmarGuardado() {
-    const formElement = document.getElementById('formCaptura');
-    const formData = new FormData(formElement);
-    
+    const formData = new FormData(document.getElementById('formCaptura'));
     Swal.fire({
         title: '¿Confirmar cambios?',
-        text: "Se actualizará la fase del proceso y la información capturada.",
+        text: "Se actualizará la fase y la información del expediente.",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#773357',
-        confirmButtonText: 'Sí, guardar',
-        reverseButtons: true
+        confirmButtonText: 'Sí, guardar'
     }).then((result) => {
         if (result.isConfirmed) {
-            Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
-
-            fetch('<?php echo URLROOT; ?>/Captura/actualizar', {
-                method: 'POST',
-                body: formData
-            })
+            Swal.fire({ title: 'Guardando...', didOpen: () => { Swal.showLoading() } });
+            fetch('<?php echo URLROOT; ?>/Captura/actualizar', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
-                if(data.status === 'success') {
-                    Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload());
-                } else {
-                    Swal.fire('Error', data.msg, 'error');
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
+                if(data.status === 'success') Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload());
+                else Swal.fire('Error', data.msg, 'error');
             });
-        }
-    });
-}
-
-function confirmarSalida() {
-    Swal.fire({
-        title: '¿Cerrar sesión?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#773357',
-        confirmButtonText: 'Sí, salir',
-        reverseButtons: true
-    }).then((result) => {
-        if (result.isConfirmed) {
-            window.location.href = '<?php echo URLROOT; ?>/Auth/logout';
         }
     });
 }
