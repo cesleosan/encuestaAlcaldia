@@ -438,7 +438,7 @@ $(document).ready(function() {
                                 <tbody>`;
             
             campos.forEach(c => {
-                let valor = obtenerDatoFinal(reg, c, json);
+                let valor = extractorMejorado(reg, c, json);
                 htmlCard += `
                     <tr class="border-bottom-light">
                         <td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td>
