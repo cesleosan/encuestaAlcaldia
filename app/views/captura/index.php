@@ -599,7 +599,7 @@ $(document).ready(function() {
                     <td class="text-center fw-bold text-secondary">${parseFloat(e.superficie_total || 0).toFixed(2)} ha</td>
                     <td class="text-center">
                         <button onclick="abrirEdicion(${e.id})" class="btn btn-sm btn-guinda rounded-circle shadow-sm me-1" title="Editar"><i class="fas fa-user-edit"></i></button>
-                        <a href="<?php echo URLROOT; ?>/Captura/generarPDF/${e.id}" target="_blank" class="btn btn-sm btn-outline-danger rounded-circle shadow-sm" title="PDF"><i class="fas fa-file-pdf"></i></a>
+                        <a href="<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${e.id}" target="_blank" class="btn btn-sm btn-outline-danger rounded-circle shadow-sm" title="PDF"><i class="fas fa-file-pdf"></i></a>
                     </td>
                 </tr>
             `);
@@ -637,7 +637,9 @@ $(document).ready(function() {
         $("#spanFolio").text(reg.folio || 'S/F');
         
         // Configurar link del botón PDF del modal
-        $("#btnDescargarPDF").attr("onclick", `window.open('<?php echo URLROOT; ?>/Captura/generarPDF/${reg.id}', '_blank')`).removeClass("d-none");
+      $("#btnDescargarPDF")
+        .removeClass("d-none")
+        .attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
 
         // Identidad
         const fullNombre = getDatoFinal(reg, "nombre_productor", json);
@@ -682,29 +684,67 @@ $(document).ready(function() {
     }
 
     function renderTabResumen(reg, json) {
-        const $resumen = $("#resumenCaptura").empty();
-        const config = {
-            "1. Identidad": ["folio", "curp", "rfc", "nombre_productor", "sexo", "fecha_nacimiento"],
-            "2. Ubicación": ["cp", "pueblo_colonia", "calle_numero"],
-            "3. Perfil": ["grado_estudios", "ocupacion", "estado_civil"],
-            "4. Técnica": ["tipo_produccion", "linea_ayuda", "superficie_prod", "cultivo_principal"]
-        };
-        for (const [titulo, campos] of Object.entries(config)) {
-            let filas = "";
-            campos.forEach(c => {
-                let val = getDatoFinal(reg, c, json);
-                let displayVal = (val && val !== "") ? val.toString().replace(/_/g, ' ') : '---';
-                filas += `<tr><td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td><td class="fw-bold py-2 text-dark">${displayVal}</td></tr>`;
-            });
-            $resumen.append(`<div class="col-md-6 mb-3"><div class="card h-100 border-0 shadow-sm"><div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small">${titulo}</div><div class="card-body p-0"><table class="table table-sm mb-0" style="font-size:0.75rem;"><tbody>${filas}</tbody></table></div></div></div>`);
+    const $resumen = $("#resumenCaptura").empty();
+    
+    // Configuración extendida basada en tu JSON real
+    const config = {
+        "1. Registro y Control": ["tecnico_nombre", "folio", "fase_proceso"],
+        "2. Identidad Productor": ["nombre_productor", "curp", "rfc", "sexo", "fecha_nacimiento", "estado_civil", "grado_estudios"],
+        "3. Ubicación y Contacto": ["calle_numero", "pueblo_colonia", "cp", "latitud", "longitud", "tel_particular", "tel_recados", "email"],
+        "4. Perfil Social": ["ocupacion", "tiempo_residencia", "tiempo_residencia_cdmx", "dependientes_economicos", "servicios_salud", "grupo_etnico"],
+        "5. Vivienda": ["material_pisos", "combustible_cocina", "bienes_vivienda", "tipo_agua"],
+        "6. Datos Técnicos y Producción": ["situacion_unidad", "tipo_produccion", "cats_agricola", "detalle_hortalizas", "superficie_prod", "volumen_prod", "unidad_medida", "otra_unidad_texto"],
+        "7. Economía y Mercado": ["ingreso_mensual", "dependencia_economica", "destino_produccion", "financiamiento", "insumos_agricolas", "maquinaria", "problema_principal", "dificultades_comercializacion"],
+        "8. Aspectos Sociales y Cierre": ["participacion_mujeres", "nuevas_generaciones", "capacitaciones_deseadas", "observaciones"]
+    };
+
+    for (const [titulo, campos] of Object.entries(config)) {
+        let filas = "";
+        let tieneDatos = false;
+
+        campos.forEach(c => {
+            let val = getDatoFinal(reg, c, json);
+            
+            // Si es un valor presente, lo formateamos
+            if (val && val !== "") {
+                tieneDatos = true;
+                // Limpiamos guiones bajos para que se vea profesional
+                let displayVal = val.toString().replace(/_/g, ' ');
+                
+                filas += `
+                    <tr>
+                        <td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td>
+                        <td class="fw-bold py-2 text-dark">${displayVal}</td>
+                    </tr>`;
+            }
+        });
+
+        // Solo agregamos la tarjeta si la sección tiene al menos un dato
+        if (tieneDatos) {
+            $resumen.append(`
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100 border-0 shadow-sm" style="border-radius: 12px;">
+                        <div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small">
+                            <i class="fas fa-check-circle me-2 text-success"></i>${titulo}
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm mb-0" style="font-size:0.75rem;">
+                                <tbody>
+                                    ${filas}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `);
         }
     }
 
-    $("#tablaSearch").on("keyup", function() {
-        const val = $(this).val().toLowerCase();
-        filteredData = rawData.filter(e => (e.folio || "").toLowerCase().includes(val) || (e.nombre || "").toLowerCase().includes(val) || (e.curp || "").toLowerCase().includes(val));
-        renderTable(1);
-    });
+    // Si por alguna razón está vacío, mostramos un aviso
+    if ($resumen.is(':empty')) {
+        $resumen.html('<div class="col-12 text-center text-muted py-4">No hay datos adicionales capturados en la encuesta.</div>');
+    }
+}
 });
 
 // ==========================================
