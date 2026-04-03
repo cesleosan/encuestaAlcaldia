@@ -460,7 +460,6 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
 $(document).ready(function() {
     let rawData = [];
@@ -471,15 +470,19 @@ $(document).ready(function() {
     // ==========================================
     // 1. CARGA INICIAL
     // ==========================================
-    fetch('<?php echo URLROOT; ?>/Encuesta/getEstadisticas')
-        .then(res => res.json())
-        .then(data => {
-            rawData = data.maestro || [];
-            filteredData = [...rawData];
-            actualizarKPIs(rawData);
-            renderTable(1);
-        })
-        .catch(err => console.error("Error al obtener datos:", err));
+    function cargarDatos() {
+        fetch('<?php echo URLROOT; ?>/Encuesta/getEstadisticas')
+            .then(res => res.json())
+            .then(data => {
+                rawData = data.maestro || [];
+                filteredData = [...rawData];
+                actualizarKPIs(rawData);
+                renderTable(currentPage);
+            })
+            .catch(err => console.error("Error al obtener datos:", err));
+    }
+
+    cargarDatos();
 
     function actualizarKPIs(data) {
         $("#kpi-total").text(data.length);
@@ -489,14 +492,12 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 2. UTILIDADES DE PROCESAMIENTO
+    // 2. UTILIDADES
     // ==========================================
-    
     function segmentarNombreCompleto(nombreCompleto) {
         if (!nombreCompleto) return { nombres: '', paterno: '', materno: '' };
         let palabras = nombreCompleto.trim().toUpperCase().split(/\s+/);
         let result = { nombres: '', paterno: '', materno: '' };
-
         if (palabras.length >= 3) {
             result.materno = palabras.pop();
             result.paterno = palabras.pop();
@@ -511,12 +512,10 @@ $(document).ready(function() {
     }
 
     function getDatoFinal(reg, campoBuscado, json) {
-        // Prioridad: Columnas físicas de la base de datos
         const nombreFisico = `${reg.nombre || ''} ${reg.apellido_paterno || ''} ${reg.apellido_materno || ''}`.trim();
-        
         const mapaFisico = {
             "folio": reg.folio,
-            "curp": reg.curp, // Columna real en MariaDB
+            "curp": reg.curp,
             "rfc": reg.rfc,
             "nombre_productor": nombreFisico,
             "pueblo_colonia": reg.colonia_nombre,
@@ -527,16 +526,40 @@ $(document).ready(function() {
             "ocupacion": reg.ocupacion,
             "estado_civil": reg.estado_civil,
             "calle_numero": reg.calle,
-            "cp": reg.codigo_postal
+            "cp": reg.codigo_postal,
+            "tipo_id": reg.tipo_id,
+            "numero_id": reg.numero_id,
+            "tiene_discapacidad": reg.tiene_discapacidad,
+            "cual_discapacidad": reg.cual_discapacidad,
+            "grupo_etnico": reg.grupo_etnico,
+            "grupo_etnico_cual": reg.grupo_etnico_cual,
+            "tel_particular": reg.tel_particular,
+            "tel_casa": reg.tel_casa,
+            "tel_recados": reg.tel_familiar, // Mapeo de DB a Form
+            "linea_ayuda": reg.linea_ayuda,
+            "siniiga_status": reg.registro_siniiga,
+            "num_total_predios": reg.num_total_predios,
+            "tipo_documento_prop": reg.tipo_documento_propiedad,
+            "pueblo_colonia_up": reg.pueblo_colonia_up,
+            "parajes": reg.parajes,
+            "tenencia_tierra": reg.tenencia_tierra,
+            "cultivo_principal": reg.especie_cultivo_principal,
+            "num_animales": reg.numero_cabezas_colmenas,
+            "check_solicitud": reg.check_solicitud,
+            "check_identidad": reg.check_identidad,
+            "check_domicilio": reg.check_domicilio,
+            "check_curp_doc": reg.check_curp_doc,
+            "check_rfc_doc": reg.check_rfc_doc,
+            "check_manifiesto": reg.check_manifiesto,
+            "check_propiedad": reg.check_propiedad,
+            "check_finiquito": reg.check_finiquito,
+            "check_siniiga_doc": reg.check_siniiga_doc
         };
 
         if (mapaFisico[campoBuscado] !== undefined && mapaFisico[campoBuscado] !== null && mapaFisico[campoBuscado] !== "") {
             return mapaFisico[campoBuscado];
         }
-
         if (!json) return '';
-
-        // Búsqueda en el JSON multinivel
         for (let seccion in json) {
             let contenido = json[seccion];
             if (seccion === "6" && contenido[campoBuscado]) return contenido[campoBuscado];
@@ -555,7 +578,7 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 3. RENDERIZADO DE TABLA
+    // 3. RENDER TABLA
     // ==========================================
     function renderTable(page) {
         currentPage = page;
@@ -575,7 +598,8 @@ $(document).ready(function() {
                     <td><span class="badge badge-fase fase-${e.fase_proceso || 'EMPADRONADO'}">${faseLimpia}</span></td>
                     <td class="text-center fw-bold text-secondary">${parseFloat(e.superficie_total || 0).toFixed(2)} ha</td>
                     <td class="text-center">
-                        <button onclick="abrirEdicion(${e.id})" class="btn btn-sm btn-guinda rounded-circle shadow-sm"><i class="fas fa-user-edit"></i></button>
+                        <button onclick="abrirEdicion(${e.id})" class="btn btn-sm btn-guinda rounded-circle shadow-sm me-1" title="Editar"><i class="fas fa-user-edit"></i></button>
+                        <a href="<?php echo URLROOT; ?>/Captura/generarPDF/${e.id}" target="_blank" class="btn btn-sm btn-outline-danger rounded-circle shadow-sm" title="PDF"><i class="fas fa-file-pdf"></i></a>
                     </td>
                 </tr>
             `);
@@ -585,20 +609,16 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 4. LÓGICA DEL MODAL (CORRECCIÓN QUIRÚRGICA)
+    // 4. LÓGICA MODAL
     // ==========================================
-    
     window.controlarDependencias = function() {
-        // Discapacidad
         if ($("#in_tiene_discap").val() === "SI") {
             $("#in_cual_discap").prop("disabled", false).removeClass("bg-light");
         } else {
             $("#in_cual_discap").val("NA").prop("disabled", true).addClass("bg-light");
         }
-        
-        // Grupo Étnico (Surgico: Agregamos esta lógica que faltaba)
         const grupoEtnico = $("#in_grupo_etnico_edit").val();
-        if (grupoEtnico === "SI" || (grupoEtnico && grupoEtnico !== "NO" && grupoEtnico !== "NA")) {
+        if (grupoEtnico === "SI") {
             $("#in_grupo_cual").prop("disabled", false).removeClass("bg-light");
         } else {
             $("#in_grupo_cual").val("NA").prop("disabled", true).addClass("bg-light");
@@ -607,50 +627,50 @@ $(document).ready(function() {
 
     $(document).on("change", "#in_tiene_discap, #in_grupo_etnico_edit", window.controlarDependencias);
 
-window.abrirEdicion = function(id) {
-    const reg = rawData.find(i => i.id == id);
-    if (!reg) return;
-    const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
+    window.abrirEdicion = function(id) {
+        const reg = rawData.find(i => i.id == id);
+        if (!reg) return;
+        const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-    $("#formCaptura")[0].reset();
-    $("#reg_id").val(reg.id);
-    $("#spanFolio").text(reg.folio || 'S/F');
-
-    // 1. Identidad y CURP/RFC (Forzado manual)
-    const fullNombre = getDatoFinal(reg, "nombre_productor", json);
-    const seg = segmentarNombreCompleto(fullNombre);
-    $("#in_nombre_productor").val(seg.nombres); 
-    $("#in_paterno").val(reg.apellido_paterno || seg.paterno); 
-    $("#in_materno").val(reg.apellido_materno || seg.materno);
-    $("#in_curp_edit").val(reg.curp || getDatoFinal(reg, "curp", json));
-    $("#in_rfc").val(reg.rfc || getDatoFinal(reg, "rfc", json));
-
-    // 2. Llenado Automático de TODO el resto (Inputs, Selects, Checkboxes)
-    $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
-        const el = $(this);
-        const name = el.attr('name');
-        const excluidos = ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'];
+        $("#formCaptura")[0].reset();
+        $("#reg_id").val(reg.id);
+        $("#spanFolio").text(reg.folio || 'S/F');
         
-        if (!name || excluidos.includes(name)) return;
+        // Configurar link del botón PDF del modal
+        $("#btnDescargarPDF").attr("onclick", `window.open('<?php echo URLROOT; ?>/Captura/generarPDF/${reg.id}', '_blank')`).removeClass("d-none");
 
-        // Buscamos el valor en DB física o JSON
-        const valor = getDatoFinal(reg, name.replace('[]', ''), json);
+        // Identidad
+        const fullNombre = getDatoFinal(reg, "nombre_productor", json);
+        const seg = segmentarNombreCompleto(fullNombre);
+        $("#in_nombre_productor").val(reg.nombre || seg.nombres); 
+        $("#in_paterno").val(reg.apellido_paterno || seg.paterno); 
+        $("#in_materno").val(reg.apellido_materno || seg.materno);
+        $("#in_curp_edit").val(reg.curp);
+        $("#in_rfc").val(reg.rfc);
 
-        if (valor !== undefined && valor !== "") {
-            if (el.is(':checkbox')) {
-                el.prop('checked', valor == 1 || valor === 'SI');
-            } else {
-                el.val(valor); // Aquí llena automáticamente Selects y Textos
+        // Llenado masivo
+        $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
+            const el = $(this);
+            const name = el.attr('name');
+            const excluidos = ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'];
+            if (!name || excluidos.includes(name)) return;
+
+            const valor = getDatoFinal(reg, name, json);
+            if (valor !== undefined && valor !== "") {
+                if (el.is(':checkbox')) {
+                    el.prop('checked', valor == 1 || valor === 'SI' || valor === true);
+                } else {
+                    el.val(valor);
+                }
             }
-        }
-    });
+        });
 
-    renderTabResumen(reg, json);
-    window.controlarDependencias(); 
-    bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
-    $("#modalEdicion").modal('show');
-};
-    // Funciones de tabla y buscador...
+        renderTabResumen(reg, json);
+        window.controlarDependencias(); 
+        bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
+        $("#modalEdicion").modal('show');
+    };
+
     function renderPaginationUI() {
         const totalPages = Math.ceil(filteredData.length / pageSize);
         const container = $("#paginationControls").empty();
@@ -664,14 +684,11 @@ window.abrirEdicion = function(id) {
     function renderTabResumen(reg, json) {
         const $resumen = $("#resumenCaptura").empty();
         const config = {
-            "1. Identidad": ["folio", "curp", "rfc", "nombre_productor", "sexo", "fecha_nacimiento", "tecnico_nombre"],
-            "2. Ubicación": ["cp", "pueblo_colonia", "calle_numero", "latitud", "longitud"],
-            "3. Perfil": ["grado_estudios", "ocupacion", "estado_civil", "ingreso_mensual", "servicios_salud"],
-            "4. Técnica": ["situacion_unidad", "tipo_produccion", "cats_agricola", "detalle_hortalizas", "superficie_prod", "volumen_prod", "unidad_medida"],
-            "5. Economía": ["insumos_agricolas", "maquinaria", "problema_principal", "destino_produccion", "financiamiento"],
-            "6. Cierre": ["participacion_mujeres", "nuevas_generaciones", "capacitaciones_deseadas", "observaciones"]
+            "1. Identidad": ["folio", "curp", "rfc", "nombre_productor", "sexo", "fecha_nacimiento"],
+            "2. Ubicación": ["cp", "pueblo_colonia", "calle_numero"],
+            "3. Perfil": ["grado_estudios", "ocupacion", "estado_civil"],
+            "4. Técnica": ["tipo_produccion", "linea_ayuda", "superficie_prod", "cultivo_principal"]
         };
-
         for (const [titulo, campos] of Object.entries(config)) {
             let filas = "";
             campos.forEach(c => {
@@ -679,49 +696,73 @@ window.abrirEdicion = function(id) {
                 let displayVal = (val && val !== "") ? val.toString().replace(/_/g, ' ') : '---';
                 filas += `<tr><td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td><td class="fw-bold py-2 text-dark">${displayVal}</td></tr>`;
             });
-            $resumen.append(`
-                <div class="col-md-6 mb-3">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small"><i class="fas fa-caret-right me-2 text-warning"></i>${titulo}</div>
-                        <div class="card-body p-0"><table class="table table-sm mb-0" style="font-size:0.75rem;"><tbody>${filas}</tbody></table></div>
-                    </div>
-                </div>
-            `);
+            $resumen.append(`<div class="col-md-6 mb-3"><div class="card h-100 border-0 shadow-sm"><div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small">${titulo}</div><div class="card-body p-0"><table class="table table-sm mb-0" style="font-size:0.75rem;"><tbody>${filas}</tbody></table></div></div></div>`);
         }
     }
 
     $("#tablaSearch").on("keyup", function() {
         const val = $(this).val().toLowerCase();
-        filteredData = rawData.filter(e => 
-            (e.folio || "").toLowerCase().includes(val) || 
-            (e.nombre || "").toLowerCase().includes(val) ||
-            (e.curp || "").toLowerCase().includes(val)
-        );
+        filteredData = rawData.filter(e => (e.folio || "").toLowerCase().includes(val) || (e.nombre || "").toLowerCase().includes(val) || (e.curp || "").toLowerCase().includes(val));
         renderTable(1);
     });
 });
 
-// ACCIONES GLOBALES
-function confirmarSalida() {
-    Swal.fire({ title: '¿Cerrar sesión?', icon: 'question', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Sí, salir' }).then((result) => { if (result.isConfirmed) window.location.href = '<?php echo URLROOT; ?>/Auth/logout'; });
-}
-
+// ==========================================
+// 5. ACCIÓN DE GUARDADO (CRUCIAL)
+// ==========================================
 function confirmarGuardado() {
-    const formData = new FormData(document.getElementById('formCaptura'));
+    // 1. Habilitar campos deshabilitados para que FormData los capture
+    const inputsDisabled = $("#formCaptura").find(':disabled');
+    inputsDisabled.prop('disabled', false);
+
+    const formElement = document.getElementById('formCaptura');
+    const formData = new FormData(formElement);
+
+    // 2. Manejar Checkboxes (FormData no envía nada si no están marcados)
+    // El Modelo PHP espera estos 9 campos. Si no están en el form, los forzamos a 0.
+    const checks = [
+        'check_solicitud', 'check_identidad', 'check_domicilio', 
+        'check_curp_doc', 'check_rfc_doc', 'check_manifiesto', 
+        'check_propiedad', 'check_finiquito', 'check_siniiga_doc'
+    ];
+    
+    checks.forEach(c => {
+        if (!formData.has(c)) {
+            formData.append(c, 0);
+        }
+    });
+
+    // 3. Restaurar estado de inputs originales
+    inputsDisabled.prop('disabled', true);
+
     Swal.fire({
         title: '¿Guardar cambios?',
+        text: "Se actualizará el expediente oficial del productor",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#773357',
-        confirmButtonText: 'Guardar'
+        confirmButtonText: 'Sí, guardar'
     }).then((result) => {
         if (result.isConfirmed) {
-            Swal.fire({ title: 'Guardando...', didOpen: () => { Swal.showLoading() } });
-            fetch('<?php echo URLROOT; ?>/Captura/actualizar', { method: 'POST', body: formData })
+            Swal.fire({ title: 'Procesando...', didOpen: () => { Swal.showLoading() } });
+            
+            fetch('<?php echo URLROOT; ?>/Captura/actualizar', { 
+                method: 'POST', 
+                body: formData 
+            })
             .then(res => res.json())
             .then(data => {
-                if(data.status === 'success') Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload());
-                else Swal.fire('Error', data.msg, 'error');
+                if(data.status === 'success') {
+                    Swal.fire('¡Éxito!', data.msg, 'success').then(() => {
+                        location.reload(); // Recargamos para ver cambios reflejados
+                    });
+                } else {
+                    Swal.fire('Error', data.msg || 'No se pudo actualizar', 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                Swal.fire('Error', 'Falla de comunicación con el servidor', 'error');
             });
         }
     });

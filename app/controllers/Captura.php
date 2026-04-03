@@ -38,15 +38,15 @@ class Captura extends Controller {
             'grado_estudios'    => $_POST['grado_estudios'],
             'ocupacion'         => $_POST['ocupacion'],
             'tiene_discapacidad'=> $_POST['tiene_discapacidad'],
-            'cual_discapacidad' => $_POST['cual_discapacidad'],
+            'cual_discapacidad' => $_POST['cual_discapacidad'] ?? 'NA',
             'grupo_etnico'      => $_POST['grupo_etnico'],
-            'grupo_etnico_cual' => $_POST['grupo_etnico_cual'],
+            'grupo_etnico_cual' => $_POST['grupo_etnico_cual'] ?? 'NA',
             'calle_numero'      => $_POST['calle_numero'],
             'pueblo_colonia'    => $_POST['pueblo_colonia'],
             'cp'                => $_POST['cp'],
             'tel_particular'    => $_POST['tel_particular'],
             'tel_casa'          => $_POST['tel_casa'],
-            'tel_recados'       => $_POST['tel_recados'],
+            'tel_recados'       => $_POST['tel_recados'], // <--- Este es el del HTML
             'linea_ayuda'       => $_POST['linea_ayuda'],
             'siniiga_status'    => $_POST['siniiga_status'],
             'num_total_predios' => $_POST['num_total_predios'],
@@ -58,11 +58,22 @@ class Captura extends Controller {
             'cultivo_principal' => $_POST['cultivo_principal'],
             'num_animales'      => $_POST['num_animales'],
             'fase_proceso'      => $_POST['fase_proceso'],
-            'json'              => $registro->respuestas_json // No perdemos la encuesta original
+            'check_solicitud'   => $_POST['check_solicitud'] ?? 0,
+            'check_identidad'   => $_POST['check_identidad'] ?? 0,
+            'check_domicilio'   => $_POST['check_domicilio'] ?? 0,
+            'check_curp_doc'    => $_POST['check_curp_doc'] ?? 0,
+            'check_rfc_doc'     => $_POST['check_rfc_doc'] ?? 0,
+            'check_manifiesto'  => $_POST['check_manifiesto'] ?? 0,
+            'check_propiedad'   => $_POST['check_propiedad'] ?? 0,
+            'check_finiquito'   => $_POST['check_finiquito'] ?? 0,
+            'check_siniiga_doc' => $_POST['check_siniiga_doc'] ?? 0,
+            'json'              => $registro->respuestas_json 
         ];
 
         if ($this->encuestaModel->actualizarExpediente($data)) {
-            echo json_encode(['status' => 'success', 'msg' => 'Guardado completo']);
+            echo json_encode(['status' => 'success', 'msg' => 'Expediente actualizado correctamente']);
+        } else {
+            echo json_encode(['status' => 'error', 'msg' => 'Error en el servidor al guardar']);
         }
     }
 }
