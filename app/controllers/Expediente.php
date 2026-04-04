@@ -39,61 +39,62 @@ class Expediente extends Controller {
         // A. Encabezado (Folio y Fecha)
         $pdf->SetXY(155, 43); $pdf->Write(0, $datos->folio ?? '');
         $fecha = ($datos->fecha_inicio) ? date('d/m/Y', strtotime($datos->fecha_inicio)) : date('d/m/Y');
-        $pdf->SetXY(140, 55); $pdf->Write(0, $fecha);
+        $pdf->SetXY(155, 55); $pdf->Write(0, $fecha);
 
         // B. Identidad del Solicitante (Ajuste de altura para centrar en fila)
-        $pdf->SetXY(22, 105); $pdf->Write(0, $this->toLatin1($datos->nombre ?? ''));
-        $pdf->SetXY(85, 105); $pdf->Write(0, $this->toLatin1($datos->apellido_paterno ?? ''));
-        $pdf->SetXY(145, 105); $pdf->Write(0, $this->toLatin1($datos->apellido_materno ?? ''));
+        $pdf->SetXY(25, 85); $pdf->Write(0, $this->toLatin1($datos->nombre ?? ''));
+        $pdf->SetXY(75, 85); $pdf->Write(0, $this->toLatin1($datos->apellido_paterno ?? ''));
+        $pdf->SetXY(135, 85); $pdf->Write(0, $this->toLatin1($datos->apellido_materno ?? ''));
         
-        $pdf->SetXY(22, 118); $pdf->Write(0, $datos->curp ?? '');
-        $pdf->SetXY(145, 118); $pdf->Write(0, $datos->rfc ?? '');
+        $pdf->SetXY(75, 93); $pdf->Write(0, $datos->curp ?? '');
+        $pdf->SetXY(160, 93); $pdf->Write(0, $datos->rfc ?? '');
 
         // C. Datos Generales
-        $pdf->SetXY(22, 133); $pdf->Write(0, $this->toLatin1($datos->tipo_id ?? 'INE'));
-        $pdf->SetXY(145, 133); $pdf->Write(0, $datos->numero_id ?? '');
+        $pdf->SetXY(25, 95); $pdf->Write(0, $this->toLatin1($datos->tipo_id ?? 'INE'));
+        $pdf->SetXY(120, 95); $pdf->Write(0, $datos->numero_id ?? '');
         
-        $pdf->SetXY(22, 146); $pdf->Write(0, $this->toLatin1($datos->estado_civil ?? ''));
-        $pdf->SetXY(85, 146); $pdf->Write(0, $this->toLatin1($datos->escolaridad ?? ''));
-        $pdf->SetXY(145, 146); $pdf->Write(0, $this->toLatin1($datos->ocupacion ?? ''));
+        $pdf->SetXY(25, 105); $pdf->Write(0, $this->toLatin1($datos->estado_civil ?? ''));
+        $pdf->SetXY(85, 105); $pdf->Write(0, $this->toLatin1($datos->escolaridad ?? ''));
+        $pdf->SetXY(135, 105); $pdf->Write(0, $this->toLatin1($datos->ocupacion ?? ''));
 
         // Discapacidad y Etnia (Ajustado a los cuadros de respuesta)
-        $pdf->SetXY(60, 154); $pdf->Write(0, $this->toLatin1($datos->tiene_discapacidad ?? 'NO'));
-        $pdf->SetXY(155, 154); $pdf->Write(0, $this->toLatin1($datos->cual_discapacidad ?? 'NA'));
+        $pdf->SetXY(105, 110); $pdf->Write(0, $this->toLatin1($datos->tiene_discapacidad ?? 'NO'));
+        $pdf->SetXY(105, 115); $pdf->Write(0, $this->toLatin1($datos->cual_discapacidad ?? 'NA'));
         
-        $pdf->SetXY(60, 161); $pdf->Write(0, $this->toLatin1($datos->grupo_etnico ?? 'NO'));
-        $pdf->SetXY(155, 161); $pdf->Write(0, $this->toLatin1($datos->grupo_etnico_cual ?? 'NA'));
+        $pdf->SetXY(155, 110); $pdf->Write(0, $this->toLatin1($datos->grupo_etnico ?? 'NO'));
+        $pdf->SetXY(155, 115); $pdf->Write(0, $this->toLatin1($datos->grupo_etnico_cual ?? 'NA'));
 
         // D. Domicilio y Contacto
-        $pdf->SetXY(22, 178); $pdf->Write(0, $this->toLatin1($datos->calle ?? ''));
-        $pdf->SetXY(85, 178); $pdf->Write(0, $this->toLatin1($datos->pueblo_colonia ?? $datos->colonia_nombre ?? ''));
-        $pdf->SetXY(150, 178); $pdf->Write(0, $datos->codigo_postal ?? '');
+        $pdf->SetXY(25, 118); $pdf->Write(0, $this->toLatin1($datos->calle ?? ''));
+        $pdf->SetXY(75, 118); $pdf->Write(0, $this->toLatin1($datos->pueblo_colonia ?? $datos->colonia_nombre ?? ''));
+        $pdf->SetXY(125, 118); $pdf->Write(0, $datos->codigo_postal ?? '');
         
-        $pdf->SetXY(22, 190); $pdf->Write(0, $datos->tel_particular ?? '');
-        $pdf->SetXY(85, 190); $pdf->Write(0, $datos->tel_casa ?? '');
-        $pdf->SetXY(145, 190); $pdf->Write(0, $datos->tel_familiar ?? '');
+        $pdf->SetXY(35, 125); $pdf->Write(0, $datos->tel_particular ?? '');
+        $pdf->SetXY(90, 125); $pdf->Write(0, $datos->tel_casa ?? '');
+        $pdf->SetXY(145, 125); $pdf->Write(0, $datos->tel_familiar ?? '');
 
-        // E. Checklist de Requisitos (Marcas 'X')
-        $baseY = 205; 
-        if (!empty($datos->check_identidad)) { $pdf->SetXY(192, $baseY); $pdf->Write(0, 'X'); }
-        if (!empty($datos->check_domicilio)) { $pdf->SetXY(192, $baseY + 7); $pdf->Write(0, 'X'); }
-        if (!empty($datos->check_curp_doc))  { $pdf->SetXY(192, $baseY + 14); $pdf->Write(0, 'X'); }
-        if (!empty($datos->check_rfc_doc))   { $pdf->SetXY(192, $baseY + 21); $pdf->Write(0, 'X'); }
-        if (!empty($datos->check_propiedad)) { $pdf->SetXY(192, $baseY + 28); $pdf->Write(0, 'X'); }
-        if (!empty($datos->check_siniiga_doc)){ $pdf->SetXY(192, $baseY + 35); $pdf->Write(0, 'X'); }
-        if (!empty($datos->check_finiquito)) { $pdf->SetXY(192, $baseY + 42); $pdf->Write(0, 'X'); }
+       // E. Checklist de Requisitos (Marcas 'X') - Coordenadas basadas en Grid Rojo
+        $baseY = 145; // Centro de la primera fila (Identidad)
+        $intercalado = 5; // Altura exacta de cada fila en tu PDF
 
+        if (!empty($datos->check_identidad))   { $pdf->SetXY(175, $baseY); $pdf->Write(0, 'X'); }
+        if (!empty($datos->check_domicilio))   { $pdf->SetXY(175, $baseY + $intercalado); $pdf->Write(0, 'X'); }
+        if (!empty($datos->check_curp_doc))    { $pdf->SetXY(175, $baseY + ($intercalado * 2)); $pdf->Write(0, 'X'); }
+        if (!empty($datos->check_rfc_doc))     { $pdf->SetXY(175, $baseY + ($intercalado * 3)); $pdf->Write(0, 'X'); }
+        if (!empty($datos->check_propiedad))   { $pdf->SetXY(175, $baseY + ($intercalado * 4)); $pdf->Write(0, 'X'); }
+        if (!empty($datos->check_siniiga_doc)) { $pdf->SetXY(175, $baseY + ($intercalado * 5)); $pdf->Write(0, 'X'); }
+        if (!empty($datos->check_finiquito))   { $pdf->SetXY(175, $baseY + ($intercalado * 6)); $pdf->Write(0, 'X'); }
         // F. Producción Primaria
-        $pdf->SetXY(40, 248); $pdf->Write(0, $datos->num_total_predios ?? '1');
-        $pdf->SetXY(150, 248); $pdf->Write(0, ($datos->superficie_total ?? '0') . ' ha');
+        $pdf->SetXY(85, 180); $pdf->Write(0, $datos->num_total_predios ?? '1');
+        $pdf->SetXY(165, 180); $pdf->Write(0, ($datos->superficie_total ?? '0') . ' ha');
         
-        $pdf->SetXY(40, 258); $pdf->Write(0, $this->toLatin1($datos->tipo_documento_propiedad ?? ''));
+        $pdf->SetXY(80, 185); $pdf->Write(0, $this->toLatin1($datos->tipo_documento_propiedad ?? ''));
         
-        $pdf->SetXY(40, 268); $pdf->Write(0, $this->toLatin1($datos->pueblo_colonia_up ?? ''));
-        $pdf->SetXY(150, 268); $pdf->Write(0, $this->toLatin1($datos->parajes ?? ''));
+        $pdf->SetXY(95, 195); $pdf->Write(0, $this->toLatin1($datos->pueblo_colonia_up ?? ''));
+        $pdf->SetXY(165, 195); $pdf->Write(0, $this->toLatin1($datos->parajes ?? ''));
 
-        $pdf->SetXY(40, 278); $pdf->Write(0, $this->toLatin1($datos->especie_cultivo_principal ?? ''));
-        $pdf->SetXY(150, 278); $pdf->Write(0, $datos->numero_cabezas_colmenas ?? '0');
+        $pdf->SetXY(75, 202); $pdf->Write(0, $this->toLatin1($datos->especie_cultivo_principal ?? ''));
+        $pdf->SetXY(165, 202); $pdf->Write(0, $datos->numero_cabezas_colmenas ?? '0');
 
         // --- PÁGINA 2: COMPROMISOS ---
         $tplId2 = $pdf->importPage(2);
