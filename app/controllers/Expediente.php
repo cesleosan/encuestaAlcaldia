@@ -9,9 +9,14 @@ class Expediente extends Controller {
         $this->encuestaModel = $this->model('EncuestaModelo'); 
     }
 
+    /**
+     * Convierte el texto a codificación Latin1 y lo transforma a MAYÚSCULAS
+     */
     private function toLatin1($txt) {
         if ($txt === null || $txt === '') return '';
-        return iconv('UTF-8', 'windows-1252//TRANSLIT', $txt);
+        // Convertimos a mayúsculas antes de la codificación para preservar caracteres especiales
+        $txtMayus = mb_strtoupper($txt, 'UTF-8');
+        return iconv('UTF-8', 'windows-1252//TRANSLIT', $txtMayus);
     }
 
     public function imprimirSolicitud($id) {
@@ -41,7 +46,7 @@ class Expediente extends Controller {
         $fecha = ($datos->fecha_inicio) ? date('d/m/Y', strtotime($datos->fecha_inicio)) : date('d/m/Y');
         $pdf->SetXY(155, 55); $pdf->Write(0, $fecha);
 
-        // B. Identidad del Solicitante (Ajuste de altura para centrar en fila)
+        // B. Identidad del Solicitante
         $pdf->SetXY(25, 83); $pdf->Write(0, $this->toLatin1($datos->nombre ?? ''));
         $pdf->SetXY(75, 83); $pdf->Write(0, $this->toLatin1($datos->apellido_paterno ?? ''));
         $pdf->SetXY(135, 83); $pdf->Write(0, $this->toLatin1($datos->apellido_materno ?? ''));
@@ -53,11 +58,11 @@ class Expediente extends Controller {
         $pdf->SetXY(25, 94); $pdf->Write(0, $this->toLatin1($datos->tipo_id ?? 'INE'));
         $pdf->SetXY(120, 94); $pdf->Write(0, $datos->numero_id ?? '');
         
-        $pdf->SetXY(25, 101); $pdf->Write(0, $this->toLatin1($datos->estado_civil ?? ''));
-        $pdf->SetXY(85, 101); $pdf->Write(0, $this->toLatin1($datos->escolaridad ?? ''));
-        $pdf->SetXY(135, 101); $pdf->Write(0, $this->toLatin1($datos->ocupacion ?? ''));
+        $pdf->SetXY(25, 102); $pdf->Write(0, $this->toLatin1($datos->estado_civil ?? ''));
+        $pdf->SetXY(85, 102); $pdf->Write(0, $this->toLatin1($datos->escolaridad ?? ''));
+        $pdf->SetXY(135, 102); $pdf->Write(0, $this->toLatin1($datos->ocupacion ?? ''));
 
-        // Discapacidad y Etnia (Ajustado a los cuadros de respuesta)
+        // Discapacidad y Etnia
         $pdf->SetXY(105, 109); $pdf->Write(0, $this->toLatin1($datos->tiene_discapacidad ?? 'NO'));
         $pdf->SetXY(105, 113); $pdf->Write(0, $this->toLatin1($datos->cual_discapacidad ?? 'NA'));
         
@@ -73,9 +78,9 @@ class Expediente extends Controller {
         $pdf->SetXY(95, 123); $pdf->Write(0, $datos->tel_casa ?? '');
         $pdf->SetXY(159, 123); $pdf->Write(0, $datos->tel_familiar ?? '');
 
-       // E. Checklist de Requisitos (Marcas 'X') - Coordenadas basadas en Grid Rojo
-        $baseY = 139; // Centro de la primera fila (Identidad)
-        $intercalado = 5; // Altura exacta de cada fila en tu PDF
+        // E. Checklist de Requisitos (Marcas 'X')
+        $baseY = 139; 
+        $intercalado = 5; 
 
         if (!empty($datos->check_identidad))   { $pdf->SetXY(180, $baseY); $pdf->Write(0, 'X'); }
         if (!empty($datos->check_domicilio))   { $pdf->SetXY(180, $baseY + $intercalado); $pdf->Write(0, 'X'); }
@@ -84,9 +89,10 @@ class Expediente extends Controller {
         if (!empty($datos->check_propiedad))   { $pdf->SetXY(180, $baseY + ($intercalado * 4)); $pdf->Write(0, 'X'); }
         if (!empty($datos->check_siniiga_doc)) { $pdf->SetXY(180, $baseY + ($intercalado * 5)); $pdf->Write(0, 'X'); }
         if (!empty($datos->check_finiquito))   { $pdf->SetXY(180, $baseY + ($intercalado * 6)); $pdf->Write(0, 'X'); }
+
         // F. Producción Primaria
         $pdf->SetXY(85, 180); $pdf->Write(0, $datos->num_total_predios ?? '1');
-        $pdf->SetXY(165, 180); $pdf->Write(0, ($datos->superficie_total ?? '0') . ' ha');
+        $pdf->SetXY(165, 180); $pdf->Write(0, ($datos->superficie_total ?? '0') . ' HA');
         
         $pdf->SetXY(80, 185); $pdf->Write(0, $this->toLatin1($datos->tipo_documento_propiedad ?? ''));
         
@@ -104,7 +110,7 @@ class Expediente extends Controller {
         $nombreFull = trim(($datos->nombre ?? '') . ' ' . ($datos->apellido_paterno ?? '') . ' ' . ($datos->apellido_materno ?? ''));
         $pdf->SetFont('Arial', 'B', 9);
         
-        // Firma Solicitante (Centrada sobre la línea)
+        // Firma Solicitante
         $pdf->SetXY(110, 267); 
         $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
 
@@ -113,7 +119,7 @@ class Expediente extends Controller {
         $pdf->addPage();
         $pdf->useTemplate($tplId3);
         
-        // Firma última página (Centrada sobre la línea)
+        // Firma última página
         $pdf->SetXY(25, 267); 
         $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
 
@@ -121,51 +127,48 @@ class Expediente extends Controller {
         $pdf->Output('I', "Solicitud_{$datos->folio}.pdf");
     }
 
+    /**
+     * Mantiene la cuadrícula de calibración intacta
+     */
     public function calibrar($id) {
-    if (ob_get_level()) ob_end_clean();
+        if (ob_get_level()) ob_end_clean();
 
-    // 1. Cargar el PDF base
-    $pdf = new Fpdi();
-    $pdf->SetAutoPageBreak(false);
-    $rutaTemplate = APPROOT . '/views/formatos/formatoProductores2026.pdf'; 
-    $pdf->setSourceFile($rutaTemplate);
-    $tplId = $pdf->importPage(1);
-    $pdf->addPage();
-    $pdf->useTemplate($tplId);
+        $pdf = new Fpdi();
+        $pdf->SetAutoPageBreak(false);
+        $rutaTemplate = APPROOT . '/views/formatos/formatoProductores2026.pdf'; 
+        $pdf->setSourceFile($rutaTemplate);
+        $tplId = $pdf->importPage(1);
+        $pdf->addPage();
+        $pdf->useTemplate($tplId);
 
-    // 2. Configurar estilo de la cuadrícula
-    $pdf->SetFont('Arial', '', 7);
-    $pdf->SetDrawColor(255, 0, 0); // Rojo para las líneas
-    $pdf->SetTextColor(255, 0, 0); // Rojo para los números
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->SetDrawColor(255, 0, 0);
+        $pdf->SetTextColor(255, 0, 0);
 
-    // 3. Dibujar Guías Horizontales (Eje Y) cada 5mm
-    for ($y = 0; $y <= 297; $y += 5) {
-        $pdf->Line(0, $y, 210, $y);
-        // Escribir el número cada 10mm para no saturar
-        if ($y % 10 == 0) {
-            $pdf->SetXY(2, $y - 2);
-            $pdf->Write(0, "Y=$y");
+        for ($y = 0; $y <= 297; $y += 5) {
+            $pdf->Line(0, $y, 210, $y);
+            if ($y % 10 == 0) {
+                $pdf->SetXY(2, $y - 2);
+                $pdf->Write(0, "Y=$y");
+            }
         }
-    }
 
-    // 4. Dibujar Guías Verticales (Eje X) cada 5mm
-    for ($x = 0; $x <= 210; $x += 5) {
-        $pdf->Line($x, 0, $x, 297);
-        if ($x % 10 == 0) {
-            $pdf->SetXY($x + 1, 2);
-            $pdf->Write(0, "X=$x");
+        for ($x = 0; $x <= 210; $x += 5) {
+            $pdf->Line($x, 0, $x, 297);
+            if ($x % 10 == 0) {
+                $pdf->SetXY($x + 1, 2);
+                $pdf->Write(0, "X=$x");
+            }
         }
-    }
 
-    // 5. Opcional: Imprimir un dato real para ver cómo queda
-    $datos = $this->encuestaModel->getExpedienteCompleto($id);
-    if($datos){
-        $pdf->SetFont('Arial', 'B', 12);
-        $pdf->SetTextColor(0, 0, 255); // Azul para el dato de prueba
-        $pdf->SetXY(22, 105); 
-        $pdf->Write(0, "PRUEBA: " . $this->toLatin1($datos->nombre));
-    }
+        $datos = $this->encuestaModel->getExpedienteCompleto($id);
+        if($datos){
+            $pdf->SetFont('Arial', 'B', 12);
+            $pdf->SetTextColor(0, 0, 255);
+            $pdf->SetXY(22, 105); 
+            $pdf->Write(0, "PRUEBA: " . $this->toLatin1($datos->nombre));
+        }
 
-    $pdf->Output('I', 'CALIBRACION_COORDENADAS.pdf');
-}
+        $pdf->Output('I', 'CALIBRACION_COORDENADAS.pdf');
+    }
 }
