@@ -20,6 +20,24 @@
     /* Tipografía y Colores */
     .text-guinda { color: var(--guinda); }
     .bg-aliceblue { background-color: #f0f8ff !important; }
+
+    /* --- FORZAR MAYÚSCULAS EN TODO EL MODAL --- */
+    #modalEdicion input, 
+    #modalEdicion select, 
+    #modalEdicion textarea,
+    #resumenCaptura .fw-bold { 
+        text-transform: uppercase; 
+    }
+
+    /* --- CORRECCIÓN DE ALINEACIÓN (Labels consistentes) --- */
+    #formCaptura label {
+        display: block;
+        min-height: 2.2rem; /* Altura mínima para que los inputs se alineen horizontalmente */
+        margin-bottom: 0.25rem;
+        line-height: 1.1;
+        display: flex;
+        align-items: flex-end; /* Alinea el texto de la etiqueta al fondo */
+    }
     
     /* Botones Profesionales */
     .btn-guinda { background-color: var(--guinda); color: white; border-radius: 10px; font-weight: 600; padding: 10px 22px; border: none; transition: 0.3s; }
@@ -44,7 +62,7 @@
         padding: 1.25rem 1.5rem; 
         border-top: 1px solid #eee; 
         background: #fcfcfc !important; 
-        z-index: 1055; /* Asegura que esté sobre el contenido */
+        z-index: 1055; 
     }
 
     /* Pestañas (Tabs) */
@@ -62,7 +80,6 @@
         to { opacity: 1; transform: translateY(0); }
     }
 </style>
-
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-md-7">
@@ -751,15 +768,27 @@ $(document).ready(function() {
 // 5. ACCIÓN DE GUARDADO (CRUCIAL)
 // ==========================================
 function confirmarGuardado() {
-    // 1. Habilitar campos deshabilitados para que FormData los capture
+    // ============================================================
+    // 1. TRANSFORMACIÓN A MAYÚSCULAS (PASO NUEVO)
+    // ============================================================
+    // Convertimos el valor de todos los inputs de texto y textareas a mayúsculas
+    $("#formCaptura input[type='text'], #formCaptura textarea").each(function() {
+        $(this).val($(this).val().toUpperCase());
+    });
+
+    // ============================================================
+    // 2. MANEJO DE CAMPOS DESHABILITADOS
+    // ============================================================
+    // Habilitar temporalmente para que FormData capture los valores (discapacidad, etnia, etc.)
     const inputsDisabled = $("#formCaptura").find(':disabled');
     inputsDisabled.prop('disabled', false);
 
     const formElement = document.getElementById('formCaptura');
     const formData = new FormData(formElement);
 
-    // 2. Manejar Checkboxes (FormData no envía nada si no están marcados)
-    // El Modelo PHP espera estos 9 campos. Si no están en el form, los forzamos a 0.
+    // ============================================================
+    // 3. MANEJO DE CHECKBOXES (VALORES POR DEFECTO 0)
+    // ============================================================
     const checks = [
         'check_solicitud', 'check_identidad', 'check_domicilio', 
         'check_curp_doc', 'check_rfc_doc', 'check_manifiesto', 
@@ -772,12 +801,14 @@ function confirmarGuardado() {
         }
     });
 
-    // 3. Restaurar estado de inputs originales
+    // ============================================================
+    // 4. RESTAURAR ESTADO Y LANZAR CONFIRMACIÓN
+    // ============================================================
     inputsDisabled.prop('disabled', true);
 
     Swal.fire({
         title: '¿Guardar cambios?',
-        text: "Se actualizará el expediente oficial del productor",
+        text: "Se actualizará el expediente oficial del productor en MAYÚSCULAS",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#773357',
@@ -791,15 +822,19 @@ function confirmarGuardado() {
                 body: formData 
             })
             .then(res => res.json())
-            .then(data => {
-                if(data.status === 'success') {
-                    Swal.fire('¡Éxito!', data.msg, 'success').then(() => {
-                        location.reload(); // Recargamos para ver cambios reflejados
-                    });
-                } else {
-                    Swal.fire('Error', data.msg || 'No se pudo actualizar', 'error');
-                }
-            })
+                .then(data => {
+                    if(data.status === 'success') {
+                        Swal.fire({
+                            title: '¡Éxito!',
+                            text: data.msg,
+                            icon: 'success'
+                        }).then(() => {
+                            location.reload(); // Recargamos para reflejar los cambios
+                        });
+                    } else {
+                        Swal.fire('Error', data.msg || 'No se pudo actualizar', 'error');
+                    }
+                })
             .catch(err => {
                 console.error(err);
                 Swal.fire('Error', 'Falla de comunicación con el servidor', 'error');
