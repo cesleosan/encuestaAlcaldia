@@ -33,7 +33,7 @@ class Expediente extends Controller {
         $pdf->useTemplate($tplId);
 
         // Fuente estándar para los datos
-        $pdf->SetFont('Arial', '', 9); 
+        $pdf->SetFont('Arial', '', 8); 
         $pdf->SetTextColor(0, 0, 0);
 
         // A. Encabezado (Folio y Fecha)
@@ -65,9 +65,9 @@ class Expediente extends Controller {
         $pdf->SetXY(158, 113); $pdf->Write(0, $this->toLatin1($datos->grupo_etnico_cual ?? 'NA'));
 
         // D. Domicilio y Contacto
-        $pdf->SetXY(25, 115); $pdf->Write(0, $this->toLatin1($datos->calle ?? ''));
-        $pdf->SetXY(75, 115); $pdf->Write(0, $this->toLatin1($datos->pueblo_colonia ?? $datos->colonia_nombre ?? ''));
-        $pdf->SetXY(135, 115); $pdf->Write(0, $datos->codigo_postal ?? '');
+        $pdf->SetXY(25, 116); $pdf->Write(0, $this->toLatin1($datos->calle ?? ''));
+        $pdf->SetXY(75, 116); $pdf->Write(0, $this->toLatin1($datos->pueblo_colonia ?? $datos->colonia_nombre ?? ''));
+        $pdf->SetXY(138, 116); $pdf->Write(0, $datos->codigo_postal ?? '');
         
         $pdf->SetXY(35, 123); $pdf->Write(0, $datos->tel_particular ?? '');
         $pdf->SetXY(90, 123); $pdf->Write(0, $datos->tel_casa ?? '');
