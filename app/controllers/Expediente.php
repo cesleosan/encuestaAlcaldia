@@ -74,9 +74,9 @@ class Expediente extends Controller {
         $pdf->SetXY(75, 116); $pdf->Write(0, $this->toLatin1($datos->pueblo_colonia ?? $datos->colonia_nombre ?? ''));
         $pdf->SetXY(138, 116); $pdf->Write(0, $datos->codigo_postal ?? '');
         
-        $pdf->SetXY(40, 123); $pdf->Write(0, $datos->tel_particular ?? '');
-        $pdf->SetXY(95, 123); $pdf->Write(0, $datos->tel_casa ?? '');
-        $pdf->SetXY(159, 123); $pdf->Write(0, $datos->tel_familiar ?? '');
+        $pdf->SetXY(40, 124); $pdf->Write(0, $datos->tel_particular ?? '');
+        $pdf->SetXY(95, 124); $pdf->Write(0, $datos->tel_casa ?? '');
+        $pdf->SetXY(159, 124); $pdf->Write(0, $datos->tel_familiar ?? '');
 
         // E. Checklist de Requisitos (Marcas 'X')
         $baseY = 139; 
