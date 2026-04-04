@@ -928,4 +928,29 @@ function confirmarGuardado() {
         }
     });
 }
+// ==========================================
+// ACCIÓN: CERRAR SESIÓN
+// ==========================================
+function confirmarSalida() {
+    Swal.fire({
+        title: '¿Cerrar sesión?',
+        text: "Cualquier cambio no guardado se perderá.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545', // Rojo para indicar salida/peligro
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="fas fa-sign-out-alt me-2"></i>SÍ, SALIR',
+        cancelButtonText: 'CANCELAR',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Redirección a la ruta de logout de tu controlador Auth
+            window.location.href = '<?php echo URLROOT; ?>/Auth/logout';
+        }
+    });
+}
+
+// También puedes asegurarte de que sea global así:
+window.confirmarSalida = confirmarSalida;
+
 </script>
