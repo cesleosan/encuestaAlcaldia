@@ -690,15 +690,101 @@ $(document).ready(function() {
         $("#modalEdicion").modal('show');
     };
 
-    function renderPaginationUI() {
-        const totalPages = Math.ceil(filteredData.length / pageSize);
-        const container = $("#paginationControls").empty();
-        if (totalPages <= 1) return;
-        for (let i = 1; i <= totalPages; i++) {
-            container.append(`<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link shadow-sm" href="#" data-page="${i}">${i}</a></li>`);
+function renderPaginationUI() {
+    const totalPages = Math.ceil(filteredData.length / pageSize);
+    const container = $("#paginationControls").empty();
+    
+    if (totalPages <= 1) return;
+
+    const delta = 2; // Cantidad de páginas a mostrar a los lados de la actual
+    const range = [];
+    const rangeWithDots = [];
+    let l;
+
+    // 1. Determinar qué números de página mostrar
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
+            range.push(i);
         }
-        container.find('a').on('click', function(e) { e.preventDefault(); renderTable(parseInt($(this).attr('data-page'))); });
     }
+
+    // 2. Insertar elipses (...) donde haya saltos
+    for (let i of range) {
+        if (l) {
+            if (i - l === 2) {
+                rangeWithDots.push(l + 1);
+            } else if (i - l !== 1) {
+                rangeWithDots.push('...');
+            }
+        }
+        rangeWithDots.push(i);
+        l = i;
+    }
+
+    // 3. Construir el HTML
+    // Botón Anterior
+    container.append(`
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link shadow-sm" href="#" data-page="${currentPage - 1}">&laquo;</a>
+        </li>
+    `);
+
+    // Números y Elipses
+    rangeWithDots.forEach(i => {
+        if (i === '...') {
+            container.append(`<li class="page-item disabled"><span class="page-link border-0">...</span></li>`);
+        } else {
+            container.append(`
+                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link shadow-sm" href="#" data-page="${i}">${i}</a>
+                </li>
+            `);
+        }
+    });
+
+    // Botón Siguiente
+    container.append(`
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link shadow-sm" href="#" data-page="${currentPage + 1}">&raquo;</a>
+        </li>
+    `);
+
+    // 4. Re-vincular el evento click
+    container.find('a').on('click', function(e) {
+        e.preventDefault();
+        const page = parseInt($(this).attr('data-page'));
+        if (page >= 1 && page <= totalPages) {
+            renderTable(page);
+            // Opcional: Hacer scroll al inicio de la tabla para mejor UX
+            document.querySelector('.card-header').scrollIntoView({ behavior: 'smooth' });
+        }
+    });
+}
+// ==========================================
+// 6. BUSCADOR DINÁMICO (FOLIO, NOMBRE, CURP)
+// ==========================================
+$("#tablaSearch").on("keyup", function() {
+    const val = $(this).val().toLowerCase().trim();
+    
+    if (val === "") {
+        filteredData = [...rawData];
+    } else {
+        filteredData = rawData.filter(e => {
+            // Unificamos nombre para búsqueda completa
+            const nombreCompleto = `${e.nombre || ''} ${e.apellido_paterno || ''} ${e.apellido_materno || ''}`.toLowerCase();
+            const folio = (e.folio || "").toLowerCase();
+            const curp = (e.curp || "").toLowerCase();
+
+            // Retorna verdadero si coincide en cualquiera de los 3 campos
+            return nombreCompleto.includes(val) || 
+                   folio.includes(val) || 
+                   curp.includes(val);
+        });
+    }
+
+    // Siempre regresar a la página 1 después de filtrar
+    renderTable(1);
+});
 
     function renderTabResumen(reg, json) {
     const $resumen = $("#resumenCaptura").empty();
