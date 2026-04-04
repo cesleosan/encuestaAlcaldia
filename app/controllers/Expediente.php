@@ -42,7 +42,7 @@ class Expediente extends Controller {
         $pdf->SetTextColor(0, 0, 0);
 
         // A. Encabezado (Folio y Fecha)
-        $pdf->SetXY(155, 43); $pdf->Write(0, $datos->folio ?? '');
+        //$pdf->SetXY(155, 43); $pdf->Write(0, $datos->folio ?? '');
         $fecha = ($datos->fecha_inicio) ? date('d/m/Y', strtotime($datos->fecha_inicio)) : date('d/m/Y');
         $pdf->SetXY(155, 55); $pdf->Write(0, $fecha);
 
@@ -56,10 +56,10 @@ class Expediente extends Controller {
 
         // C. Datos Generales
         $pdf->SetXY(25, 94); $pdf->Write(0, $this->toLatin1($datos->tipo_id ?? 'INE'));
-        $pdf->SetXY(120, 94); $pdf->Write(0, $datos->numero_id ?? '');
+        $pdf->SetXY(125, 94); $pdf->Write(0, $datos->numero_id ?? '');
         
-        $pdf->SetXY(25, 102); $pdf->Write(0, $this->toLatin1($datos->estado_civil ?? ''));
-        $pdf->SetXY(85, 102); $pdf->Write(0, $this->toLatin1($datos->escolaridad ?? ''));
+        $pdf->SetXY(30, 102); $pdf->Write(0, $this->toLatin1($datos->estado_civil ?? ''));
+        $pdf->SetXY(90, 102); $pdf->Write(0, $this->toLatin1($datos->escolaridad ?? ''));
         $pdf->SetXY(135, 102); $pdf->Write(0, $this->toLatin1($datos->ocupacion ?? ''));
 
         // Discapacidad y Etnia
@@ -94,9 +94,9 @@ class Expediente extends Controller {
         $pdf->SetXY(85, 180); $pdf->Write(0, $datos->num_total_predios ?? '1');
         $pdf->SetXY(165, 180); $pdf->Write(0, ($datos->superficie_total ?? '0') . ' HA');
         
-        $pdf->SetXY(80, 185); $pdf->Write(0, $this->toLatin1($datos->tipo_documento_propiedad ?? ''));
+        $pdf->SetXY(75, 188); $pdf->Write(0, $this->toLatin1($datos->tipo_documento_propiedad ?? ''));
         
-        $pdf->SetXY(95, 193); $pdf->Write(0, $this->toLatin1($datos->pueblo_colonia_up ?? ''));
+        $pdf->SetXY(75, 193); $pdf->Write(0, $this->toLatin1($datos->pueblo_colonia_up ?? ''));
         $pdf->SetXY(165, 193); $pdf->Write(0, $this->toLatin1($datos->parajes ?? ''));
 
         $pdf->SetXY(75, 205); $pdf->Write(0, $this->toLatin1($datos->especie_cultivo_principal ?? ''));
@@ -120,8 +120,8 @@ class Expediente extends Controller {
         $pdf->useTemplate($tplId3);
         
         // Firma última página
-        $pdf->SetXY(25, 267); 
-        $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
+        //$pdf->SetXY(25, 267); 
+        //$pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
 
         // Salida del PDF
         $pdf->Output('I', "Solicitud_{$datos->folio}.pdf");
