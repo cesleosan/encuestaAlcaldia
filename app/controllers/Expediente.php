@@ -46,16 +46,16 @@ class Expediente extends Controller {
         $pdf->SetXY(75, 83); $pdf->Write(0, $this->toLatin1($datos->apellido_paterno ?? ''));
         $pdf->SetXY(135, 83); $pdf->Write(0, $this->toLatin1($datos->apellido_materno ?? ''));
         
-        $pdf->SetXY(75, 89); $pdf->Write(0, $datos->curp ?? '');
-        $pdf->SetXY(160, 89); $pdf->Write(0, $datos->rfc ?? '');
+        $pdf->SetXY(75, 91); $pdf->Write(0, $datos->curp ?? '');
+        $pdf->SetXY(160, 91); $pdf->Write(0, $datos->rfc ?? '');
 
         // C. Datos Generales
         $pdf->SetXY(25, 94); $pdf->Write(0, $this->toLatin1($datos->tipo_id ?? 'INE'));
         $pdf->SetXY(120, 94); $pdf->Write(0, $datos->numero_id ?? '');
         
-        $pdf->SetXY(25, 102); $pdf->Write(0, $this->toLatin1($datos->estado_civil ?? ''));
-        $pdf->SetXY(85, 102); $pdf->Write(0, $this->toLatin1($datos->escolaridad ?? ''));
-        $pdf->SetXY(135, 102); $pdf->Write(0, $this->toLatin1($datos->ocupacion ?? ''));
+        $pdf->SetXY(25, 101); $pdf->Write(0, $this->toLatin1($datos->estado_civil ?? ''));
+        $pdf->SetXY(85, 101); $pdf->Write(0, $this->toLatin1($datos->escolaridad ?? ''));
+        $pdf->SetXY(135, 101); $pdf->Write(0, $this->toLatin1($datos->ocupacion ?? ''));
 
         // Discapacidad y Etnia (Ajustado a los cuadros de respuesta)
         $pdf->SetXY(105, 109); $pdf->Write(0, $this->toLatin1($datos->tiene_discapacidad ?? 'NO'));
@@ -69,12 +69,12 @@ class Expediente extends Controller {
         $pdf->SetXY(75, 116); $pdf->Write(0, $this->toLatin1($datos->pueblo_colonia ?? $datos->colonia_nombre ?? ''));
         $pdf->SetXY(138, 116); $pdf->Write(0, $datos->codigo_postal ?? '');
         
-        $pdf->SetXY(35, 123); $pdf->Write(0, $datos->tel_particular ?? '');
-        $pdf->SetXY(90, 123); $pdf->Write(0, $datos->tel_casa ?? '');
-        $pdf->SetXY(145, 123); $pdf->Write(0, $datos->tel_familiar ?? '');
+        $pdf->SetXY(40, 123); $pdf->Write(0, $datos->tel_particular ?? '');
+        $pdf->SetXY(95, 123); $pdf->Write(0, $datos->tel_casa ?? '');
+        $pdf->SetXY(159, 123); $pdf->Write(0, $datos->tel_familiar ?? '');
 
        // E. Checklist de Requisitos (Marcas 'X') - Coordenadas basadas en Grid Rojo
-        $baseY = 138; // Centro de la primera fila (Identidad)
+        $baseY = 139; // Centro de la primera fila (Identidad)
         $intercalado = 5; // Altura exacta de cada fila en tu PDF
 
         if (!empty($datos->check_identidad))   { $pdf->SetXY(180, $baseY); $pdf->Write(0, 'X'); }
