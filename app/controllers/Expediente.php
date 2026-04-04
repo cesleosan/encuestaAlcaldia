@@ -94,7 +94,7 @@ class Expediente extends Controller {
         $pdf->SetXY(85, 180); $pdf->Write(0, $datos->num_total_predios ?? '1');
         $pdf->SetXY(165, 180); $pdf->Write(0, ($datos->superficie_total ?? '0') . ' HA');
         
-        $pdf->SetXY(75, 188); $pdf->Write(0, $this->toLatin1($datos->tipo_documento_propiedad ?? ''));
+        $pdf->SetXY(75, 187); $pdf->Write(0, $this->toLatin1($datos->tipo_documento_propiedad ?? ''));
         
         $pdf->SetXY(75, 193); $pdf->Write(0, $this->toLatin1($datos->pueblo_colonia_up ?? ''));
         $pdf->SetXY(165, 193); $pdf->Write(0, $this->toLatin1($datos->parajes ?? ''));
