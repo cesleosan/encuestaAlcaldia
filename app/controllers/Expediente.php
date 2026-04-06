@@ -42,7 +42,7 @@ class Expediente extends Controller {
         $pdf->SetTextColor(0, 0, 0);
 
         // A. Encabezado (Folio y Fecha)
-        //$pdf->SetXY(155, 43); $pdf->Write(0, $datos->folio ?? '');
+        $pdf->SetXY(65, 50); $pdf->Write(0, $datos->folio ?? '');
         $fecha = ($datos->fecha_inicio) ? date('d/m/Y', strtotime($datos->fecha_inicio)) : date('d/m/Y');
         $pdf->SetXY(155, 55); $pdf->Write(0, $fecha);
 
@@ -81,15 +81,26 @@ class Expediente extends Controller {
         // E. Checklist de Requisitos (Marcas 'X')
         $baseY = 139; 
         $intercalado = 5; 
+        // 1. Acreditación de identidad
+        if (!empty($datos->check_identidad))   { $pdf->SetXY(180, 140); $pdf->Write(0, 'X'); }
 
-        if (!empty($datos->check_identidad))   { $pdf->SetXY(180, $baseY); $pdf->Write(0, 'X'); }
-        if (!empty($datos->check_domicilio))   { $pdf->SetXY(180, $baseY + $intercalado); $pdf->Write(0, 'X'); }
-        if (!empty($datos->check_curp_doc))    { $pdf->SetXY(180, $baseY + ($intercalado * 2)); $pdf->Write(0, 'X'); }
-        if (!empty($datos->check_rfc_doc))     { $pdf->SetXY(180, $baseY + ($intercalado * 3)); $pdf->Write(0, 'X'); }
-        if (!empty($datos->check_propiedad))   { $pdf->SetXY(180, $baseY + ($intercalado * 4)); $pdf->Write(0, 'X'); }
-        if (!empty($datos->check_siniiga_doc)) { $pdf->SetXY(180, $baseY + ($intercalado * 5)); $pdf->Write(0, 'X'); }
-        if (!empty($datos->check_finiquito))   { $pdf->SetXY(180, $baseY + ($intercalado * 6)); $pdf->Write(0, 'X'); }
+        // 2. Comprobante de domicilio
+        if (!empty($datos->check_domicilio))   { $pdf->SetXY(180, 141); $pdf->Write(0, 'X'); }
 
+        // 3. Copia de la CURP
+        if (!empty($datos->check_curp_doc))    { $pdf->SetXY(180, 143); $pdf->Write(0, 'X'); }
+
+        // 4. Registro Federal de Contribuyentes (RFC)
+        if (!empty($datos->check_rfc_doc))     { $pdf->SetXY(180, 145); $pdf->Write(0, 'X'); }
+
+        // 5. Acreditación de la propiedad o posesión
+        if (!empty($datos->check_propiedad))   { $pdf->SetXY(180, 148); $pdf->Write(0, 'X'); }
+
+        // 6. Registro en el SINIIGA
+        if (!empty($datos->check_siniiga_doc)) { $pdf->SetXY(180, 151); $pdf->Write(0, 'X'); }
+
+        // 7. Carta finiquito
+        if (!empty($datos->check_finiquito))   { $pdf->SetXY(180, 153); $pdf->Write(0, 'X'); }
         // F. Producción Primaria
         $pdf->SetXY(85, 180); $pdf->Write(0, $datos->num_total_predios ?? '1');
         $pdf->SetXY(165, 180); $pdf->Write(0, ($datos->superficie_total ?? '0') . ' HA');
@@ -111,7 +122,7 @@ class Expediente extends Controller {
         $pdf->SetFont('Arial', 'B', 9);
         
         // Firma Solicitante
-        $pdf->SetXY(110, 267); 
+        $pdf->SetXY(90, 270); 
         $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
 
         // --- PÁGINA 3: AVISO DE PRIVACIDAD ---
