@@ -188,8 +188,8 @@ class EncuestaModelo {
      *  NUEVO: Obtiene el expediente para el Generador PDF (61 campos)
      */
     public function getExpedienteCompleto($id) {
-        // Agregamos el JOIN para traer el nombre del usuario que capturó
-        $this->db->query("SELECT e.*, u.nombre_completo as tecnico_nombre 
+        // IMPORTANTE: Agregamos el JOIN con la tabla usuarios
+        $this->db->query("SELECT e.*, u.nombre_completo as nombre_tecnico 
                         FROM encuestas e
                         LEFT JOIN usuarios u ON e.usuario_id = u.id 
                         WHERE e.id = :id");

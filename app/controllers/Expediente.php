@@ -138,13 +138,15 @@ class Expediente extends Controller {
         $pdf->SetXY(25, 209); 
         $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
 
-        // Seteamos la posición
-        $pdf->SetXY(110, 209); 
+// Nos posicionamos en la coordenada que necesites (ejemplo hoja de firmas)
+$pdf->SetXY(110, 209); 
 
-        // El nombre ahora viene en tecnico_nombre gracias al JOIN que hicimos arriba
-        $nombreTecnico = !empty($datos->tecnico_nombre) ? $datos->tecnico_nombre : 'S/D';
+// Verificamos si existe el dato antes de pintar
+$tecnico = (isset($datos->nombre_tecnico) && !empty($datos->nombre_tecnico)) 
+           ? $datos->nombre_tecnico 
+           : 'TECNICO NO REGISTRADO';
 
-        $pdf->Cell(80, 0, $this->toLatin1($nombreTecnico), 0, 0, 'C');
+$pdf->Cell(80, 0, $this->toLatin1($tecnico), 0, 0, 'C');
 
         // Salida del PDF
         $pdf->Output('I', "Solicitud_{$datos->folio}.pdf");
