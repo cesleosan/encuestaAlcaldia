@@ -784,7 +784,7 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 3. RENDERIZADO DE TABLA
+    // 3. RENDERIZADO DE TABLA (LIBERACIÓN DE PDF)
     // ==========================================
     function renderTable(page) {
         currentPage = page;
@@ -876,7 +876,6 @@ $(document).ready(function() {
         });
 
         // 🔥 SOLO UI: Mostrar botón "VER ACTUAL" si el archivo existe físicamente
-        // Nota: NO altera los checkboxes, solo muestra la visualización.
         fetch(`<?php echo URLROOT; ?>/Captura/verificarArchivos/${id}`)
             .then(res => res.json())
             .then(archivos => {
@@ -977,7 +976,6 @@ $(document).ready(function() {
         }
     }
 
-    // AL SUBIR ARCHIVO: Solo actualiza la UI
     $(document).on('change', '.file-input', function() {
         const input = this;
         const suffix = input.id.replace('file_', '');
@@ -987,10 +985,11 @@ $(document).ready(function() {
             container.find('.file-name-text').text(input.files[0].name);
             container.removeClass('d-none');
             $(input).closest('.doc-row').css('background-color', '#f0fff4');
+            // Al subir nuevo documento, activamos el check manual por conveniencia
+            $(`input[name="check_${suffix}"]`).prop('checked', true);
         }
     });
 
-    // AL ELIMINAR ARCHIVO: Solo UI y Flag de borrado físico
     window.eliminarArchivo = function(suffix) {
         Swal.fire({
             title: '¿Quitar archivo?',
@@ -1004,6 +1003,7 @@ $(document).ready(function() {
                 $(`#delete_${suffix}`).val('1'); 
                 $(`#file_${suffix}`).val(''); 
                 $(`#preview_${suffix}`).addClass('d-none');
+                $(`input[name="check_${suffix}"]`).prop('checked', false); 
                 $(`#preview_${suffix}`).closest('.doc-row').css('background-color', '#fff5f5');
                 $(`label[for="file_${suffix}"]`).html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR');
             }
@@ -1029,17 +1029,27 @@ function confirmarGuardado() {
     const inputsDisabled = $("#formCaptura").find(':disabled');
     inputsDisabled.prop('disabled', false);
 
-    const formData = new FormData(document.getElementById('formCaptura'));
+    const formElement = document.getElementById('formCaptura');
+    const formData = new FormData(formElement);
+
+    // 🔥 CRÍTICO: Forzar el envío de los checks manuales
+    const listadoChecks = [
+        'check_solicitud', 'check_identidad', 'check_domicilio', 
+        'check_curp_doc', 'check_rfc_doc', 'check_manifiesto', 
+        'check_propiedad', 'check_finiquito', 'check_siniiga_doc'
+    ];
     
-    // Asegurar que los checks lleguen siempre (aunque sean 0)
-    const checks = ['check_solicitud', 'check_identidad', 'check_domicilio', 'check_curp_doc', 'check_rfc_doc', 'check_manifiesto', 'check_propiedad', 'check_finiquito', 'check_siniiga_doc'];
-    checks.forEach(c => { if (!formData.has(c)) formData.append(c, 0); });
+    listadoChecks.forEach(c => {
+        const el = document.getElementsByName(c)[0];
+        // Seteamos explícitamente 1 o 0 según lo que se vea en pantalla
+        formData.set(c, (el && el.checked) ? 1 : 0);
+    });
 
     inputsDisabled.prop('disabled', true);
 
     Swal.fire({
         title: '¿Guardar cambios?',
-        text: "Se actualizará el expediente oficial y se procesarán los archivos marcados.",
+        text: "Se actualizará el expediente oficial y los checks manuales.",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#773357',

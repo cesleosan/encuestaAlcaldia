@@ -23,14 +23,11 @@ class Captura extends Controller {
         $this->view('captura/index');
     }
 
-    /**
-     * MÉTODO PRINCIPAL: Recibe el POST, gestiona archivos y actualiza BD
-     */
     public function actualizar() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $id = $_POST['id'];
             
-            // 1. Obtener registro actual para el Folio
+            // 1. Obtener registro actual
             $registro = $this->encuestaModel->getExpedienteCompleto($id);
             if (!$registro) {
                 echo json_encode(['status' => 'error', 'msg' => 'No se encontró el registro']);
@@ -40,7 +37,7 @@ class Captura extends Controller {
             $folioCarpeta = str_replace(['/', ' ', '\\'], '-', $registro->folio);
             $rutaBase = PUBROOT . '/uploads/expedientes/' . $folioCarpeta;
 
-            // 2. GESTIÓN DE ARCHIVOS (BORRADO Y CARGA)
+            // 2. MAPEO: Clave JS => Prefijo Archivo => Columna DB
             $mapeoDoc = [
                 'solicitud'   => ['file' => 'SOLICITUD',   'col' => 'check_solicitud'],
                 'identidad'   => ['file' => 'IDENTIDAD',   'col' => 'check_identidad'],
@@ -59,17 +56,22 @@ class Captura extends Controller {
                 $columna = $info['col'];
                 $prefijo = $info['file'];
 
-                // A) ELIMINACIÓN FÍSICA (Si se activó la 'X')
+                // REGLA 1: Prioridad Manual - Tomar lo que diga el POST (0 o 1)
+                // Se asume que el JS envía 0 si no está checado
+                $dbChecks[$columna] = (isset($_POST[$columna]) && $_POST[$columna] == '1') ? 1 : 0;
+
+                // REGLA 2: Si el usuario presionó la 'X' para borrar físicamente
                 if (isset($_POST['delete_' . $key]) && $_POST['delete_' . $key] == '1') {
                     $patron = $rutaBase . '/' . $folioCarpeta . '_' . $prefijo . '.*';
                     $archivosViejos = glob($patron);
                     if ($archivosViejos) {
                         foreach ($archivosViejos as $f) { @unlink($f); }
                     }
-                    $dbChecks[$columna] = 0;
+                    $dbChecks[$columna] = 0; // Al borrar el archivo, forzamos el check a 0
                 } 
-                // B) CARGA DE ARCHIVO NUEVO
-                elseif (isset($_FILES['file_' . $key]) && $_FILES['file_' . $key]['error'] === UPLOAD_ERR_OK) {
+                
+                // REGLA 3: Si está subiendo un archivo nuevo en este momento
+                if (isset($_FILES['file_' . $key]) && $_FILES['file_' . $key]['error'] === UPLOAD_ERR_OK) {
                     if (!is_dir($rutaBase)) { @mkdir($rutaBase, 0775, true); }
                     
                     $ext = strtolower(pathinfo($_FILES['file_' . $key]['name'], PATHINFO_EXTENSION));
@@ -78,18 +80,12 @@ class Captura extends Controller {
 
                     if (move_uploaded_file($_FILES['file_' . $key]['tmp_name'], $destino)) {
                         chmod($destino, 0664);
-                        $dbChecks[$columna] = 1;
-                    } else {
-                        $dbChecks[$columna] = isset($_POST[$columna]) ? 1 : 0;
+                        $dbChecks[$columna] = 1; // Si sube archivo nuevo, forzamos el check a 1
                     }
-                } 
-                // C) ESTADO MANUAL (Si no hay cambios de archivo)
-                else {
-                    $dbChecks[$columna] = isset($_POST[$columna]) ? 1 : 0;
                 }
             }
 
-            // 3. PREPARACIÓN DE DATA PARA EL MODELO (Mapeo exacto a MariaDB)
+            // 3. PREPARACIÓN DE DATA (Mapeo exacto a MariaDB)
             $data = [
                 'id'                => $id,
                 'curp'              => mb_strtoupper($_POST['curp'], 'UTF-8'),
@@ -128,7 +124,7 @@ class Captura extends Controller {
                                         ? 'SOLICITUD_INGRESADA' 
                                         : ($_POST['fase_proceso'] ?? $registro->fase_proceso),
                 
-                // Checks Calculados
+                // ✅ CHECKS MANUALES (Obedecen al formulario)
                 'check_solicitud'   => $dbChecks['check_solicitud'],
                 'check_identidad'   => $dbChecks['check_identidad'],
                 'check_domicilio'   => $dbChecks['check_domicilio'],
@@ -151,19 +147,13 @@ class Captura extends Controller {
         }
     }
 
-    /**
-     * Escanea archivos físicos para mostrar botón "VER ACTUAL"
-     */
     public function verificarArchivos($id) {
         $registro = $this->encuestaModel->getExpedienteCompleto($id);
         if (!$registro) { echo json_encode([]); return; }
-
         $folioCarpeta = str_replace(['/', ' ', '\\'], '-', $registro->folio);
         $rutaFisica = PUBROOT . '/uploads/expedientes/' . $folioCarpeta;
         $urlBase = URLROOT . '/uploads/expedientes/' . $folioCarpeta;
-
         $archivosEncontrados = [];
-
         if (is_dir($rutaFisica)) {
             $archivos = scandir($rutaFisica);
             foreach ($archivos as $archivo) {
