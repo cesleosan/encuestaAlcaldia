@@ -16,26 +16,33 @@ class Expediente extends Controller {
     }
 
     /**
-     * Escribe texto ajustando el tamaño de fuente si excede el ancho.
-     * Si sigue siendo muy largo, permite un salto de línea controlado.
+     * Escribe texto ajustando el tamaño de fuente.
+     * Si es MultiCell (como Paraje), centra el bloque verticalmente.
      */
     private function escribirAjustado($pdf, $x, $y, $texto, $anchoMax, $fuenteBase = 8, $esMulti = false) {
         $textoFinal = $this->toLatin1($texto);
         $pdf->SetFont('Arial', '', $fuenteBase);
         
-        while($pdf->GetStringWidth($textoFinal) > $anchoMax && $fuenteBase > 5.5) {
+        // Ajuste de tamaño de fuente dinámico
+        while($pdf->GetStringWidth($textoFinal) > ($esMulti ? $anchoMax * 1.8 : $anchoMax) && $fuenteBase > 5.5) {
             $fuenteBase -= 0.5;
             $pdf->SetFont('Arial', '', $fuenteBase);
         }
         
-        $pdf->SetXY($x, $y);
         if ($esMulti) {
-            // MultiCell para parajes o textos que requieran 2 niveles
+            // Si el texto es largo, subimos un poco el cursor Y para que las 2 líneas queden centradas
+            $lineas = ($pdf->GetStringWidth($textoFinal) > $anchoMax) ? 2 : 1;
+            $nuevoY = ($lineas === 2) ? $y - 2.5 : $y - 1; 
+            
+            $pdf->SetXY($x, $nuevoY);
+            // El alto de celda (3) es pequeño para que las dos líneas queden juntas y quepan en el recuadro
             $pdf->MultiCell($anchoMax, 3, $textoFinal, 0, 'L');
         } else {
+            $pdf->SetXY($x, $y);
             $pdf->Write(0, $textoFinal);
         }
-        $pdf->SetFont('Arial', '', 8);
+        
+        $pdf->SetFont('Arial', '', 8); // Reset
     }
 
     public function imprimirSolicitud($id) {
@@ -102,11 +109,11 @@ class Expediente extends Controller {
         $this->escribirAjustado($pdf, 75, 187, $datos->tipo_documento_propiedad ?? '', 100);
         $this->escribirAjustado($pdf, 75, 193, $datos->pueblo_colonia_up ?? '', 75);
         
-        // AJUSTE PARAJES (Coordenada X reducida para ganar espacio a la derecha)
-        $this->escribirAjustado($pdf, 155, 192, $datos->parajes ?? '', 45, 8, true);
+        // --- AJUSTE PARA PARAJE (Centrado vertical en el recuadro) ---
+        $this->escribirAjustado($pdf, 155, 193, $datos->parajes ?? '', 45, 8, true);
 
-        // TENENCIA DE LA TIERRA (Ajustada a Y=201 para no encimarse)
-        $this->escribirAjustado($pdf, 75, 201, $datos->tenencia_tierra ?? 'NA', 45);
+        // TENENCIA DE LA TIERRA
+        $this->escribirAjustado($pdf, 75, 199, $datos->tenencia_tierra ?? 'NA', 45);
 
         $this->escribirAjustado($pdf, 75, 205, $datos->especie_cultivo_principal ?? '', 80);
         $pdf->SetXY(165, 205); $pdf->Write(0, $datos->numero_cabezas_colmenas ?? '0');
@@ -120,7 +127,7 @@ class Expediente extends Controller {
         $pdf->SetFont('Arial', 'B', 8);
         $pdf->SetXY(114, 205); $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
         $pdf->SetXY(25, 205); 
-        $usuarioFirma = (!empty($_SESSION['usuario_nombre'])) ? $_SESSION['usuario_nombre'] : 'USUARIO';
+        $usuarioFirma = (!empty($_SESSION['usuario_nombre'])) ? $_SESSION['usuario_nombre'] : '';
         $pdf->Cell(80, 0, $this->toLatin1(mb_strtoupper($usuarioFirma, 'UTF-8')), 0, 0, 'C');
 
         // --- PÁGINA 3 ---
