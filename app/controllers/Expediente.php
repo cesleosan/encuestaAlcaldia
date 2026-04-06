@@ -20,80 +20,30 @@ class Expediente extends Controller {
      * Implementa lógica para MultiCell (Paraje) centrando verticalmente el bloque.
      */
     private function escribirAjustado($pdf, $x, $y, $texto, $anchoMax, $fuenteBase = 8, $esMulti = false) {
-    $textoFinal = $this->toLatin1($texto);
-    $fuente = $fuenteBase;
-    $lineHeight = 2.8;
-
-    $pdf->SetFont('Arial', '', $fuente);
-
-    // 🔹 NUEVO: función para dividir texto sin cortar palabras
-    $wrapTexto = function($pdf, $texto, $ancho) {
-        $palabras = explode(' ', $texto);
-        $lineas = [];
-        $lineaActual = '';
-
-        foreach ($palabras as $palabra) {
-            $test = ($lineaActual == '') ? $palabra : $lineaActual . ' ' . $palabra;
-
-            if ($pdf->GetStringWidth($test) <= $ancho) {
-                $lineaActual = $test;
-            } else {
-                if ($lineaActual != '') {
-                    $lineas[] = $lineaActual;
-                }
-                $lineaActual = $palabra;
-            }
+        $textoFinal = $this->toLatin1($texto);
+        $pdf->SetFont('Arial', '', $fuenteBase);
+        
+        // Ajuste preventivo de fuente si el texto es muy largo
+        while($pdf->GetStringWidth($textoFinal) > ($esMulti ? $anchoMax * 1.8 : $anchoMax) && $fuenteBase > 6) {
+            $fuenteBase -= 0.3;
+            $pdf->SetFont('Arial', '', $fuenteBase);
         }
-
-        if ($lineaActual != '') {
-            $lineas[] = $lineaActual;
+        
+        if ($esMulti) {
+            // Calculamos si el texto ocupará 2 líneas para ajustar el Y
+            $requiereDosLineas = ($pdf->GetStringWidth($textoFinal) > $anchoMax);
+            $yFinal = $requiereDosLineas ? $y - 2.5 : $y - 1;
+            
+            $pdf->SetXY($x, $yFinal);
+            // Interlineado de 2.8 para que no se desborde del recuadro
+            $pdf->MultiCell($anchoMax, 2.8, $textoFinal, 0, 'L');
+        } else {
+            $pdf->SetXY($x, $y);
+            $pdf->Write(0, $textoFinal);
         }
-
-        return $lineas;
-    };
-
-    // 🔹 Si es multicelda (PARAJE)
-    if ($esMulti) {
-
-        // Generar líneas correctamente
-        $lineas = $wrapTexto($pdf, $textoFinal, $anchoMax);
-
-        // Reducir fuente si se pasa de 2 líneas
-        while (count($lineas) > 2 && $fuente > 6) {
-            $fuente -= 0.3;
-            $pdf->SetFont('Arial', '', $fuente);
-            $lineas = $wrapTexto($pdf, $textoFinal, $anchoMax);
-        }
-
-        // Máximo 2 líneas (evita desbordes)
-        $lineas = array_slice($lineas, 0, 2);
-
-        // 🔹 Centrado vertical REAL (mejor que tu ajuste manual)
-        $numLineas = count($lineas);
-        $alturaTotal = $numLineas * $lineHeight;
-        $alturaCaja = 6; // puedes ajustar a 5.5 si quieres más precisión
-        $yFinal = $y + (($alturaCaja - $alturaTotal) / 2);
-
-        $pdf->SetXY($x, $yFinal);
-
-        foreach ($lineas as $linea) {
-            $pdf->Cell($anchoMax, $lineHeight, $linea, 0, 2, 'L');
-        }
-
-    } else {
-        // 🔹 TU LÓGICA ORIGINAL (solo mejorada)
-        while($pdf->GetStringWidth($textoFinal) > $anchoMax && $fuente > 6) {
-            $fuente -= 0.3;
-            $pdf->SetFont('Arial', '', $fuente);
-        }
-
-        $pdf->SetXY($x, $y);
-        $pdf->Write(0, $textoFinal);
+        
+        $pdf->SetFont('Arial', '', 8); // Reset
     }
-
-    // Reset
-    $pdf->SetFont('Arial', '', 8);
-}
 
     public function imprimirSolicitud($id) {
         if (ob_get_level()) ob_end_clean();
@@ -159,8 +109,8 @@ class Expediente extends Controller {
         $this->escribirAjustado($pdf, 75, 187, $datos->tipo_documento_propiedad ?? '', 100);
         $this->escribirAjustado($pdf, 75, 193, $datos->pueblo_colonia_up ?? '', 75);
         
-// Coordenada X=150 (más a la izquierda), Y=193, Ancho=50, Fuente inicial=7
-$this->escribirAjustado($pdf, 145, 193, $datos->parajes ?? '', 50, 7, true);
+        // --- AJUSTE QUIRÚRGICO PARA PARAJE ---
+        $this->escribirAjustado($pdf, 158, 193, $datos->parajes ?? '', 42, 6, true);
 
         // TENENCIA DE LA TIERRA
         $this->escribirAjustado($pdf, 75, 198, $datos->tenencia_tierra ?? 'NA', 45);
