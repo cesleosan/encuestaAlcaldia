@@ -110,10 +110,10 @@ class Expediente extends Controller {
         $this->escribirAjustado($pdf, 75, 193, $datos->pueblo_colonia_up ?? '', 75);
         
         // --- AJUSTE QUIRÚRGICO PARA PARAJE ---
-        $this->escribirAjustado($pdf, 152, 193, $datos->parajes ?? '', 42, 7.5, true);
+        $this->escribirAjustado($pdf, 155, 193, $datos->parajes ?? '', 42, 6, true);
 
         // TENENCIA DE LA TIERRA
-        $this->escribirAjustado($pdf, 75, 200, $datos->tenencia_tierra ?? 'NA', 45);
+        $this->escribirAjustado($pdf, 75, 198, $datos->tenencia_tierra ?? 'NA', 45);
 
         $this->escribirAjustado($pdf, 75, 206, $datos->especie_cultivo_principal ?? '', 80);
         $pdf->SetXY(165, 206); $pdf->Write(0, $datos->numero_cabezas_colmenas ?? '0');
