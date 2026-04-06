@@ -708,6 +708,21 @@ $(document).ready(function() {
     let currentPage = 1;
 
     // ==========================================
+    // 0. CONFIGURACIÓN DE NOTIFICACIONES (Soluciona el error ReferenceError: Toast)
+    // ==========================================
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer)
+            toast.addEventListener('mouseleave', Swal.resumeTimer)
+        }
+    });
+
+    // ==========================================
     // 1. CARGA INICIAL DE DATOS
     // ==========================================
     function cargarDatos() {
@@ -791,7 +806,7 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 3. RENDERIZADO DE TABLA (LIBERACIÓN DE PDF)
+    // 3. RENDERIZADO DE TABLA
     // ==========================================
     function renderTable(page) {
         currentPage = page;
@@ -827,119 +842,94 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 4. LÓGICA DEL MODAL (CONTROL MANUAL TOTAL)
+    // 4. LÓGICA DEL MODAL
     // ==========================================
     window.abrirEdicion = function(id) {
-    const reg = rawData.find(i => i.id == id);
-    if (!reg) return;
-    const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
+        const reg = rawData.find(i => i.id == id);
+        if (!reg) return;
+        const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-    // 1. Resetear Formulario y banderas
-    $("#formCaptura")[0].reset();
-    $('input[name^="delete_"]').val('0'); 
-    $(".file-preview-container").addClass('d-none');
-    $(".doc-row").css('background-color', '');
-    $(".btn-upload").html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR');
-    
-    $("#reg_id").val(reg.id);
-    $("#spanFolio").text(reg.folio || 'S/F');
-    
-    // 2. Control de botón de descarga PDF
-    const pdfLiberado = reg.fase_proceso && reg.fase_proceso !== 'EMPADRONADO';
-    if (pdfLiberado) {
-        $("#btnDescargarPDF").removeClass("d-none").attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
-    } else {
-        $("#btnDescargarPDF").addClass("d-none");
-    }
-
-    // 3. Llenado de Identidad
-    const fullNombre = getDatoFinal(reg, "nombre_productor", json);
-    const seg = segmentarNombreCompleto(fullNombre);
-    $("#in_nombre_productor").val(reg.nombre || seg.nombres); 
-    $("#in_paterno").val(reg.apellido_paterno || seg.paterno); 
-    $("#in_materno").val(reg.apellido_materno || seg.materno);
-    $("#in_curp_edit").val(reg.curp);
-    $("#in_rfc").val(reg.rfc);
-
-    // 4. Llenado Masivo de Inputs de Texto/Select/Textarea
-    $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
-        const el = $(this);
-        const name = el.attr('name');
-        // Excluimos campos especiales que ya llenamos o que se manejan manual
-        if (!name || ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp', 'tipo_produccion'].includes(name) || el.attr('type') === 'file' || name.startsWith('check_')) return;
-
-        const valor = getDatoFinal(reg, name, json);
-        if (valor !== undefined && valor !== "") {
-            el.val(valor);
-        }
-    });
-
-    // 5. ✅ LÓGICA ESPECIAL: TIPO DE PRODUCCIÓN (Línea de Ayuda)
-    const valorProduccionOriginal = getDatoFinal(reg, "tipo_produccion", json);
-    $("#origen_produccion_text").text(valorProduccionOriginal || 'No definido'); // Para mostrar en el <small> del HTML
-    
-    const selectProd = $("#in_tipo_produccion");
-    selectProd.removeClass("is-invalid border-danger");
-
-    if (valorProduccionOriginal) {
-        // Si detectamos comas (múltiples actividades)
-        if (valorProduccionOriginal.includes(',')) {
-            selectProd.val(""); // Dejamos vacío para obligar a elegir
-            selectProd.addClass("is-invalid border-danger");
-            Toast.fire({ icon: 'warning', title: 'Múltiples actividades detectadas. Elija la Línea de Ayuda principal.' });
+        $("#formCaptura")[0].reset();
+        $('input[name^="delete_"]').val('0'); 
+        $(".file-preview-container").addClass('d-none');
+        $(".doc-row").css('background-color', '');
+        $(".btn-upload").html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR');
+        
+        $("#reg_id").val(reg.id);
+        $("#spanFolio").text(reg.folio || 'S/F');
+        
+        const pdfLiberado = reg.fase_proceso && reg.fase_proceso !== 'EMPADRONADO';
+        if (pdfLiberado) {
+            $("#btnDescargarPDF").removeClass("d-none").attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
         } else {
-            // Si solo es una, intentamos seleccionarla automáticamente
-            const limpio = valorProduccionOriginal.trim().toUpperCase();
-            selectProd.val(limpio);
-            
-            // Si después de intentar asignar el valor está vacío, es que el valor no existe en el select
-            if (selectProd.val() === null || selectProd.val() === "") {
-                 selectProd.addClass("is-invalid border-danger");
+            $("#btnDescargarPDF").addClass("d-none");
+        }
+
+        const fullNombre = getDatoFinal(reg, "nombre_productor", json);
+        const seg = segmentarNombreCompleto(fullNombre);
+        $("#in_nombre_productor").val(reg.nombre || seg.nombres); 
+        $("#in_paterno").val(reg.apellido_paterno || seg.paterno); 
+        $("#in_materno").val(reg.apellido_materno || seg.materno);
+        $("#in_curp_edit").val(reg.curp);
+        $("#in_rfc").val(reg.rfc);
+
+        $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
+            const el = $(this);
+            const name = el.attr('name');
+            if (!name || ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp', 'tipo_produccion'].includes(name) || el.attr('type') === 'file' || name.startsWith('check_')) return;
+            const valor = getDatoFinal(reg, name, json);
+            if (valor !== undefined && valor !== "") { el.val(valor); }
+        });
+
+        // ✅ LÓGICA ESPECIAL: TIPO DE PRODUCCIÓN
+        const valorProduccionOriginal = getDatoFinal(reg, "tipo_produccion", json);
+        $("#origen_produccion_text").text(valorProduccionOriginal || 'No definido'); 
+        const selectProd = $("#in_tipo_produccion");
+        selectProd.removeClass("is-invalid border-danger");
+        if (valorProduccionOriginal) {
+            if (valorProduccionOriginal.includes(',')) {
+                selectProd.val(""); 
+                selectProd.addClass("is-invalid border-danger");
+                Toast.fire({ icon: 'warning', title: 'Múltiples actividades detectadas. Elija la Línea de Ayuda principal.' });
+            } else {
+                const limpio = valorProduccionOriginal.trim().toUpperCase();
+                selectProd.val(limpio);
+                if (selectProd.val() === null || selectProd.val() === "") { selectProd.addClass("is-invalid border-danger"); }
             }
         }
-    }
 
-    // 6. ✅ CONTROL MANUAL DE CHECKS: Cargar según Base de Datos
-    const checksCotejo = [
-        'solicitud', 'identidad', 'domicilio', 'curp_doc', 'rfc_doc', 
-        'manifiesto', 'propiedad', 'finiquito', 'siniiga_doc'
-    ];
-    checksCotejo.forEach(c => {
-        const columnaDB = 'check_' + c;
-        const valorDB = reg[columnaDB];
-        $(`input[name="${columnaDB}"]`).prop('checked', parseInt(valorDB) === 1);
-    });
+        // ✅ CONTROL MANUAL DE CHECKS
+        const checksCotejo = ['solicitud', 'identidad', 'domicilio', 'curp_doc', 'rfc_doc', 'manifiesto', 'propiedad', 'finiquito', 'siniiga_doc'];
+        checksCotejo.forEach(c => {
+            const columnaDB = 'check_' + c;
+            const valorDB = reg[columnaDB];
+            $(`input[name="${columnaDB}"]`).prop('checked', parseInt(valorDB) === 1);
+        });
 
-    // 7. 🔥 VERIFICACIÓN DE ARCHIVOS FÍSICOS (Solo UI)
-    fetch(`<?php echo URLROOT; ?>/Captura/verificarArchivos/${id}`)
-        .then(res => res.json())
-        .then(archivos => {
-            archivos.forEach(file => {
-                const partes = file.tipo.split('_');
-                let tipoDoc = partes[partes.length - 1].toLowerCase();
-                if (tipoDoc === 'doc') { tipoDoc = partes[partes.length - 2].toLowerCase() + '_doc'; }
+        fetch(`<?php echo URLROOT; ?>/Captura/verificarArchivos/${id}`)
+            .then(res => res.json())
+            .then(archivos => {
+                archivos.forEach(file => {
+                    const partes = file.tipo.split('_');
+                    let tipoDoc = partes[partes.length - 1].toLowerCase();
+                    if (tipoDoc === 'doc') { tipoDoc = partes[partes.length - 2].toLowerCase() + '_doc'; }
+                    const container = $(`#preview_${tipoDoc}`);
+                    if (container.length) {
+                        container.removeClass('d-none');
+                        container.find('.file-name-text').html(`<a href="${file.url}" target="_blank" class="text-primary fw-bold text-decoration-none"><i class="fas fa-eye me-1"></i> VER ARCHIVO ACTUAL</a>`);
+                        $(`label[for="file_${tipoDoc}"]`).html('<i class="fas fa-sync me-1"></i> REEMPLAZAR');
+                        container.closest('.doc-row').css('background-color', '#f0faff');
+                    }
+                });
+            })
+            .catch(err => console.error("Error en archivos:", err));
 
-                const container = $(`#preview_${tipoDoc}`);
-                if (container.length) {
-                    container.removeClass('d-none');
-                    container.find('.file-name-text').html(`
-                        <a href="${file.url}" target="_blank" class="text-primary fw-bold text-decoration-none">
-                            <i class="fas fa-eye me-1"></i> VER ARCHIVO ACTUAL
-                        </a>
-                    `);
-                    $(`label[for="file_${tipoDoc}"]`).html('<i class="fas fa-sync me-1"></i> REEMPLAZAR');
-                    container.closest('.doc-row').css('background-color', '#f0faff');
-                }
-            });
-        })
-        .catch(err => console.error("Error en archivos:", err));
+        renderTabResumen(reg, json);
+        window.controlarDependencias(); 
+        bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
+        $("#modalEdicion").modal('show');
+    };
 
-    // 8. Renderizar Resumen y abrir Tab de Identidad
-    renderTabResumen(reg, json);
-    window.controlarDependencias(); 
-    bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
-    $("#modalEdicion").modal('show');
-};
     // ==========================================
     // 5. BÚSQUEDA Y PAGINACIÓN
     // ==========================================
@@ -949,29 +939,17 @@ $(document).ready(function() {
         if (totalPages <= 1) return;
         const delta = 2;
         const range = [];
-        const rangeWithDots = [];
-        let l;
         for (let i = 1; i <= totalPages; i++) {
             if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) { range.push(i); }
         }
-        for (let i of range) {
+        let l;
+        range.forEach(i => {
             if (l) {
-                if (i - l === 2) rangeWithDots.push(l + 1);
-                else if (i - l !== 1) rangeWithDots.push('...');
+                if (i - l === 2) container.append(`<li class="page-item"><a class="page-link shadow-sm" href="#" data-page="${l + 1}">${l + 1}</a></li>`);
+                else if (i - l !== 1) container.append(`<li class="page-item disabled"><span class="page-link border-0">...</span></li>`);
             }
-            rangeWithDots.push(i);
+            container.append(`<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link shadow-sm" href="#" data-page="${i}">${i}</a></li>`);
             l = i;
-        }
-        container.append(`<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link shadow-sm" href="#" data-page="${currentPage - 1}">&laquo;</a></li>`);
-        rangeWithDots.forEach(i => {
-            if (i === '...') container.append(`<li class="page-item disabled"><span class="page-link border-0">...</span></li>`);
-            else container.append(`<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link shadow-sm" href="#" data-page="${i}">${i}</a></li>`);
-        });
-        container.append(`<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link shadow-sm" href="#" data-page="${currentPage + 1}">&raquo;</a></li>`);
-        container.find('a').on('click', function(e) {
-            e.preventDefault();
-            const page = parseInt($(this).attr('data-page'));
-            if (page >= 1 && page <= totalPages) { renderTable(page); }
         });
     }
 
@@ -984,30 +962,16 @@ $(document).ready(function() {
         renderTable(1);
     });
 
-    // ==========================================
-    // 6. RESUMEN Y GESTIÓN DE ARCHIVOS UI
-    // ==========================================
     function renderTabResumen(reg, json) {
         const $resumen = $("#resumenCaptura").empty();
-        const config = {
-            "1. Registro": ["tecnico_nombre", "folio", "fase_proceso"],
-            "2. Identidad": ["nombre_productor", "curp", "rfc", "sexo", "grado_estudios"],
-            "3. Ubicación": ["calle_numero", "pueblo_colonia", "cp", "tel_particular"],
-            "4. Perfil": ["ocupacion", "grupo_etnico"],
-            "5. Producción": ["tipo_produccion", "superficie_prod", "cultivo_principal"]
-        };
+        const config = { "1. Registro": ["tecnico_nombre", "folio", "fase_proceso"], "2. Identidad": ["nombre_productor", "curp", "rfc", "sexo", "grado_estudios"], "3. Ubicación": ["calle_numero", "pueblo_colonia", "cp", "tel_particular"], "4. Perfil": ["ocupacion", "grupo_etnico"], "5. Producción": ["tipo_produccion", "superficie_prod", "cultivo_principal"] };
         for (const [titulo, campos] of Object.entries(config)) {
             let filas = ""; let tieneDatos = false;
             campos.forEach(c => {
                 let val = getDatoFinal(reg, c, json);
-                if (val && val !== "") {
-                    tieneDatos = true;
-                    filas += `<tr><td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td><td class="fw-bold py-2 text-dark small">${val.toString().toUpperCase()}</td></tr>`;
-                }
+                if (val && val !== "") { tieneDatos = true; filas += `<tr><td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td><td class="fw-bold py-2 text-dark small">${val.toString().toUpperCase()}</td></tr>`; }
             });
-            if (tieneDatos) {
-                $resumen.append(`<div class="col-md-6 mb-3"><div class="card h-100 border-0 shadow-sm"><div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small">${titulo}</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>${filas}</tbody></table></div></div></div>`);
-            }
+            if (tieneDatos) { $resumen.append(`<div class="col-md-6 mb-3"><div class="card h-100 border-0 shadow-sm"><div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small">${titulo}</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>${filas}</tbody></table></div></div></div>`); }
         }
     }
 
@@ -1020,20 +984,12 @@ $(document).ready(function() {
             container.find('.file-name-text').text(input.files[0].name);
             container.removeClass('d-none');
             $(input).closest('.doc-row').css('background-color', '#f0fff4');
-            // Al subir nuevo documento, activamos el check manual por conveniencia
             $(`input[name="check_${suffix}"]`).prop('checked', true);
         }
     });
 
     window.eliminarArchivo = function(suffix) {
-        Swal.fire({
-            title: '¿Quitar archivo?',
-            text: "Se marcará para eliminación física al guardar.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            confirmButtonText: 'Sí, quitar'
-        }).then((result) => {
+        Swal.fire({ title: '¿Quitar archivo?', text: "Se marcará para eliminación física al guardar.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Sí, quitar' }).then((result) => {
             if (result.isConfirmed) {
                 $(`#delete_${suffix}`).val('1'); 
                 $(`#file_${suffix}`).val(''); 
@@ -1053,74 +1009,36 @@ $(document).ready(function() {
     };
 });
 
-// ==========================================
-// 7. ACCIONES DE GUARDADO FINAL
-// ==========================================
 function confirmarGuardado() {
-    $("#formCaptura input[type='text'], #formCaptura textarea").each(function() {
-        $(this).val($(this).val().toUpperCase());
-    });
-
+    $("#formCaptura input[type='text'], #formCaptura textarea").each(function() { $(this).val($(this).val().toUpperCase()); });
     const inputsDisabled = $("#formCaptura").find(':disabled');
     inputsDisabled.prop('disabled', false);
-
     const formElement = document.getElementById('formCaptura');
     const formData = new FormData(formElement);
-
-    // 🔥 CRÍTICO: Forzar el envío de los checks manuales
-    const listadoChecks = [
-        'check_solicitud', 'check_identidad', 'check_domicilio', 
-        'check_curp_doc', 'check_rfc_doc', 'check_manifiesto', 
-        'check_propiedad', 'check_finiquito', 'check_siniiga_doc'
-    ];
-    
+    const listadoChecks = ['check_solicitud', 'check_identidad', 'check_domicilio', 'check_curp_doc', 'check_rfc_doc', 'check_manifiesto', 'check_propiedad', 'check_finiquito', 'check_siniiga_doc'];
     listadoChecks.forEach(c => {
         const el = document.getElementsByName(c)[0];
-        // Seteamos explícitamente 1 o 0 según lo que se vea en pantalla
         formData.set(c, (el && el.checked) ? 1 : 0);
     });
-
     inputsDisabled.prop('disabled', true);
-
-    Swal.fire({
-        title: '¿Guardar cambios?',
-        text: "Se actualizará el expediente oficial y los checks manuales.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#773357',
-        confirmButtonText: 'Sí, guardar'
-    }).then((result) => {
+    Swal.fire({ title: '¿Guardar cambios?', text: "Se actualizará el expediente oficial y los checks manuales.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#773357', confirmButtonText: 'Sí, guardar' }).then((result) => {
         if (result.isConfirmed) {
             Swal.fire({ title: 'Procesando...', didOpen: () => { Swal.showLoading() } });
             fetch('<?php echo URLROOT; ?>/Captura/actualizar', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
-                if(data.status === 'success') {
-                    Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload());
-                } else {
-                    Swal.fire('Error', data.msg || 'Falla en servidor', 'error');
-                }
+                if(data.status === 'success') { Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload()); }
+                else { Swal.fire('Error', data.msg || 'Falla en servidor', 'error'); }
             })
-            .catch(err => {
-                console.error(err);
-                Swal.fire('Error', 'Falla de comunicación con el servidor', 'error');
-            });
+            .catch(err => { console.error(err); Swal.fire('Error', 'Falla de comunicación con el servidor', 'error'); });
         }
     });
 }
 
 function confirmarSalida() {
-    Swal.fire({
-        title: '¿Cerrar sesión?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc3545',
-        confirmButtonText: 'SÍ, SALIR',
-        reverseButtons: true
-    }).then((result) => {
+    Swal.fire({ title: '¿Cerrar sesión?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'SÍ, SALIR', reverseButtons: true }).then((result) => {
         if (result.isConfirmed) window.location.href = '<?php echo URLROOT; ?>/Auth/logout';
     });
 }
-
 window.confirmarSalida = confirmarSalida;
 </script>
