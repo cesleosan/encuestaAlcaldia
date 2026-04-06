@@ -135,7 +135,7 @@ class Expediente extends Controller {
         $pdf->SetXY(160, 68); $pdf->Write(0, $fecha);
         $pdf->SetFont('Arial', 'B', 9);
         // Firma última página
-        $pdf->SetXY(40, 209); 
+        $pdf->SetXY(30, 209); 
         $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
 
         // Salida del PDF
