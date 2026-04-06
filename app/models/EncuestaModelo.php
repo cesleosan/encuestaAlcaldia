@@ -185,16 +185,20 @@ class EncuestaModelo {
     }
 
     /**
-     * 🔥 NUEVO: Obtiene el expediente para el Generador PDF (61 campos)
+     *  NUEVO: Obtiene el expediente para el Generador PDF (61 campos)
      */
     public function getExpedienteCompleto($id) {
-        $this->db->query("SELECT * FROM encuestas WHERE id = :id");
+        // Agregamos el JOIN para traer el nombre del usuario que capturó
+        $this->db->query("SELECT e.*, u.nombre_completo as tecnico_nombre 
+                        FROM encuestas e
+                        LEFT JOIN usuarios u ON e.usuario_id = u.id 
+                        WHERE e.id = :id");
         $this->db->bind(':id', $id);
         return $this->db->single();
     }
 
     /**
-     * 🔥 ACTUALIZACIÓN INTEGRAL (Versión 100% Sincronizada)
+     *  ACTUALIZACIÓN INTEGRAL (Versión 100% Sincronizada)
      * CORRECCIÓN: Se cambiaron las llaves :paterno, :materno y :nombre_productor
      * para que coincidan con lo que manda el Controlador Captura.php
      */

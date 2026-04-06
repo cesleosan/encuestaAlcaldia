@@ -135,8 +135,16 @@ class Expediente extends Controller {
         $pdf->SetXY(160, 68); $pdf->Write(0, $fecha);
         $pdf->SetFont('Arial', 'B', 9);
         // Firma última página
-        $pdf->SetXY(30, 209); 
+        $pdf->SetXY(25, 209); 
         $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
+
+        // Seteamos la posición
+        $pdf->SetXY(110, 209); 
+
+        // El nombre ahora viene en tecnico_nombre gracias al JOIN que hicimos arriba
+        $nombreTecnico = !empty($datos->tecnico_nombre) ? $datos->tecnico_nombre : 'S/D';
+
+        $pdf->Cell(80, 0, $this->toLatin1($nombreTecnico), 0, 0, 'C');
 
         // Salida del PDF
         $pdf->Output('I', "Solicitud_{$datos->folio}.pdf");
