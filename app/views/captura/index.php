@@ -749,7 +749,7 @@ $(document).ready(function() {
         const mapaFisico = {
             "folio": reg.folio, "curp": reg.curp, "rfc": reg.rfc, "nombre_productor": nombreFisico,
             "pueblo_colonia": reg.colonia_nombre, "superficie_prod": reg.superficie_total,
-            "fase_proceso": reg.fase_proceso, "tipo_produccion": reg.actividad_principal,
+            "fase_proceso": reg.fase_proceso, "tipo_produccion": reg.linea_ayuda,
             "grado_estudios": reg.escolaridad, "ocupacion": reg.ocupacion, "estado_civil": reg.estado_civil,
             "calle_numero": reg.calle, "cp": reg.codigo_postal, "tipo_id": reg.tipo_id,
             "numero_id": reg.numero_id, "tiene_discapacidad": reg.tiene_discapacidad,
@@ -759,12 +759,7 @@ $(document).ready(function() {
             "siniiga_status": reg.registro_siniiga, "num_total_predios": reg.num_total_predios,
             "tipo_documento_prop": reg.tipo_documento_propiedad, "pueblo_colonia_up": reg.pueblo_colonia_up,
             "parajes": reg.parajes, "tenencia_tierra": reg.tenencia_tierra,
-            "cultivo_principal": reg.especie_cultivo_principal, "num_animales": reg.numero_cabezas_colmenas,
-            "check_solicitud": reg.check_solicitud, "check_identidad": reg.check_identidad,
-            "check_domicilio": reg.check_domicilio, "check_curp_doc": reg.check_curp_doc,
-            "check_rfc_doc": reg.check_rfc_doc, "check_manifiesto": reg.check_manifiesto,
-            "check_propiedad": reg.check_propiedad, "check_finiquito": reg.check_finiquito,
-            "check_siniiga_doc": reg.check_siniiga_doc
+            "cultivo_principal": reg.especie_cultivo_principal, "num_animales": reg.numero_cabezas_colmenas
         };
 
         if (mapaFisico[campoBuscado] !== undefined && mapaFisico[campoBuscado] !== null && mapaFisico[campoBuscado] !== "") {
@@ -789,7 +784,7 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 3. RENDERIZADO DE TABLA (LIBERACIÓN DE PDF)
+    // 3. RENDERIZADO DE TABLA
     // ==========================================
     function renderTable(page) {
         currentPage = page;
@@ -814,7 +809,7 @@ $(document).ready(function() {
                         <button onclick="abrirEdicion(${e.id})" class="btn btn-sm btn-guinda rounded-circle shadow-sm me-1" title="Editar"><i class="fas fa-user-edit"></i></button>
                         ${pdfLiberado ? 
                             `<a href="<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${e.id}" target="_blank" class="btn btn-sm btn-outline-danger rounded-circle shadow-sm" title="Descargar PDF"><i class="fas fa-file-pdf"></i></a>` : 
-                            `<button class="btn btn-sm btn-light rounded-circle text-muted shadow-none" style="cursor:not-allowed;" title="PDF bloqueado: Realice captura" disabled><i class="fas fa-file-pdf"></i></button>`
+                            `<button class="btn btn-sm btn-light rounded-circle text-muted shadow-none" style="cursor:not-allowed;" title="Falta captura" disabled><i class="fas fa-file-pdf"></i></button>`
                         }
                     </td>
                 </tr>
@@ -825,14 +820,13 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 4. LÓGICA DEL MODAL (ABRIR EDICIÓN)
+    // 4. LÓGICA DEL MODAL (CONTROL MANUAL TOTAL)
     // ==========================================
     window.abrirEdicion = function(id) {
         const reg = rawData.find(i => i.id == id);
         if (!reg) return;
         const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-        // Reset UI y banderas de borrado físico
         $("#formCaptura")[0].reset();
         $('input[name^="delete_"]').val('0'); 
         $(".file-preview-container").addClass('d-none');
@@ -842,7 +836,6 @@ $(document).ready(function() {
         $("#reg_id").val(reg.id);
         $("#spanFolio").text(reg.folio || 'S/F');
         
-        // Control de botón PDF
         const pdfLiberado = reg.fase_proceso && reg.fase_proceso !== 'EMPADRONADO';
         if (pdfLiberado) {
             $("#btnDescargarPDF").removeClass("d-none").attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
@@ -850,7 +843,7 @@ $(document).ready(function() {
             $("#btnDescargarPDF").addClass("d-none");
         }
 
-        // Identidad
+        // Llenado de Identidad
         const fullNombre = getDatoFinal(reg, "nombre_productor", json);
         const seg = segmentarNombreCompleto(fullNombre);
         $("#in_nombre_productor").val(reg.nombre || seg.nombres); 
@@ -859,32 +852,38 @@ $(document).ready(function() {
         $("#in_curp_edit").val(reg.curp);
         $("#in_rfc").val(reg.rfc);
 
-        // Llenado masivo de inputs
+        // Llenado Masivo de Inputs de Texto/Select
         $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
             const el = $(this);
             const name = el.attr('name');
-            if (!name || ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'].includes(name) || el.attr('type') === 'file') return;
+            if (!name || ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'].includes(name) || el.attr('type') === 'file' || name.startsWith('check_')) return;
 
             const valor = getDatoFinal(reg, name, json);
             if (valor !== undefined && valor !== "") {
-                if (el.is(':checkbox')) {
-                    el.prop('checked', valor == 1 || valor === 'SI' || valor === true);
-                } else {
-                    el.val(valor);
-                }
+                el.val(valor);
             }
         });
 
-        // 🔥 RECUPERACIÓN DE ARCHIVOS EXISTENTES
+        // ✅ CONTROL MANUAL: Cargar los checks EXACTAMENTE como están en la Base de Datos
+        const checksCotejo = [
+            'solicitud', 'identidad', 'domicilio', 'curp_doc', 'rfc_doc', 
+            'manifiesto', 'propiedad', 'finiquito', 'siniiga_doc'
+        ];
+        checksCotejo.forEach(c => {
+            const columnaDB = 'check_' + c;
+            const valorDB = reg[columnaDB];
+            $(`input[name="${columnaDB}"]`).prop('checked', parseInt(valorDB) === 1);
+        });
+
+        // 🔥 SOLO UI: Mostrar botón "VER ACTUAL" si el archivo existe físicamente
+        // Nota: NO altera los checkboxes, solo muestra la visualización.
         fetch(`<?php echo URLROOT; ?>/Captura/verificarArchivos/${id}`)
             .then(res => res.json())
             .then(archivos => {
                 archivos.forEach(file => {
                     const partes = file.tipo.split('_');
                     let tipoDoc = partes[partes.length - 1].toLowerCase();
-                    if (tipoDoc === 'doc') {
-                        tipoDoc = partes[partes.length - 2].toLowerCase() + '_doc';
-                    }
+                    if (tipoDoc === 'doc') { tipoDoc = partes[partes.length - 2].toLowerCase() + '_doc'; }
 
                     const container = $(`#preview_${tipoDoc}`);
                     if (container.length) {
@@ -896,8 +895,6 @@ $(document).ready(function() {
                         `);
                         $(`label[for="file_${tipoDoc}"]`).html('<i class="fas fa-sync me-1"></i> REEMPLAZAR');
                         container.closest('.doc-row').css('background-color', '#f0faff');
-                        // Sincronizamos checkbox con la existencia física
-                        $(`input[name="check_${tipoDoc}"]`).prop('checked', true);
                     }
                 });
             })
@@ -954,7 +951,7 @@ $(document).ready(function() {
     });
 
     // ==========================================
-    // 6. GESTIÓN DE ARCHIVOS (AUTO-CHECK Y BORRADO)
+    // 6. RESUMEN Y GESTIÓN DE ARCHIVOS UI
     // ==========================================
     function renderTabResumen(reg, json) {
         const $resumen = $("#resumenCaptura").empty();
@@ -980,46 +977,34 @@ $(document).ready(function() {
         }
     }
 
-    // ✅ ADICIÓN: MARCAR CHECKBOX AL SUBIR ARCHIVO
+    // AL SUBIR ARCHIVO: Solo actualiza la UI
     $(document).on('change', '.file-input', function() {
         const input = this;
         const suffix = input.id.replace('file_', '');
         const container = $(`#preview_${suffix}`);
-        const checkbox = $(input).closest('.doc-row').find('.doc-check');
-        const deleteFlag = $(`#delete_${suffix}`);
-
         if (input.files && input.files[0]) {
-            // UI
+            $(`#delete_${suffix}`).val('0'); 
             container.find('.file-name-text').text(input.files[0].name);
             container.removeClass('d-none');
-            $(input).closest('.doc-row').css('background-color', '#f0fff4'); // Verde tenue
-            
-            // Lógica
-            checkbox.prop('checked', true); // Marcar checkbox automáticamente
-            deleteFlag.val('0'); // Limpiar orden de borrado si existía
+            $(input).closest('.doc-row').css('background-color', '#f0fff4');
         }
     });
 
-    // ✅ ADICIÓN: ELIMINAR FÍSICAMENTE Y DESMARCAR
+    // AL ELIMINAR ARCHIVO: Solo UI y Flag de borrado físico
     window.eliminarArchivo = function(suffix) {
         Swal.fire({
             title: '¿Quitar archivo?',
-            text: "El registro se desmarcará y el archivo se borrará físicamente al guardar.",
+            text: "Se marcará para eliminación física al guardar.",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
-            confirmButtonText: 'Sí, quitar',
-            cancelButtonText: 'Cancelar'
+            confirmButtonText: 'Sí, quitar'
         }).then((result) => {
             if (result.isConfirmed) {
-                // Lógica Servidor
-                $(`#delete_${suffix}`).val('1'); // Señal de borrado para PHP
-                $(`input[name="check_${suffix}"]`).prop('checked', false); // Desmarcar bit BD
-                $(`#file_${suffix}`).val(''); // Limpiar input file
-                
-                // UI
+                $(`#delete_${suffix}`).val('1'); 
+                $(`#file_${suffix}`).val(''); 
                 $(`#preview_${suffix}`).addClass('d-none');
-                $(`#preview_${suffix}`).closest('.doc-row').css('background-color', '#fff5f5'); // Rojo tenue (marcado para borrar)
+                $(`#preview_${suffix}`).closest('.doc-row').css('background-color', '#fff5f5');
                 $(`label[for="file_${suffix}"]`).html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR');
             }
         });
@@ -1045,6 +1030,8 @@ function confirmarGuardado() {
     inputsDisabled.prop('disabled', false);
 
     const formData = new FormData(document.getElementById('formCaptura'));
+    
+    // Asegurar que los checks lleguen siempre (aunque sean 0)
     const checks = ['check_solicitud', 'check_identidad', 'check_domicilio', 'check_curp_doc', 'check_rfc_doc', 'check_manifiesto', 'check_propiedad', 'check_finiquito', 'check_siniiga_doc'];
     checks.forEach(c => { if (!formData.has(c)) formData.append(c, 0); });
 
