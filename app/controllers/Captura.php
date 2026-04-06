@@ -140,9 +140,11 @@ class Captura extends Controller {
 
             // 4. EJECUTAR EN EL MODELO
             if ($this->encuestaModel->actualizarExpediente($data)) {
-                echo json_encode(['status' => 'success', 'msg' => '¡Expediente actualizado con éxito!']);
+                echo json_encode(['status' => 'success', 'msg' => '...']);
             } else {
-                echo json_encode(['status' => 'error', 'msg' => 'Error al actualizar el registro en la base de datos.']);
+                // CAMBIA ESTA LÍNEA TEMPORALMENTE:
+                $errorTecnico = $this->encuestaModel->getError(); 
+                echo json_encode(['status' => 'error', 'msg' => 'Error BD: ' . $errorTecnico]);
             }
         }
     }
