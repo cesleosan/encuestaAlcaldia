@@ -9,9 +9,6 @@ class Expediente extends Controller {
         $this->encuestaModel = $this->model('EncuestaModelo'); 
     }
 
-    /**
-     * Convierte el texto a Latin1 y MAYÚSCULAS
-     */
     private function toLatin1($txt) {
         if ($txt === null || $txt === '') return '';
         $txtMayus = mb_strtoupper($txt, 'UTF-8');
@@ -19,23 +16,25 @@ class Expediente extends Controller {
     }
 
     /**
-     * Función Quirúrgica para escribir texto con ajuste dinámico de fuente
-     * Evita que los textos largos desborden el recuadro
+     * Escribe texto ajustando el tamaño de fuente si excede el ancho.
+     * Si sigue siendo muy largo, permite un salto de línea controlado.
      */
-    private function escribirAjustado($pdf, $x, $y, $texto, $anchoMax, $fuenteBase = 8) {
+    private function escribirAjustado($pdf, $x, $y, $texto, $anchoMax, $fuenteBase = 8, $esMulti = false) {
         $textoFinal = $this->toLatin1($texto);
         $pdf->SetFont('Arial', '', $fuenteBase);
         
-        // Mientras el texto sea más ancho que el recuadro, bajamos la fuente
-        while($pdf->GetStringWidth($textoFinal) > $anchoMax && $fuenteBase > 5) {
+        while($pdf->GetStringWidth($textoFinal) > $anchoMax && $fuenteBase > 5.5) {
             $fuenteBase -= 0.5;
             $pdf->SetFont('Arial', '', $fuenteBase);
         }
         
         $pdf->SetXY($x, $y);
-        $pdf->Write(0, $textoFinal);
-        
-        // Restauramos fuente original
+        if ($esMulti) {
+            // MultiCell para parajes o textos que requieran 2 niveles
+            $pdf->MultiCell($anchoMax, 3, $textoFinal, 0, 'L');
+        } else {
+            $pdf->Write(0, $textoFinal);
+        }
         $pdf->SetFont('Arial', '', 8);
     }
 
@@ -49,13 +48,13 @@ class Expediente extends Controller {
         $pdf->SetAutoPageBreak(false);
         $pdf->SetTitle("Solicitud_" . ($datos->folio ?? 'SF'));
 
-        // --- PÁGINA 1: DATOS Y REQUISITOS ---
         $rutaTemplate = APPROOT . '/views/formatos/formatoProductores2026.pdf'; 
         $pdf->setSourceFile($rutaTemplate);
+        
+        // --- PÁGINA 1 ---
         $tplId = $pdf->importPage(1);
         $pdf->addPage();
         $pdf->useTemplate($tplId);
-
         $pdf->SetFont('Arial', '', 8); 
         $pdf->SetTextColor(0, 0, 0);
 
@@ -63,7 +62,7 @@ class Expediente extends Controller {
         $pdf->SetXY(65, 53); $pdf->Write(0, $datos->folio ?? '');
         $pdf->SetXY(157, 55); $pdf->Write(0, date('d/m/Y'));
 
-        // B. Identidad (Con ajuste dinámico por si son nombres muy largos)
+        // B. Identidad
         $this->escribirAjustado($pdf, 25, 83, $datos->nombre ?? '', 45);
         $this->escribirAjustado($pdf, 75, 83, $datos->apellido_paterno ?? '', 55);
         $this->escribirAjustado($pdf, 135, 83, $datos->apellido_materno ?? '', 50);
@@ -74,18 +73,11 @@ class Expediente extends Controller {
         // C. Datos Generales
         $pdf->SetXY(25, 94); $pdf->Write(0, $this->toLatin1($datos->tipo_id ?? 'INE'));
         $pdf->SetXY(125, 94); $pdf->Write(0, $datos->numero_id ?? '');
-        
         $pdf->SetXY(30, 102); $pdf->Write(0, $this->toLatin1($datos->estado_civil ?? ''));
         $this->escribirAjustado($pdf, 90, 102, $datos->escolaridad ?? '', 40);
         $this->escribirAjustado($pdf, 135, 102, $datos->ocupacion ?? '', 50);
 
-        $pdf->SetXY(105, 109); $pdf->Write(0, $this->toLatin1($datos->tiene_discapacidad ?? 'NO'));
-        $this->escribirAjustado($pdf, 157, 109, $datos->cual_discapacidad ?? 'NA', 35);
-        
-        $pdf->SetXY(105, 113); $pdf->Write(0, $this->toLatin1($datos->grupo_etnico ?? 'NO'));
-        $this->escribirAjustado($pdf, 158, 113, $datos->grupo_etnico_cual ?? 'NA', 35);
-
-        // D. Domicilio y Contacto
+        // D. Domicilio
         $this->escribirAjustado($pdf, 25, 116, $datos->calle ?? '', 45);
         $this->escribirAjustado($pdf, 75, 116, ($datos->pueblo_colonia ?? $datos->colonia_nombre ?? ''), 55);
         $pdf->SetXY(138, 116); $pdf->Write(0, $datos->codigo_postal ?? '');
@@ -94,7 +86,7 @@ class Expediente extends Controller {
         $pdf->SetXY(95, 124); $pdf->Write(0, $datos->tel_casa ?? '');
         $pdf->SetXY(159, 124); $pdf->Write(0, $datos->tel_familiar ?? '');
 
-        // E. Checklist de Requisitos
+        // E. Checklist
         if (!empty($datos->check_identidad))   { $pdf->SetXY(180, 141); $pdf->Write(0, 'X'); }
         if (!empty($datos->check_domicilio))   { $pdf->SetXY(180, 145); $pdf->Write(0, 'X'); }
         if (!empty($datos->check_curp_doc))    { $pdf->SetXY(180, 149); $pdf->Write(0, 'X'); }
@@ -108,50 +100,41 @@ class Expediente extends Controller {
         $pdf->SetXY(165, 180); $pdf->Write(0, ($datos->superficie_total ?? '0') . ' HA');
         
         $this->escribirAjustado($pdf, 75, 187, $datos->tipo_documento_propiedad ?? '', 100);
-        $this->escribirAjustado($pdf, 75, 193, $datos->pueblo_colonia_up ?? '', 80);
+        $this->escribirAjustado($pdf, 75, 193, $datos->pueblo_colonia_up ?? '', 75);
         
-        // AJUSTE PARAJES (Texto propenso a ser muy largo)
-        $this->escribirAjustado($pdf, 165, 193, $datos->parajes ?? '', 35);
+        // AJUSTE PARAJES (Coordenada X reducida para ganar espacio a la derecha)
+        $this->escribirAjustado($pdf, 155, 192, $datos->parajes ?? '', 45, 8, true);
+
+        // TENENCIA DE LA TIERRA (Ajustada a Y=201 para no encimarse)
+        $this->escribirAjustado($pdf, 75, 201, $datos->tenencia_tierra ?? 'NA', 45);
 
         $this->escribirAjustado($pdf, 75, 205, $datos->especie_cultivo_principal ?? '', 80);
         $pdf->SetXY(165, 205); $pdf->Write(0, $datos->numero_cabezas_colmenas ?? '0');
 
-        // --- PÁGINA 2: COMPROMISOS ---
+        // --- PÁGINA 2 ---
         $tplId2 = $pdf->importPage(2);
         $pdf->addPage();
         $pdf->useTemplate($tplId2);
-        
         $nombreFull = trim(($datos->nombre ?? '') . ' ' . ($datos->apellido_paterno ?? '') . ' ' . ($datos->apellido_materno ?? ''));
         
-        // Firma Solicitante (Derecha)
-        $pdf->SetXY(114, 205); 
-        $pdf->SetFont('Arial', 'B', 8); // Fuente un poco más pequeña por seguridad
-        $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
-
-        // Firma Usuario Logueado (Izquierda)
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetXY(114, 205); $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
         $pdf->SetXY(25, 205); 
-        $usuarioFirma = (!empty($_SESSION['usuario_nombre'])) ? $_SESSION['usuario_nombre'] : '';
+        $usuarioFirma = (!empty($_SESSION['usuario_nombre'])) ? $_SESSION['usuario_nombre'] : 'USUARIO';
         $pdf->Cell(80, 0, $this->toLatin1(mb_strtoupper($usuarioFirma, 'UTF-8')), 0, 0, 'C');
 
-        // --- PÁGINA 3: AVISO DE PRIVACIDAD ---
+        // --- PÁGINA 3 ---
         $tplId3 = $pdf->importPage(3);
         $pdf->addPage();
         $pdf->useTemplate($tplId3);
-        
         $pdf->SetFont('Arial', '', 8); 
         $pdf->SetXY(65, 70); $pdf->Write(0, $datos->folio ?? '');
         $pdf->SetXY(160, 68); $pdf->Write(0, date('d/m/Y'));
         
         $pdf->SetFont('Arial', 'B', 8);
-        // Firma Solicitante (Abajo Izquierda)
-        $pdf->SetXY(25, 209); 
-        $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
+        $pdf->SetXY(25, 209); $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
+        $pdf->SetXY(110, 209); $pdf->Cell(80, 0, $this->toLatin1(mb_strtoupper($usuarioFirma, 'UTF-8')), 0, 0, 'C');
 
-        // Firma Usuario Logueado (Abajo Derecha)
-        $pdf->SetXY(110, 209); 
-        $pdf->Cell(80, 0, $this->toLatin1(mb_strtoupper($usuarioFirma, 'UTF-8')), 0, 0, 'C');
-
-        // Salida del PDF
         $pdf->Output('I', "Solicitud_{$datos->folio}.pdf");
     }
 
@@ -159,30 +142,13 @@ class Expediente extends Controller {
         if (ob_get_level()) ob_end_clean();
         $pdf = new Fpdi();
         $pdf->SetAutoPageBreak(false);
-        $rutaTemplate = APPROOT . '/views/formatos/formatoProductores2026.pdf'; 
-        $pdf->setSourceFile($rutaTemplate);
-        $tplId = $pdf->importPage(1);
+        $pdf->setSourceFile(APPROOT . '/views/formatos/formatoProductores2026.pdf');
         $pdf->addPage();
-        $pdf->useTemplate($tplId);
+        $pdf->useTemplate($pdf->importPage(1));
         $pdf->SetFont('Arial', '', 7);
-        $pdf->SetDrawColor(255, 0, 0);
-        $pdf->SetTextColor(255, 0, 0);
-
-        for ($y = 0; $y <= 297; $y += 5) {
-            $pdf->Line(0, $y, 210, $y);
-            if ($y % 10 == 0) { $pdf->SetXY(2, $y - 2); $pdf->Write(0, "Y=$y"); }
-        }
-        for ($x = 0; $x <= 210; $x += 5) {
-            $pdf->Line($x, 0, $x, 297);
-            if ($x % 10 == 0) { $pdf->SetXY($x + 1, 2); $pdf->Write(0, "X=$x"); }
-        }
-        $datos = $this->encuestaModel->getExpedienteCompleto($id);
-        if($datos){
-            $pdf->SetFont('Arial', 'B', 12);
-            $pdf->SetTextColor(0, 0, 255);
-            $pdf->SetXY(22, 105); 
-            $pdf->Write(0, "PRUEBA: " . $this->toLatin1($datos->nombre));
-        }
-        $pdf->Output('I', 'CALIBRACION_COORDENADAS.pdf');
+        $pdf->SetDrawColor(255, 0, 0); $pdf->SetTextColor(255, 0, 0);
+        for ($y = 0; $y <= 297; $y += 5) { $pdf->Line(0, $y, 210, $y); if ($y % 10 == 0) { $pdf->SetXY(2, $y - 2); $pdf->Write(0, "Y=$y"); } }
+        for ($x = 0; $x <= 210; $x += 5) { $pdf->Line($x, 0, $x, 297); if ($x % 10 == 0) { $pdf->SetXY($x + 1, 2); $pdf->Write(0, "X=$x"); } }
+        $pdf->Output('I', 'CALIBRACION.pdf');
     }
 }
