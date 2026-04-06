@@ -12,10 +12,8 @@ class Captura extends Controller {
         }
         $this->encuestaModel = $this->model('EncuestaModelo');
 
-        // DEFINICIÓN DE PUBROOT SI NO EXISTE (Corrección Quirúrgica para el error)
+        // DEFINICIÓN DE PUBROOT: Asegura la ruta física para el servidor (Nginx/Linux)
         if (!defined('PUBROOT')) {
-            // Asumiendo que APPROOT está en /var/www/html/encuestaAlcaldia/app
-            // PUBROOT debe ser /var/www/html/encuestaAlcaldia/public
             define('PUBROOT', dirname(APPROOT) . '/public');
         }
     }
@@ -25,65 +23,61 @@ class Captura extends Controller {
     }
 
     /**
-     * ACTUALIZADO: Guarda expediente oficial y gestiona carga de archivos por Folio
+     * Guarda expediente oficial, convierte a MAYÚSCULAS y gestiona archivos
      */
     public function actualizar() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $id = $_POST['id'];
             
-            // 1. Obtener el registro actual para conocer el Folio oficial
+            // 1. Obtener el registro para conocer el Folio oficial
             $registro = $this->encuestaModel->getExpedienteCompleto($id);
             if (!$registro) {
-                echo json_encode(['status' => 'error', 'msg' => 'No se encontró el registro en la base de datos']);
+                echo json_encode(['status' => 'error', 'msg' => 'No se encontró el registro']);
                 return;
             }
 
-            // 2. LÓGICA DE DIRECTORIOS: Carpeta única por Folio
-            // Limpiamos el folio de caracteres que Linux/Apache no aceptan en nombres de carpeta
+            // 2. LÓGICA DE DIRECTORIOS
             $folioCarpeta = str_replace(['/', ' ', '\\'], '-', $registro->folio);
             $rutaBase = PUBROOT . '/uploads/expedientes/' . $folioCarpeta;
 
-            // Creamos la ruta física si no existe
             if (!is_dir($rutaBase)) {
-                // La @ silencia el warning y el mkdir con true crea la ruta completa
+                // Creamos con 0775 y forzamos permisos para el usuario nginx
                 if (!@mkdir($rutaBase, 0775, true)) {
-                    echo json_encode(['status' => 'error', 'msg' => 'Error de escritura en el servidor.']);
+                    echo json_encode(['status' => 'error', 'msg' => 'Error de permisos: No se pudo crear la carpeta del expediente.']);
                     return;
                 }
+                chmod($rutaBase, 0775); 
             }
 
-            // 3. PROCESAMIENTO DE ARCHIVOS
-            // Mapeo de name="input" del HTML a prefijo de nombre de archivo oficial
+            // 3. PROCESAMIENTO DE ARCHIVOS (Sobrescribe si ya existen)
             $mapeoArchivos = [
-                'file_solicitud'  => 'SOLICITUD',
-                'file_identidad'  => 'IDENTIDAD',
-                'file_domicilio'  => 'DOMICILIO',
-                'file_curp_doc'   => 'CURP',
-                'file_rfc_doc'    => 'RFC',
-                'file_manifiesto' => 'MANIFIESTO',
-                'file_propiedad'  => 'PROPIEDAD',
-                'file_finiquito'  => 'FINIQUITO',
-                'file_siniiga_doc'=> 'SINIIGA'
+                'file_solicitud'   => 'SOLICITUD',
+                'file_identidad'   => 'IDENTIDAD',
+                'file_domicilio'   => 'DOMICILIO',
+                'file_curp_doc'    => 'CURP',
+                'file_rfc_doc'     => 'RFC',
+                'file_manifiesto'  => 'MANIFIESTO',
+                'file_propiedad'   => 'PROPIEDAD',
+                'file_finiquito'   => 'FINIQUITO',
+                'file_siniiga_doc' => 'SINIIGA'
             ];
 
             foreach ($mapeoArchivos as $inputName => $nombreDoc) {
                 if (isset($_FILES[$inputName]) && $_FILES[$inputName]['error'] === UPLOAD_ERR_OK) {
-                    
                     $tmpName = $_FILES[$inputName]['tmp_name'];
-                    $originalName = $_FILES[$inputName]['name'];
-                    $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+                    $ext = strtolower(pathinfo($_FILES[$inputName]['name'], PATHINFO_EXTENSION));
                     
-                    // Nombre estandarizado: TLP-26-XXXX_IDENTIDAD.pdf
+                    // Nombre estandarizado: FOLIO_TIPO.ext
                     $nombreFinal = $folioCarpeta . "_" . $nombreDoc . "." . $ext;
                     $destinoCompleto = $rutaBase . "/" . $nombreFinal;
 
-                    // Mover archivo del temporal a la carpeta del folio
-                    move_uploaded_file($tmpName, $destinoCompleto);
+                    if (move_uploaded_file($tmpName, $destinoCompleto)) {
+                        chmod($destinoCompleto, 0664); // Permiso de lectura para Nginx
+                    }
                 }
             }
 
-            // 4. PREPARACIÓN DE DATOS PARA BASE DE DATOS
-            // Recibimos todo y aseguramos valores por defecto para evitar fallos en el Modelo
+            // 4. PREPARACIÓN DE DATOS (Todo a MAYÚSCULAS)
             $data = [
                 'id'                => $id,
                 'nombre_productor'  => mb_strtoupper($_POST['nombre_productor'], 'UTF-8'),
@@ -118,7 +112,7 @@ class Captura extends Controller {
                 'num_animales'      => $_POST['num_animales'] ?? 0,
                 'fase_proceso'      => $_POST['fase_proceso'] ?? 'EMPADRONADO',
                 
-                // Checkboxes de cotejo (llegan como 1 o se fuerzan a 0)
+                // Cotejo
                 'check_solicitud'   => isset($_POST['check_solicitud']) ? 1 : 0,
                 'check_identidad'   => isset($_POST['check_identidad']) ? 1 : 0,
                 'check_domicilio'   => isset($_POST['check_domicilio']) ? 1 : 0,
@@ -129,26 +123,20 @@ class Captura extends Controller {
                 'check_finiquito'   => isset($_POST['check_finiquito']) ? 1 : 0,
                 'check_siniiga_doc' => isset($_POST['check_siniiga_doc']) ? 1 : 0,
                 
-                'json'              => $registro->respuestas_json // Preservamos la encuesta original
+                'json'              => $registro->respuestas_json 
             ];
 
-            // 5. EJECUTAR ACTUALIZACIÓN EN BASE DE DATOS
+            // 5. EJECUTAR ACTUALIZACIÓN
             if ($this->encuestaModel->actualizarExpediente($data)) {
-                echo json_encode([
-                    'status' => 'success', 
-                    'msg' => '¡Expediente actualizado y documentos cargados con éxito!'
-                ]);
+                echo json_encode(['status' => 'success', 'msg' => '¡Expediente y documentos actualizados!']);
             } else {
-                echo json_encode([
-                    'status' => 'error', 
-                    'msg' => 'El expediente se subió pero hubo un error al registrar en la base de datos.'
-                ]);
+                echo json_encode(['status' => 'error', 'msg' => 'Error al registrar en la base de datos.']);
             }
         }
     }
 
-        /**
-     * Escanea la carpeta del folio y devuelve la lista de archivos existentes
+    /**
+     * Escanea archivos para UI/UX
      */
     public function verificarArchivos($id) {
         $registro = $this->encuestaModel->getExpedienteCompleto($id);
@@ -156,7 +144,9 @@ class Captura extends Controller {
 
         $folioCarpeta = str_replace(['/', ' ', '\\'], '-', $registro->folio);
         $rutaFisica = PUBROOT . '/uploads/expedientes/' . $folioCarpeta;
-        $urlBase = URLROOT . '/public/uploads/expedientes/' . $folioCarpeta;
+        
+        // CORRECCIÓN CLAVE: Quitamos '/public' de la URL para que Nginx no redirija al index
+        $urlBase = URLROOT . '/uploads/expedientes/' . $folioCarpeta;
 
         $archivosEncontrados = [];
 
@@ -164,7 +154,6 @@ class Captura extends Controller {
             $archivos = scandir($rutaFisica);
             foreach ($archivos as $archivo) {
                 if ($archivo !== '.' && $archivo !== '..') {
-                    // Identificamos el tipo basado en el nombre (ej. TLP-26_IDENTIDAD.pdf)
                     $archivosEncontrados[] = [
                         'nombre' => $archivo,
                         'url'    => $urlBase . '/' . $archivo,
