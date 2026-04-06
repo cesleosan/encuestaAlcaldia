@@ -44,7 +44,7 @@ class Expediente extends Controller {
         // A. Encabezado (Folio y Fecha)
         $pdf->SetXY(65, 53); $pdf->Write(0, $datos->folio ?? '');
         $fecha = ($datos->fecha_inicio) ? date('d/m/Y', strtotime($datos->fecha_inicio)) : date('d/m/Y');
-        $pdf->SetXY(155, 55); $pdf->Write(0, $fecha);
+        $pdf->SetXY(157, 55); $pdf->Write(0, $fecha);
 
         // B. Identidad del Solicitante
         $pdf->SetXY(25, 83); $pdf->Write(0, $this->toLatin1($datos->nombre ?? ''));
@@ -122,7 +122,7 @@ class Expediente extends Controller {
         $pdf->SetFont('Arial', 'B', 9);
         
         // Firma Solicitante
-        $pdf->SetXY(113, 202); 
+        $pdf->SetXY(113, 203); 
         $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
 
         // --- PÁGINA 3: AVISO DE PRIVACIDAD ---
@@ -132,7 +132,7 @@ class Expediente extends Controller {
 
         $pdf->SetXY(65, 70); $pdf->Write(0, $datos->folio ?? '');
         $fecha = ($datos->fecha_inicio) ? date('d/m/Y', strtotime($datos->fecha_inicio)) : date('d/m/Y');
-        $pdf->SetXY(160, 65); $pdf->Write(0, $fecha);
+        $pdf->SetXY(160, 68); $pdf->Write(0, $fecha);
         
         // Firma última página
         $pdf->SetXY(110, 209); 
