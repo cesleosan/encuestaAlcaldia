@@ -45,11 +45,18 @@ class Captura extends Controller {
 
             // Creamos la ruta física si no existe
             if (!is_dir($rutaBase)) {
-                // Permisos 0775 para que el grupo 'apache' pueda escribir
-                if (!mkdir($rutaBase, 0775, true)) {
-                    echo json_encode(['status' => 'error', 'msg' => 'Error crítico: No se pudo crear la carpeta de expedientes. Revise permisos de servidor.']);
+                // La @ silencia el warning para que el JSON no se rompa
+                if (!@mkdir($rutaBase, 0777, true)) { 
+                    // Si falla, mandamos un mensaje más técnico para debuggear
+                    $error = error_get_last();
+                    echo json_encode([
+                        'status' => 'error', 
+                        'msg' => 'Error de sistema: ' . ($error['message'] ?? 'Permiso denegado en uploads.')
+                    ]);
                     return;
                 }
+                // Forzamos los permisos justo después de crearla por si el sistema los restringió
+                chmod($rutaBase, 0777); 
             }
 
             // 3. PROCESAMIENTO DE ARCHIVOS
