@@ -110,7 +110,8 @@ class Captura extends Controller {
                 'tenencia_tierra'   => $_POST['tenencia_tierra'] ?? 'NA',
                 'cultivo_principal' => mb_strtoupper($_POST['cultivo_principal'] ?? '', 'UTF-8'),
                 'num_animales'      => $_POST['num_animales'] ?? 0,
-                'fase_proceso'      => $_POST['fase_proceso'] ?? 'EMPADRONADO',
+                // En el array $data del método actualizar():
+                'fase_proceso' => ($registro->fase_proceso == 'EMPADRONADO') ? 'SOLICITUD_INGRESADA' : $_POST['fase_proceso'],
                 
                 // Cotejo
                 'check_solicitud'   => isset($_POST['check_solicitud']) ? 1 : 0,

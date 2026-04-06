@@ -130,6 +130,8 @@
     cursor: pointer;
     font-size: 0.9rem;
 }
+/* Agrega el color para la nueva fase */
+.fase-SOLICITUD_INGRESADA { background-color: #17a2b8; color: white; } /* Azul turquesa */
 </style>
 <div class="container-fluid py-4">
     <div class="row mb-4">
@@ -799,7 +801,7 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 3. RENDERIZADO DE TABLA
+    // 3. RENDERIZADO DE TABLA (CON LIBERACIÓN DE PDF)
     // ==========================================
     function renderTable(page) {
         currentPage = page;
@@ -809,6 +811,10 @@ $(document).ready(function() {
 
         items.forEach(e => {
             const faseLimpia = (e.fase_proceso || 'EMPADRONADO').replace(/_/g, ' ');
+            
+            // ✅ Lógica de Adán: Solo se libera el PDF si NO está en EMPADRONADO
+            const pdfLiberado = e.fase_proceso && e.fase_proceso !== 'EMPADRONADO';
+
             tbody.append(`
                 <tr>
                     <td class="ps-3 fw-bold text-guinda">${e.folio || 'S/F'}</td>
@@ -820,7 +826,11 @@ $(document).ready(function() {
                     <td class="text-center fw-bold text-secondary">${parseFloat(e.superficie_total || 0).toFixed(2)} ha</td>
                     <td class="text-center">
                         <button onclick="abrirEdicion(${e.id})" class="btn btn-sm btn-guinda rounded-circle shadow-sm me-1" title="Editar"><i class="fas fa-user-edit"></i></button>
-                        <a href="<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${e.id}" target="_blank" class="btn btn-sm btn-outline-danger rounded-circle shadow-sm" title="PDF"><i class="fas fa-file-pdf"></i></a>
+                        
+                        ${pdfLiberado ? 
+                            `<a href="<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${e.id}" target="_blank" class="btn btn-sm btn-outline-danger rounded-circle shadow-sm" title="Descargar PDF"><i class="fas fa-file-pdf"></i></a>` : 
+                            `<button class="btn btn-sm btn-light rounded-circle text-muted shadow-none" style="cursor:not-allowed;" title="PDF bloqueado: Capture datos para liberar" disabled><i class="fas fa-file-pdf"></i></button>`
+                        }
                     </td>
                 </tr>
             `);
@@ -849,98 +859,87 @@ $(document).ready(function() {
     $(document).on("change", "#in_tiene_discap, #in_grupo_etnico_edit", window.controlarDependencias);
 
     window.abrirEdicion = function(id) {
-    const reg = rawData.find(i => i.id == id);
-    if (!reg) return;
-    const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
+        const reg = rawData.find(i => i.id == id);
+        if (!reg) return;
+        const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-    // 1. Resetear Formulario y UI de Archivos
-    $("#formCaptura")[0].reset();
-    $(".file-preview-container").addClass('d-none'); // Ocultar previews previos
-    $(".doc-row").css('background-color', '');      // Quitar colores de fila
-    $(".btn-upload").html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR'); // Reset botones
-    
-    $("#reg_id").val(reg.id);
-    $("#spanFolio").text(reg.folio || 'S/F');
-    
-    // 2. Configurar botón de descarga PDF oficial
-    $("#btnDescargarPDF")
-        .removeClass("d-none")
-        .attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
-
-    // 3. Llenado de Identidad Principal
-    const fullNombre = getDatoFinal(reg, "nombre_productor", json);
-    const seg = segmentarNombreCompleto(fullNombre);
-    $("#in_nombre_productor").val(reg.nombre || seg.nombres); 
-    $("#in_paterno").val(reg.apellido_paterno || seg.paterno); 
-    $("#in_materno").val(reg.apellido_materno || seg.materno);
-    $("#in_curp_edit").val(reg.curp);
-    $("#in_rfc").val(reg.rfc);
-
-    // 4. Llenado Masivo de Inputs (Texto, Selects, Checkboxes)
-    $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
-        const el = $(this);
-        const name = el.attr('name');
-        const excluidos = ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'];
+        // 1. Resetear Formulario y UI
+        $("#formCaptura")[0].reset();
+        $(".file-preview-container").addClass('d-none');
+        $(".doc-row").css('background-color', '');
+        $(".btn-upload").html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR');
         
-        // No procesamos archivos ni campos de identidad manual en este bucle
-        if (!name || excluidos.includes(name) || el.attr('type') === 'file') return;
-
-        const valor = getDatoFinal(reg, name, json);
-        if (valor !== undefined && valor !== "") {
-            if (el.is(':checkbox')) {
-                // Forzamos el check si el valor es 1, 'SI' o true
-                el.prop('checked', valor == 1 || valor === 'SI' || valor === true);
-            } else {
-                el.val(valor);
-            }
+        $("#reg_id").val(reg.id);
+        $("#spanFolio").text(reg.folio || 'S/F');
+        
+        // 2. Liberar PDF en el modal si corresponde
+        const pdfLiberado = reg.fase_proceso && reg.fase_proceso !== 'EMPADRONADO';
+        if (pdfLiberado) {
+            $("#btnDescargarPDF")
+                .removeClass("d-none")
+                .attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
+        } else {
+            $("#btnDescargarPDF").addClass("d-none");
         }
-    });
 
-    // 5. 🔥 NUEVO: RECUPERACIÓN DE EXPEDIENTE DIGITAL (ARCHIVOS)
-    fetch(`<?php echo URLROOT; ?>/Captura/verificarArchivos/${id}`)
-        .then(res => res.json())
-        .then(archivos => {
-            archivos.forEach(file => {
-                // Extraemos el tipo de documento del nombre (ej: FOLIO_IDENTIDAD.pdf -> identidad)
-                const partes = file.tipo.split('_');
-                let tipoDoc = partes[partes.length - 1].toLowerCase();
-                
-                // Mapeo especial para coincidir con tus IDs de previsualización
-                // Si el nombre termina en 'DOC' (como curp_doc), tomamos el segmento anterior
-                if (tipoDoc === 'doc') {
-                    tipoDoc = partes[partes.length - 2].toLowerCase() + '_doc';
+        // 3. Llenado de Identidad
+        const fullNombre = getDatoFinal(reg, "nombre_productor", json);
+        const seg = segmentarNombreCompleto(fullNombre);
+        $("#in_nombre_productor").val(reg.nombre || seg.nombres); 
+        $("#in_paterno").val(reg.apellido_paterno || seg.paterno); 
+        $("#in_materno").val(reg.apellido_materno || seg.materno);
+        $("#in_curp_edit").val(reg.curp);
+        $("#in_rfc").val(reg.rfc);
+
+        // 4. Llenado Masivo
+        $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
+            const el = $(this);
+            const name = el.attr('name');
+            const excluidos = ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'];
+            if (!name || excluidos.includes(name) || el.attr('type') === 'file') return;
+
+            const valor = getDatoFinal(reg, name, json);
+            if (valor !== undefined && valor !== "") {
+                if (el.is(':checkbox')) {
+                    el.prop('checked', valor == 1 || valor === 'SI' || valor === true);
+                } else {
+                    el.val(valor);
                 }
+            }
+        });
 
-                const container = $(`#preview_${tipoDoc}`);
-                if (container.length) {
-                    container.removeClass('d-none');
-                    // Inyectamos link de visualización UI/UX
-                    container.find('.file-name-text').html(`
-                        <a href="${file.url}" target="_blank" class="text-primary fw-bold text-decoration-none">
-                            <i class="fas fa-eye me-1"></i> VER ARCHIVO ACTUAL
-                        </a>
-                    `);
-                    
-                    // Cambiamos el estilo del botón y la fila para indicar existencia
-                    $(`label[for="file_${tipoDoc}"]`).html('<i class="fas fa-sync me-1"></i> REEMPLAZAR');
-                    container.closest('.doc-row').css('background-color', '#f0faff');
-                    
-                    // Aseguramos que el checkbox de cotejo esté marcado si el archivo existe
-                    $(`input[name="check_${tipoDoc}"]`).prop('checked', true);
-                }
-            });
-        })
-        .catch(err => console.error("Error al recuperar expediente digital:", err));
+        // 5. RECUPERACIÓN DE ARCHIVOS
+        fetch(`<?php echo URLROOT; ?>/Captura/verificarArchivos/${id}`)
+            .then(res => res.json())
+            .then(archivos => {
+                archivos.forEach(file => {
+                    const partes = file.tipo.split('_');
+                    let tipoDoc = partes[partes.length - 1].toLowerCase();
+                    if (tipoDoc === 'doc') {
+                        tipoDoc = partes[partes.length - 2].toLowerCase() + '_doc';
+                    }
 
-    // 6. Finalizar Carga de Interfaz
-    renderTabResumen(reg, json);
-    window.controlarDependencias(); 
-    
-    // Regresar siempre a la primera pestaña (Resumen o Datos)
-    bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
-    
-    $("#modalEdicion").modal('show');
-};
+                    const container = $(`#preview_${tipoDoc}`);
+                    if (container.length) {
+                        container.removeClass('d-none');
+                        container.find('.file-name-text').html(`
+                            <a href="${file.url}" target="_blank" class="text-primary fw-bold text-decoration-none">
+                                <i class="fas fa-eye me-1"></i> VER ARCHIVO ACTUAL
+                            </a>
+                        `);
+                        $(`label[for="file_${tipoDoc}"]`).html('<i class="fas fa-sync me-1"></i> REEMPLAZAR');
+                        container.closest('.doc-row').css('background-color', '#f0faff');
+                        $(`input[name="check_${tipoDoc}"]`).prop('checked', true);
+                    }
+                });
+            })
+            .catch(err => console.error("Error al recuperar expediente digital:", err));
+
+        renderTabResumen(reg, json);
+        window.controlarDependencias(); 
+        bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
+        $("#modalEdicion").modal('show');
+    };
 
     // ==========================================
     // 5. PAGINACIÓN Y BÚSQUEDA
@@ -1002,7 +1001,7 @@ $(document).ready(function() {
     });
 
     // ==========================================
-    // 6. RESUMEN Y CARGA DE ARCHIVOS
+    // 6. RESUMEN Y MANEJO DE FILES UI
     // ==========================================
     function renderTabResumen(reg, json) {
         const $resumen = $("#resumenCaptura").empty();
@@ -1034,7 +1033,6 @@ $(document).ready(function() {
         }
     }
 
-    // Manejador visual de carga de archivos
     $(document).on('change', '.file-input', function() {
         const input = this;
         const suffix = input.id.replace('file_', '');
@@ -1061,22 +1059,19 @@ $(document).ready(function() {
 });
 
 // ==========================================
-// 7. ACCIONES GLOBALES (GUARDAR Y SALIR)
+// 7. ACCIONES GLOBALES
 // ==========================================
 function confirmarGuardado() {
-    // 1. Convertir textos a MAYÚSCULAS
     $("#formCaptura input[type='text'], #formCaptura textarea").each(function() {
         $(this).val($(this).val().toUpperCase());
     });
 
-    // 2. Habilitar disabled temporalmente para capturar
     const inputsDisabled = $("#formCaptura").find(':disabled');
     inputsDisabled.prop('disabled', false);
 
     const formElement = document.getElementById('formCaptura');
     const formData = new FormData(formElement);
 
-    // 3. Forzar 0 en Checkboxes no marcados
     const checks = ['check_solicitud', 'check_identidad', 'check_domicilio', 'check_curp_doc', 'check_rfc_doc', 'check_manifiesto', 'check_propiedad', 'check_finiquito', 'check_siniiga_doc'];
     checks.forEach(c => { if (!formData.has(c)) formData.append(c, 0); });
 
@@ -1084,7 +1079,7 @@ function confirmarGuardado() {
 
     Swal.fire({
         title: '¿Guardar cambios?',
-        text: "Se actualizará el expediente y se subirán los documentos en MAYÚSCULAS",
+        text: "Se actualizará el expediente oficial y se subirá la documentación en MAYÚSCULAS",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#773357',
