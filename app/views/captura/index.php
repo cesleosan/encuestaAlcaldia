@@ -426,10 +426,11 @@
                                 <label class="small fw-bold text-danger d-block text-start text-uppercase">Fase del proceso</label>
                                 <select class="form-select fw-bold border-danger" name="fase_proceso" id="in_fase">
                                     <option value="EMPADRONADO">1. EMPADRONADO</option>
-                                    <option value="VALIDACION_DOCS">2. VALIDACIÓN DE DOCS</option>
-                                    <option value="EN_REVISION">3. EN REVISIÓN TÉCNICA</option>
-                                    <option value="APROBADO">4. APROBADO</option>
-                                    <option value="RECHAZADO">5. RECHAZADO</option>
+                                    <option value="SOLICITUD_INGRESADA">2. SOLICITUD INGRESADA</option>
+                                    <option value="VALIDACION_DOCS">3. VALIDACIÓN DE DOCS</option>
+                                    <option value="EN_REVISION">4. EN REVISIÓN TÉCNICA</option>
+                                    <option value="APROBADO">5. APROBADO</option>
+                                    <option value="RECHAZADO">6. RECHAZADO</option>
                                 </select>
                             </div>
                         </div>
