@@ -122,7 +122,7 @@ class Expediente extends Controller {
         $pdf->SetFont('Arial', 'B', 9);
         
         // Firma Solicitante
-        $pdf->SetXY(113, 203); 
+        $pdf->SetXY(114, 204); 
         $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
 
         // --- PÁGINA 3: AVISO DE PRIVACIDAD ---
