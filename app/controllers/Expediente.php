@@ -125,6 +125,16 @@ class Expediente extends Controller {
         $pdf->SetXY(114, 205); 
         $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
 
+                // Nos posicionamos en la coordenada que necesites (ejemplo hoja de firmas)
+        $pdf->SetXY(30, 205); 
+
+        // Verificamos si existe el dato antes de pintar
+        $tecnico = (isset($datos->nombre_tecnico) && !empty($datos->nombre_tecnico)) 
+                ? $datos->nombre_tecnico 
+                : 'TECNICO NO REGISTRADO';
+
+        $pdf->Cell(80, 0, $this->toLatin1($tecnico), 0, 0, 'C');
+
         // --- PÁGINA 3: AVISO DE PRIVACIDAD ---
         $tplId3 = $pdf->importPage(3);
         $pdf->addPage();
@@ -138,15 +148,15 @@ class Expediente extends Controller {
         $pdf->SetXY(25, 209); 
         $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
 
-// Nos posicionamos en la coordenada que necesites (ejemplo hoja de firmas)
-$pdf->SetXY(110, 209); 
+        // Nos posicionamos en la coordenada que necesites (ejemplo hoja de firmas)
+        $pdf->SetXY(110, 209); 
 
-// Verificamos si existe el dato antes de pintar
-$tecnico = (isset($datos->nombre_tecnico) && !empty($datos->nombre_tecnico)) 
-           ? $datos->nombre_tecnico 
-           : 'TECNICO NO REGISTRADO';
+        // Verificamos si existe el dato antes de pintar
+        $tecnico = (isset($datos->nombre_tecnico) && !empty($datos->nombre_tecnico)) 
+                ? $datos->nombre_tecnico 
+                : 'TECNICO NO REGISTRADO';
 
-$pdf->Cell(80, 0, $this->toLatin1($tecnico), 0, 0, 'C');
+        $pdf->Cell(80, 0, $this->toLatin1($tecnico), 0, 0, 'C');
 
         // Salida del PDF
         $pdf->Output('I', "Solicitud_{$datos->folio}.pdf");
