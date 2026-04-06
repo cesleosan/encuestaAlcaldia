@@ -82,25 +82,25 @@ class Expediente extends Controller {
         $baseY = 139; 
         $intercalado = 5; 
         // 1. Acreditación de identidad
-        if (!empty($datos->check_identidad))   { $pdf->SetXY(180, 140); $pdf->Write(0, 'X'); }
+        if (!empty($datos->check_identidad))   { $pdf->SetXY(180, 141); $pdf->Write(0, 'X'); }
 
         // 2. Comprobante de domicilio
         if (!empty($datos->check_domicilio))   { $pdf->SetXY(180, 145); $pdf->Write(0, 'X'); }
 
         // 3. Copia de la CURP
-        if (!empty($datos->check_curp_doc))    { $pdf->SetXY(180, 150); $pdf->Write(0, 'X'); }
+        if (!empty($datos->check_curp_doc))    { $pdf->SetXY(180, 149); $pdf->Write(0, 'X'); }
 
         // 4. Registro Federal de Contribuyentes (RFC)
-        if (!empty($datos->check_rfc_doc))     { $pdf->SetXY(180, 155); $pdf->Write(0, 'X'); }
+        if (!empty($datos->check_rfc_doc))     { $pdf->SetXY(180, 154); $pdf->Write(0, 'X'); }
 
         // 5. Acreditación de la propiedad o posesión
-        if (!empty($datos->check_propiedad))   { $pdf->SetXY(180, 160); $pdf->Write(0, 'X'); }
+        if (!empty($datos->check_propiedad))   { $pdf->SetXY(180, 158); $pdf->Write(0, 'X'); }
 
         // 6. Registro en el SINIIGA
-        if (!empty($datos->check_siniiga_doc)) { $pdf->SetXY(180, 165); $pdf->Write(0, 'X'); }
+        if (!empty($datos->check_siniiga_doc)) { $pdf->SetXY(180, 162); $pdf->Write(0, 'X'); }
 
         // 7. Carta finiquito|
-        if (!empty($datos->check_finiquito))   { $pdf->SetXY(180, 170); $pdf->Write(0, 'X'); }
+        if (!empty($datos->check_finiquito))   { $pdf->SetXY(180, 166); $pdf->Write(0, 'X'); }
         // F. Producción Primaria
         $pdf->SetXY(85, 180); $pdf->Write(0, $datos->num_total_predios ?? '1');
         $pdf->SetXY(165, 180); $pdf->Write(0, ($datos->superficie_total ?? '0') . ' HA');
@@ -122,7 +122,7 @@ class Expediente extends Controller {
         $pdf->SetFont('Arial', 'B', 9);
         
         // Firma Solicitante
-        $pdf->SetXY(120, 230); 
+        $pdf->SetXY(120, 190); 
         $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
 
         // --- PÁGINA 3: AVISO DE PRIVACIDAD ---
