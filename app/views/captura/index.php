@@ -79,6 +79,57 @@
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
+    /* Estilos para carga de archivos UI/UX */
+.doc-row {
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+.doc-row:hover {
+    background-color: var(--guinda-light) !important;
+    border-left: 4px solid var(--guinda);
+}
+.file-upload-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.btn-upload {
+    border: 2px dashed #ccc;
+    color: #666;
+    padding: 5px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-bottom: 0;
+}
+.btn-upload:hover {
+    border-color: var(--guinda);
+    color: var(--guinda);
+    background: white;
+}
+.file-preview-badge {
+    background: #e9ecef;
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 200px;
+}
+.file-name-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+.remove-file {
+    color: #dc3545;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
 </style>
 <div class="container-fluid py-4">
     <div class="row mb-4">
@@ -385,70 +436,223 @@
             </div>
 
                        <div class="tab-pane fade" id="tab-docs">
-                            <div class="alert alert-info border-0 shadow-sm small mb-3">
-                                <i class="fas fa-file-invoice me-2"></i> <b>Cotejo de Documentos:</b> Marque los documentos entregados que cumplen con los requisitos.
-                            </div>
+    <div class="alert alert-info border-0 shadow-sm small mb-3">
+        <i class="fas fa-file-invoice me-2"></i> <b>Cotejo y Carga de Expediente:</b> Marque los documentos validados y suba los archivos correspondientes (PDF, Imagen, ZIP).
+    </div>
 
-                            <div class="card shadow-sm border-0">
-                                <div class="list-group list-group-flush" id="checkListDocs">
-                                    
-                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3 doc-row">
-                                        <span><i class="fas fa-file-signature text-guinda me-3"></i> <b>Formato de solicitud (Firmado)</b><br>
-                                        <small class="text-muted ms-5">Ante la J.U.D. de Desarrollo Rural</small></span>
-                                        <input type="checkbox" name="check_solicitud" value="1" class="form-check-input h5 mb-0 doc-check">
-                                    </label>
-
-                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3 doc-row">
-                                        <span><i class="fas fa-id-card text-guinda me-3"></i> <b>Acreditación de identidad vigente</b><br>
-                                        <small class="text-muted ms-5">INE, Pasaporte, Cédula o Cartilla Militar</small></span>
-                                        <input type="checkbox" name="check_identidad" value="1" class="form-check-input h5 mb-0 doc-check">
-                                    </label>
-
-                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3 doc-row">
-                                        <span><i class="fas fa-home text-guinda me-3"></i> <b>Comprobante de Domicilio</b><br>
-                                        <small class="text-muted ms-5">No mayor a 3 meses de antigüedad</small></span>
-                                        <input type="checkbox" name="check_domicilio" value="1" class="form-check-input h5 mb-0 doc-check">
-                                    </label>
-
-                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3 doc-row">
-                                        <span><i class="fas fa-fingerprint text-guinda me-3"></i> <b>Copia de la CURP</b><br>
-                                        <small class="text-muted ms-5">Clave Única de Registro de Población actualizada</small></span>
-                                        <input type="checkbox" name="check_curp_doc" value="1" class="form-check-input h5 mb-0 doc-check">
-                                    </label>
-
-                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3 doc-row">
-                                        <span><i class="fas fa-university text-guinda me-3"></i> <b>R.F.C. (Si aplica)</b><br>
-                                        <small class="text-muted ms-5">Registro Federal de Contribuyentes</small></span>
-                                        <input type="checkbox" name="check_rfc_doc" value="1" class="form-check-input h5 mb-0 doc-check">
-                                    </label>
-
-                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3 doc-row">
-                                        <span><i class="fas fa-gavel text-guinda me-3"></i> <b>Manifiesto Bajo Protesta de decir verdad</b><br>
-                                        <small class="text-muted ms-5">No desempeñar cargo en la Alcaldía Tlalpan</small></span>
-                                        <input type="checkbox" name="check_manifiesto" value="1" class="form-check-input h5 mb-0 doc-check">
-                                    </label>
-
-                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3 doc-row">
-                                        <span><i class="fas fa-map-marked-alt text-guinda me-3"></i> <b>Acreditación de propiedad o posesión legal</b><br>
-                                        <small class="text-muted ms-5">Documento técnico-legal del predio</small></span>
-                                        <input type="checkbox" name="check_propiedad" value="1" class="form-check-input h5 mb-0 doc-check">
-                                    </label>
-
-                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3 doc-row">
-                                        <span><i class="fas fa-file-contract text-guinda me-3"></i> <b>Carta Finiquito</b><br>
-                                        <small class="text-muted ms-5">Para ex-beneficiarios de programas anteriores</small></span>
-                                        <input type="checkbox" name="check_finiquito" value="1" class="form-check-input h5 mb-0 doc-check">
-                                    </label>
-
-                                    <label class="list-group-item d-flex justify-content-between align-items-center py-3 doc-row">
-                                        <span><i class="fas fa-cow text-guinda me-3"></i> <b>Registro SINIIGA (Si aplica)</b><br>
-                                        <small class="text-muted ms-5">Únicamente para Unidades Pecuarias</small></span>
-                                        <input type="checkbox" name="check_siniiga_doc" value="1" class="form-check-input h5 mb-0 doc-check">
-                                    </label>
-
-                                </div>
+    <div class="card shadow-sm border-0">
+        <div class="list-group list-group-flush" id="checkListDocs">
+            
+            <div class="list-group-item py-3 doc-row">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <input type="checkbox" name="check_solicitud" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
+                        <span>
+                            <i class="fas fa-file-signature text-guinda me-2"></i> <b>Formato de solicitud (Firmado)</b><br>
+                            <small class="text-muted">Ante la J.U.D. de Desarrollo Rural</small>
+                        </span>
+                    </div>
+                    <div class="file-upload-wrapper">
+                        <div class="file-preview-container d-none" id="preview_solicitud">
+                            <div class="file-preview-badge">
+                                <i class="fas fa-paperclip text-primary"></i>
+                                <span class="file-name-text"></span>
+                                <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('solicitud')"></i>
                             </div>
                         </div>
+                        <label for="file_solicitud" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
+                        <input type="file" name="file_solicitud" id="file_solicitud" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
+                    </div>
+                </div>
+            </div>
+
+            <div class="list-group-item py-3 doc-row">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <input type="checkbox" name="check_identidad" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
+                        <span>
+                            <i class="fas fa-id-card text-guinda me-2"></i> <b>Acreditación de identidad vigente</b><br>
+                            <small class="text-muted">INE, Pasaporte, Cédula o Cartilla Militar</small>
+                        </span>
+                    </div>
+                    <div class="file-upload-wrapper">
+                        <div class="file-preview-container d-none" id="preview_identidad">
+                            <div class="file-preview-badge">
+                                <i class="fas fa-paperclip text-primary"></i>
+                                <span class="file-name-text"></span>
+                                <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('identidad')"></i>
+                            </div>
+                        </div>
+                        <label for="file_identidad" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
+                        <input type="file" name="file_identidad" id="file_identidad" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
+                    </div>
+                </div>
+            </div>
+
+            <div class="list-group-item py-3 doc-row">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <input type="checkbox" name="check_domicilio" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
+                        <span>
+                            <i class="fas fa-home text-guinda me-2"></i> <b>Comprobante de Domicilio</b><br>
+                            <small class="text-muted">No mayor a 3 meses de antigüedad</small>
+                        </span>
+                    </div>
+                    <div class="file-upload-wrapper">
+                        <div class="file-preview-container d-none" id="preview_domicilio">
+                            <div class="file-preview-badge">
+                                <i class="fas fa-paperclip text-primary"></i>
+                                <span class="file-name-text"></span>
+                                <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('domicilio')"></i>
+                            </div>
+                        </div>
+                        <label for="file_domicilio" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
+                        <input type="file" name="file_domicilio" id="file_domicilio" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
+                    </div>
+                </div>
+            </div>
+
+            <div class="list-group-item py-3 doc-row">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <input type="checkbox" name="check_curp_doc" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
+                        <span>
+                            <i class="fas fa-fingerprint text-guinda me-2"></i> <b>Copia de la CURP</b><br>
+                            <small class="text-muted">Actualizada</small>
+                        </span>
+                    </div>
+                    <div class="file-upload-wrapper">
+                        <div class="file-preview-container d-none" id="preview_curp_doc">
+                            <div class="file-preview-badge">
+                                <i class="fas fa-paperclip text-primary"></i>
+                                <span class="file-name-text"></span>
+                                <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('curp_doc')"></i>
+                            </div>
+                        </div>
+                        <label for="file_curp_doc" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
+                        <input type="file" name="file_curp_doc" id="file_curp_doc" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
+                    </div>
+                </div>
+            </div>
+
+            <div class="list-group-item py-3 doc-row">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <input type="checkbox" name="check_rfc_doc" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
+                        <span>
+                            <i class="fas fa-university text-guinda me-2"></i> <b>R.F.C. (Si aplica)</b><br>
+                            <small class="text-muted">Registro Federal de Contribuyentes</small>
+                        </span>
+                    </div>
+                    <div class="file-upload-wrapper">
+                        <div class="file-preview-container d-none" id="preview_rfc_doc">
+                            <div class="file-preview-badge">
+                                <i class="fas fa-paperclip text-primary"></i>
+                                <span class="file-name-text"></span>
+                                <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('rfc_doc')"></i>
+                            </div>
+                        </div>
+                        <label for="file_rfc_doc" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
+                        <input type="file" name="file_rfc_doc" id="file_rfc_doc" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
+                    </div>
+                </div>
+            </div>
+
+            <div class="list-group-item py-3 doc-row">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <input type="checkbox" name="check_manifiesto" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
+                        <span>
+                            <i class="fas fa-gavel text-guinda me-2"></i> <b>Manifiesto Bajo Protesta</b><br>
+                            <small class="text-muted">No desempeñar cargo en la Alcaldía</small>
+                        </span>
+                    </div>
+                    <div class="file-upload-wrapper">
+                        <div class="file-preview-container d-none" id="preview_manifiesto">
+                            <div class="file-preview-badge">
+                                <i class="fas fa-paperclip text-primary"></i>
+                                <span class="file-name-text"></span>
+                                <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('manifiesto')"></i>
+                            </div>
+                        </div>
+                        <label for="file_manifiesto" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
+                        <input type="file" name="file_manifiesto" id="file_manifiesto" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
+                    </div>
+                </div>
+            </div>
+
+            <div class="list-group-item py-3 doc-row">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <input type="checkbox" name="check_propiedad" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
+                        <span>
+                            <i class="fas fa-map-marked-alt text-guinda me-2"></i> <b>Acreditación de propiedad</b><br>
+                            <small class="text-muted">Documento técnico-legal del predio</small>
+                        </span>
+                    </div>
+                    <div class="file-upload-wrapper">
+                        <div class="file-preview-container d-none" id="preview_propiedad">
+                            <div class="file-preview-badge">
+                                <i class="fas fa-paperclip text-primary"></i>
+                                <span class="file-name-text"></span>
+                                <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('propiedad')"></i>
+                            </div>
+                        </div>
+                        <label for="file_propiedad" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
+                        <input type="file" name="file_propiedad" id="file_propiedad" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
+                    </div>
+                </div>
+            </div>
+
+            <div class="list-group-item py-3 doc-row">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <input type="checkbox" name="check_finiquito" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
+                        <span>
+                            <i class="fas fa-file-contract text-guinda me-2"></i> <b>Carta Finiquito</b><br>
+                            <small class="text-muted">Ex-beneficiarios de programas anteriores</small>
+                        </span>
+                    </div>
+                    <div class="file-upload-wrapper">
+                        <div class="file-preview-container d-none" id="preview_finiquito">
+                            <div class="file-preview-badge">
+                                <i class="fas fa-paperclip text-primary"></i>
+                                <span class="file-name-text"></span>
+                                <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('finiquito')"></i>
+                            </div>
+                        </div>
+                        <label for="file_finiquito" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
+                        <input type="file" name="file_finiquito" id="file_finiquito" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
+                    </div>
+                </div>
+            </div>
+
+            <div class="list-group-item py-3 doc-row">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <input type="checkbox" name="check_siniiga_doc" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
+                        <span>
+                            <i class="fas fa-cow text-guinda me-2"></i> <b>Registro SINIIGA</b><br>
+                            <small class="text-muted">Únicamente para Unidades Pecuarias</small>
+                        </span>
+                    </div>
+                    <div class="file-upload-wrapper">
+                        <div class="file-preview-container d-none" id="preview_siniiga_doc">
+                            <div class="file-preview-badge">
+                                <i class="fas fa-paperclip text-primary"></i>
+                                <span class="file-name-text"></span>
+                                <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('siniiga_doc')"></i>
+                            </div>
+                        </div>
+                        <label for="file_siniiga_doc" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
+                        <input type="file" name="file_siniiga_doc" id="file_siniiga_doc" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
 
                     </div>
                 </form>
@@ -509,7 +713,7 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 2. UTILIDADES
+    // 2. UTILIDADES DE PROCESAMIENTO
     // ==========================================
     function segmentarNombreCompleto(nombreCompleto) {
         if (!nombreCompleto) return { nombres: '', paterno: '', materno: '' };
@@ -552,7 +756,7 @@ $(document).ready(function() {
             "grupo_etnico_cual": reg.grupo_etnico_cual,
             "tel_particular": reg.tel_particular,
             "tel_casa": reg.tel_casa,
-            "tel_recados": reg.tel_familiar, // Mapeo de DB a Form
+            "tel_recados": reg.tel_familiar,
             "linea_ayuda": reg.linea_ayuda,
             "siniiga_status": reg.registro_siniiga,
             "num_total_predios": reg.num_total_predios,
@@ -595,7 +799,7 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 3. RENDER TABLA
+    // 3. RENDERIZADO DE TABLA
     // ==========================================
     function renderTable(page) {
         currentPage = page;
@@ -626,7 +830,7 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 4. LÓGICA MODAL
+    // 4. LÓGICA DEL MODAL
     // ==========================================
     window.controlarDependencias = function() {
         if ($("#in_tiene_discap").val() === "SI") {
@@ -650,13 +854,15 @@ $(document).ready(function() {
         const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
         $("#formCaptura")[0].reset();
+        $(".file-preview-container").addClass('d-none'); // Resetear previsualizaciones de archivos
+        $(".doc-row").css('background-color', ''); // Resetear colores de fila
+        
         $("#reg_id").val(reg.id);
         $("#spanFolio").text(reg.folio || 'S/F');
         
-        // Configurar link del botón PDF del modal
-      $("#btnDescargarPDF")
-        .removeClass("d-none")
-        .attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
+        $("#btnDescargarPDF")
+            .removeClass("d-none")
+            .attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
 
         // Identidad
         const fullNombre = getDatoFinal(reg, "nombre_productor", json);
@@ -667,12 +873,12 @@ $(document).ready(function() {
         $("#in_curp_edit").val(reg.curp);
         $("#in_rfc").val(reg.rfc);
 
-        // Llenado masivo
+        // Llenado masivo de inputs, selects y checkboxes
         $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
             const el = $(this);
             const name = el.attr('name');
             const excluidos = ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'];
-            if (!name || excluidos.includes(name)) return;
+            if (!name || excluidos.includes(name) || el.attr('type') === 'file') return;
 
             const valor = getDatoFinal(reg, name, json);
             if (valor !== undefined && valor !== "") {
@@ -690,211 +896,149 @@ $(document).ready(function() {
         $("#modalEdicion").modal('show');
     };
 
-function renderPaginationUI() {
-    const totalPages = Math.ceil(filteredData.length / pageSize);
-    const container = $("#paginationControls").empty();
-    
-    if (totalPages <= 1) return;
+    // ==========================================
+    // 5. PAGINACIÓN Y BÚSQUEDA
+    // ==========================================
+    function renderPaginationUI() {
+        const totalPages = Math.ceil(filteredData.length / pageSize);
+        const container = $("#paginationControls").empty();
+        if (totalPages <= 1) return;
 
-    const delta = 2; // Cantidad de páginas a mostrar a los lados de la actual
-    const range = [];
-    const rangeWithDots = [];
-    let l;
+        const delta = 2;
+        const range = [];
+        const rangeWithDots = [];
+        let l;
 
-    // 1. Determinar qué números de página mostrar
-    for (let i = 1; i <= totalPages; i++) {
-        if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
-            range.push(i);
-        }
-    }
-
-    // 2. Insertar elipses (...) donde haya saltos
-    for (let i of range) {
-        if (l) {
-            if (i - l === 2) {
-                rangeWithDots.push(l + 1);
-            } else if (i - l !== 1) {
-                rangeWithDots.push('...');
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
+                range.push(i);
             }
         }
-        rangeWithDots.push(i);
-        l = i;
-    }
 
-    // 3. Construir el HTML
-    // Botón Anterior
-    container.append(`
-        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-            <a class="page-link shadow-sm" href="#" data-page="${currentPage - 1}">&laquo;</a>
-        </li>
-    `);
-
-    // Números y Elipses
-    rangeWithDots.forEach(i => {
-        if (i === '...') {
-            container.append(`<li class="page-item disabled"><span class="page-link border-0">...</span></li>`);
-        } else {
-            container.append(`
-                <li class="page-item ${i === currentPage ? 'active' : ''}">
-                    <a class="page-link shadow-sm" href="#" data-page="${i}">${i}</a>
-                </li>
-            `);
+        for (let i of range) {
+            if (l) {
+                if (i - l === 2) rangeWithDots.push(l + 1);
+                else if (i - l !== 1) rangeWithDots.push('...');
+            }
+            rangeWithDots.push(i);
+            l = i;
         }
-    });
 
-    // Botón Siguiente
-    container.append(`
-        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-            <a class="page-link shadow-sm" href="#" data-page="${currentPage + 1}">&raquo;</a>
-        </li>
-    `);
+        container.append(`<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link shadow-sm" href="#" data-page="${currentPage - 1}">&laquo;</a></li>`);
 
-    // 4. Re-vincular el evento click
-    container.find('a').on('click', function(e) {
-        e.preventDefault();
-        const page = parseInt($(this).attr('data-page'));
-        if (page >= 1 && page <= totalPages) {
-            renderTable(page);
-            // Opcional: Hacer scroll al inicio de la tabla para mejor UX
-            document.querySelector('.card-header').scrollIntoView({ behavior: 'smooth' });
-        }
-    });
-}
-// ==========================================
-// 6. BUSCADOR DINÁMICO (FOLIO, NOMBRE, CURP)
-// ==========================================
-$("#tablaSearch").on("keyup", function() {
-    const val = $(this).val().toLowerCase().trim();
-    
-    if (val === "") {
-        filteredData = [...rawData];
-    } else {
-        filteredData = rawData.filter(e => {
-            // Unificamos nombre para búsqueda completa
-            const nombreCompleto = `${e.nombre || ''} ${e.apellido_paterno || ''} ${e.apellido_materno || ''}`.toLowerCase();
-            const folio = (e.folio || "").toLowerCase();
-            const curp = (e.curp || "").toLowerCase();
+        rangeWithDots.forEach(i => {
+            if (i === '...') container.append(`<li class="page-item disabled"><span class="page-link border-0">...</span></li>`);
+            else container.append(`<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link shadow-sm" href="#" data-page="${i}">${i}</a></li>`);
+        });
 
-            // Retorna verdadero si coincide en cualquiera de los 3 campos
-            return nombreCompleto.includes(val) || 
-                   folio.includes(val) || 
-                   curp.includes(val);
+        container.append(`<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link shadow-sm" href="#" data-page="${currentPage + 1}">&raquo;</a></li>`);
+
+        container.find('a').on('click', function(e) {
+            e.preventDefault();
+            const page = parseInt($(this).attr('data-page'));
+            if (page >= 1 && page <= totalPages) {
+                renderTable(page);
+                document.querySelector('.card-header').scrollIntoView({ behavior: 'smooth' });
+            }
         });
     }
 
-    // Siempre regresar a la página 1 después de filtrar
-    renderTable(1);
-});
+    $("#tablaSearch").on("keyup", function() {
+        const val = $(this).val().toLowerCase().trim();
+        if (val === "") filteredData = [...rawData];
+        else {
+            filteredData = rawData.filter(e => {
+                const nombreCompleto = `${e.nombre || ''} ${e.apellido_paterno || ''} ${e.apellido_materno || ''}`.toLowerCase();
+                return nombreCompleto.includes(val) || (e.folio || "").toLowerCase().includes(val) || (e.curp || "").toLowerCase().includes(val);
+            });
+        }
+        renderTable(1);
+    });
 
+    // ==========================================
+    // 6. RESUMEN Y CARGA DE ARCHIVOS
+    // ==========================================
     function renderTabResumen(reg, json) {
-    const $resumen = $("#resumenCaptura").empty();
-    
-    // Configuración extendida basada en tu JSON real
-    const config = {
-        "1. Registro y Control": ["tecnico_nombre", "folio", "fase_proceso"],
-        "2. Identidad Productor": ["nombre_productor", "curp", "rfc", "sexo", "fecha_nacimiento", "estado_civil", "grado_estudios"],
-        "3. Ubicación y Contacto": ["calle_numero", "pueblo_colonia", "cp", "latitud", "longitud", "tel_particular", "tel_recados", "email"],
-        "4. Perfil Social": ["ocupacion", "tiempo_residencia", "tiempo_residencia_cdmx", "dependientes_economicos", "servicios_salud", "grupo_etnico"],
-        "5. Vivienda": ["material_pisos", "combustible_cocina", "bienes_vivienda", "tipo_agua"],
-        "6. Datos Técnicos y Producción": ["situacion_unidad", "tipo_produccion", "cats_agricola", "detalle_hortalizas", "superficie_prod", "volumen_prod", "unidad_medida", "otra_unidad_texto"],
-        "7. Economía y Mercado": ["ingreso_mensual", "dependencia_economica", "destino_produccion", "financiamiento", "insumos_agricolas", "maquinaria", "problema_principal", "dificultades_comercializacion"],
-        "8. Aspectos Sociales y Cierre": ["participacion_mujeres", "nuevas_generaciones", "capacitaciones_deseadas", "observaciones"]
-    };
+        const $resumen = $("#resumenCaptura").empty();
+        const config = {
+            "1. Registro y Control": ["tecnico_nombre", "folio", "fase_proceso"],
+            "2. Identidad Productor": ["nombre_productor", "curp", "rfc", "sexo", "fecha_nacimiento", "estado_civil", "grado_estudios"],
+            "3. Ubicación y Contacto": ["calle_numero", "pueblo_colonia", "cp", "latitud", "longitud", "tel_particular", "tel_recados", "email"],
+            "4. Perfil Social": ["ocupacion", "tiempo_residencia", "tiempo_residencia_cdmx", "dependientes_economicos", "servicios_salud", "grupo_etnico"],
+            "5. Vivienda": ["material_pisos", "combustible_cocina", "bienes_vivienda", "tipo_agua"],
+            "6. Datos Técnicos y Producción": ["situacion_unidad", "tipo_produccion", "cats_agricola", "detalle_hortalizas", "superficie_prod", "volumen_prod", "unidad_medida", "otra_unidad_texto"],
+            "7. Economía y Mercado": ["ingreso_mensual", "dependencia_economica", "destino_produccion", "financiamiento", "insumos_agricolas", "maquinaria", "problema_principal", "dificultades_comercializacion"],
+            "8. Aspectos Sociales y Cierre": ["participacion_mujeres", "nuevas_generaciones", "capacitaciones_deseadas", "observaciones"]
+        };
 
-    for (const [titulo, campos] of Object.entries(config)) {
-        let filas = "";
-        let tieneDatos = false;
-
-        campos.forEach(c => {
-            let val = getDatoFinal(reg, c, json);
-            
-            // Si es un valor presente, lo formateamos
-            if (val && val !== "") {
-                tieneDatos = true;
-                // Limpiamos guiones bajos para que se vea profesional
-                let displayVal = val.toString().replace(/_/g, ' ');
-                
-                filas += `
-                    <tr>
-                        <td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td>
-                        <td class="fw-bold py-2 text-dark">${displayVal}</td>
-                    </tr>`;
+        for (const [titulo, campos] of Object.entries(config)) {
+            let filas = "";
+            let tieneDatos = false;
+            campos.forEach(c => {
+                let val = getDatoFinal(reg, c, json);
+                if (val && val !== "") {
+                    tieneDatos = true;
+                    let displayVal = val.toString().toUpperCase().replace(/_/g, ' ');
+                    filas += `<tr><td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td><td class="fw-bold py-2 text-dark">${displayVal}</td></tr>`;
+                }
+            });
+            if (tieneDatos) {
+                $resumen.append(`<div class="col-md-6 mb-3"><div class="card h-100 border-0 shadow-sm" style="border-radius: 12px;"><div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small"><i class="fas fa-check-circle me-2 text-success"></i>${titulo}</div><div class="card-body p-0"><table class="table table-sm mb-0" style="font-size:0.75rem;"><tbody>${filas}</tbody></table></div></div></div>`);
             }
-        });
-
-        // Solo agregamos la tarjeta si la sección tiene al menos un dato
-        if (tieneDatos) {
-            $resumen.append(`
-                <div class="col-md-6 mb-3">
-                    <div class="card h-100 border-0 shadow-sm" style="border-radius: 12px;">
-                        <div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small">
-                            <i class="fas fa-check-circle me-2 text-success"></i>${titulo}
-                        </div>
-                        <div class="card-body p-0">
-                            <table class="table table-sm mb-0" style="font-size:0.75rem;">
-                                <tbody>
-                                    ${filas}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            `);
         }
     }
 
-    // Si por alguna razón está vacío, mostramos un aviso
-    if ($resumen.is(':empty')) {
-        $resumen.html('<div class="col-12 text-center text-muted py-4">No hay datos adicionales capturados en la encuesta.</div>');
-    }
-}
+    // Manejador visual de carga de archivos
+    $(document).on('change', '.file-input', function() {
+        const input = this;
+        const suffix = input.id.replace('file_', '');
+        const container = $(`#preview_${suffix}`);
+        const checkbox = $(input).closest('.doc-row').find('.doc-check');
+
+        if (input.files && input.files[0]) {
+            const fileName = input.files[0].name;
+            container.find('.file-name-text').text(fileName);
+            container.removeClass('d-none');
+            checkbox.prop('checked', true);
+            $(input).closest('.doc-row').css('background-color', '#f0fff4');
+        }
+    });
+
+    window.eliminarArchivo = function(suffix) {
+        const input = $(`#file_${suffix}`);
+        const container = $(`#preview_${suffix}`);
+        const row = input.closest('.doc-row');
+        input.val(''); 
+        container.addClass('d-none'); 
+        row.css('background-color', ''); 
+    };
 });
 
 // ==========================================
-// 5. ACCIÓN DE GUARDADO (CRUCIAL)
+// 7. ACCIONES GLOBALES (GUARDAR Y SALIR)
 // ==========================================
 function confirmarGuardado() {
-    // ============================================================
-    // 1. TRANSFORMACIÓN A MAYÚSCULAS (PASO NUEVO)
-    // ============================================================
-    // Convertimos el valor de todos los inputs de texto y textareas a mayúsculas
+    // 1. Convertir textos a MAYÚSCULAS
     $("#formCaptura input[type='text'], #formCaptura textarea").each(function() {
         $(this).val($(this).val().toUpperCase());
     });
 
-    // ============================================================
-    // 2. MANEJO DE CAMPOS DESHABILITADOS
-    // ============================================================
-    // Habilitar temporalmente para que FormData capture los valores (discapacidad, etnia, etc.)
+    // 2. Habilitar disabled temporalmente para capturar
     const inputsDisabled = $("#formCaptura").find(':disabled');
     inputsDisabled.prop('disabled', false);
 
     const formElement = document.getElementById('formCaptura');
     const formData = new FormData(formElement);
 
-    // ============================================================
-    // 3. MANEJO DE CHECKBOXES (VALORES POR DEFECTO 0)
-    // ============================================================
-    const checks = [
-        'check_solicitud', 'check_identidad', 'check_domicilio', 
-        'check_curp_doc', 'check_rfc_doc', 'check_manifiesto', 
-        'check_propiedad', 'check_finiquito', 'check_siniiga_doc'
-    ];
-    
-    checks.forEach(c => {
-        if (!formData.has(c)) {
-            formData.append(c, 0);
-        }
-    });
+    // 3. Forzar 0 en Checkboxes no marcados
+    const checks = ['check_solicitud', 'check_identidad', 'check_domicilio', 'check_curp_doc', 'check_rfc_doc', 'check_manifiesto', 'check_propiedad', 'check_finiquito', 'check_siniiga_doc'];
+    checks.forEach(c => { if (!formData.has(c)) formData.append(c, 0); });
 
-    // ============================================================
-    // 4. RESTAURAR ESTADO Y LANZAR CONFIRMACIÓN
-    // ============================================================
     inputsDisabled.prop('disabled', true);
 
     Swal.fire({
         title: '¿Guardar cambios?',
-        text: "Se actualizará el expediente oficial del productor en MAYÚSCULAS",
+        text: "Se actualizará el expediente y se subirán los documentos en MAYÚSCULAS",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#773357',
@@ -902,25 +1046,15 @@ function confirmarGuardado() {
     }).then((result) => {
         if (result.isConfirmed) {
             Swal.fire({ title: 'Procesando...', didOpen: () => { Swal.showLoading() } });
-            
-            fetch('<?php echo URLROOT; ?>/Captura/actualizar', { 
-                method: 'POST', 
-                body: formData 
-            })
+            fetch('<?php echo URLROOT; ?>/Captura/actualizar', { method: 'POST', body: formData })
             .then(res => res.json())
-                .then(data => {
-                    if(data.status === 'success') {
-                        Swal.fire({
-                            title: '¡Éxito!',
-                            text: data.msg,
-                            icon: 'success'
-                        }).then(() => {
-                            location.reload(); // Recargamos para reflejar los cambios
-                        });
-                    } else {
-                        Swal.fire('Error', data.msg || 'No se pudo actualizar', 'error');
-                    }
-                })
+            .then(data => {
+                if(data.status === 'success') {
+                    Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Error', data.msg || 'No se pudo actualizar', 'error');
+                }
+            })
             .catch(err => {
                 console.error(err);
                 Swal.fire('Error', 'Falla de comunicación con el servidor', 'error');
@@ -928,29 +1062,21 @@ function confirmarGuardado() {
         }
     });
 }
-// ==========================================
-// ACCIÓN: CERRAR SESIÓN
-// ==========================================
+
 function confirmarSalida() {
     Swal.fire({
         title: '¿Cerrar sesión?',
         text: "Cualquier cambio no guardado se perderá.",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#dc3545', // Rojo para indicar salida/peligro
-        cancelButtonColor: '#6c757d',
+        confirmButtonColor: '#dc3545',
         confirmButtonText: '<i class="fas fa-sign-out-alt me-2"></i>SÍ, SALIR',
         cancelButtonText: 'CANCELAR',
         reverseButtons: true
     }).then((result) => {
-        if (result.isConfirmed) {
-            // Redirección a la ruta de logout de tu controlador Auth
-            window.location.href = '<?php echo URLROOT; ?>/Auth/logout';
-        }
+        if (result.isConfirmed) window.location.href = '<?php echo URLROOT; ?>/Auth/logout';
     });
 }
 
-// También puedes asegurarte de que sea global así:
 window.confirmarSalida = confirmarSalida;
-
 </script>
