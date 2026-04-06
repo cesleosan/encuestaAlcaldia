@@ -146,10 +146,36 @@
     </div>
 
     <div class="row mb-2">
-        <div class="col-md-3"><div class="card p-3 border-start border-4 border-secondary"><h6 class="text-muted small mb-1">TOTAL REGISTROS</h6><h3 class="fw-bold mb-0" id="kpi-total">0</h3></div></div>
-        <div class="col-md-3"><div class="card p-3 border-start border-4 border-info"><h6 class="text-muted small mb-1">VALIDACIÓN DOCS</h6><h3 class="fw-bold mb-0" id="kpi-pendientes">0</h3></div></div>
-        <div class="col-md-3"><div class="card p-3 border-start border-4 border-warning"><h6 class="text-muted small mb-1">EN REVISIÓN</h6><h3 class="fw-bold mb-0" id="kpi-revision">0</h3></div></div>
-        <div class="col-md-3"><div class="card p-3 border-start border-4 border-success"><h6 class="text-muted small mb-1">TOTAL APROBADOS</h6><h3 class="fw-bold mb-0" id="kpi-aprobados">0</h3></div></div>
+        <div class="col-md-2 mb-2">
+            <div class="card p-3 border-start border-4 border-secondary shadow-sm">
+                <h6 class="text-muted small mb-1">TOTAL REGISTROS</h6>
+                <h3 class="fw-bold mb-0" id="kpi-total">0</h3>
+            </div>
+        </div>
+        <div class="col-md-3 mb-2">
+            <div class="card p-3 border-start border-4 border-primary shadow-sm">
+                <h6 class="text-muted small mb-1">SOLICITUDES INGRESADAS</h6>
+                <h3 class="fw-bold mb-0" id="kpi-solicitudes">0</h3>
+            </div>
+        </div>
+        <div class="col-md-2 mb-2">
+            <div class="card p-3 border-start border-4 border-info shadow-sm">
+                <h6 class="text-muted small mb-1">VALIDACIÓN DOCS</h6>
+                <h3 class="fw-bold mb-0" id="kpi-pendientes">0</h3>
+            </div>
+        </div>
+        <div class="col-md-2 mb-2">
+            <div class="card p-3 border-start border-4 border-warning shadow-sm">
+                <h6 class="text-muted small mb-1">EN REVISIÓN</h6>
+                <h3 class="fw-bold mb-0" id="kpi-revision">0</h3>
+            </div>
+        </div>
+        <div class="col-md-3 mb-2">
+            <div class="card p-3 border-start border-4 border-success shadow-sm">
+                <h6 class="text-muted small mb-1">TOTAL APROBADOS</h6>
+                <h3 class="fw-bold mb-0" id="kpi-aprobados">0</h3>
+            </div>
+        </div>
     </div>
 
     <div class="card shadow-sm">
@@ -739,12 +765,17 @@ $(document).ready(function() {
 
     cargarDatos();
 
-    function actualizarKPIs(data) {
-        $("#kpi-total").text(data.length);
-        $("#kpi-pendientes").text(data.filter(i => i.fase_proceso === 'VALIDACION_DOCS').length);
-        $("#kpi-revision").text(data.filter(i => i.fase_proceso === 'EN_REVISION').length);
-        $("#kpi-aprobados").text(data.filter(i => i.fase_proceso === 'APROBADO').length);
-    }
+function actualizarKPIs(data) {
+    $("#kpi-total").text(data.length);
+    
+    $("#kpi-solicitudes").text(data.filter(i => i.fase_proceso === 'SOLICITUD_INGRESADA').length);
+    
+    $("#kpi-pendientes").text(data.filter(i => i.fase_proceso === 'VALIDACION_DOCS').length);
+    
+    $("#kpi-revision").text(data.filter(i => i.fase_proceso === 'EN_REVISION').length);
+    
+    $("#kpi-aprobados").text(data.filter(i => i.fase_proceso === 'APROBADO').length);
+}
 
     // ==========================================
     // 2. UTILIDADES DE PROCESAMIENTO
