@@ -64,9 +64,9 @@ class Expediente extends Controller {
 
         // Discapacidad y Etnia
         $pdf->SetXY(105, 109); $pdf->Write(0, $this->toLatin1($datos->tiene_discapacidad ?? 'NO'));
-        $pdf->SetXY(105, 113); $pdf->Write(0, $this->toLatin1($datos->cual_discapacidad ?? 'NA'));
+        $pdf->SetXY(157, 109); $pdf->Write(0, $this->toLatin1($datos->cual_discapacidad ?? 'NA'));
         
-        $pdf->SetXY(158, 109); $pdf->Write(0, $this->toLatin1($datos->grupo_etnico ?? 'NO'));
+        $pdf->SetXY(105, 113); $pdf->Write(0, $this->toLatin1($datos->grupo_etnico ?? 'NO'));
         $pdf->SetXY(158, 113); $pdf->Write(0, $this->toLatin1($datos->grupo_etnico_cual ?? 'NA'));
 
         // D. Domicilio y Contacto
