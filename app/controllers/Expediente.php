@@ -130,7 +130,7 @@ class Expediente extends Controller {
 
         // Firma Usuario Logueado (Izquierda)
         $pdf->SetXY(25, 205); 
-        $usuarioFirma = (!empty($_SESSION['usuario_nombre'])) ? $_SESSION['usuario_nombre'] : 'USUARIO NO IDENTIFICADO';
+        //$usuarioFirma = (!empty($_SESSION['usuario_nombre'])) ? $_SESSION['usuario_nombre'] : 'USUARIO NO IDENTIFICADO';
         $pdf->Cell(80, 0, $this->toLatin1(mb_strtoupper($usuarioFirma, 'UTF-8')), 0, 0, 'C');
 
         // --- PÁGINA 3: AVISO DE PRIVACIDAD ---
@@ -149,7 +149,7 @@ class Expediente extends Controller {
 
         // Firma Usuario Logueado (Abajo Derecha)
         $pdf->SetXY(110, 209); 
-        $pdf->Cell(80, 0, $this->toLatin1(mb_strtoupper($usuarioFirma, 'UTF-8')), 0, 0, 'C');
+        //$pdf->Cell(80, 0, $this->toLatin1(mb_strtoupper($usuarioFirma, 'UTF-8')), 0, 0, 'C');
 
         // Salida del PDF
         $pdf->Output('I', "Solicitud_{$datos->folio}.pdf");
