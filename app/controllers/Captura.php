@@ -44,20 +44,28 @@ class Captura extends Controller {
             $rutaBase = PUBROOT . '/uploads/expedientes/' . $folioCarpeta;
 
             // Creamos la ruta física si no existe
+            // --- BLOQUE DE DIAGNÓSTICO PROFUNDO ---
             if (!is_dir($rutaBase)) {
-                // La @ silencia el warning para que el JSON no se rompa
-                if (!@mkdir($rutaBase, 0777, true)) { 
-                    // Si falla, mandamos un mensaje más técnico para debuggear
+                $userPHP = exec('whoami'); // Queremos saber quién es PHP realmente
+                $dirActual = getcwd();    // Dónde está parado el script
+                
+                // Intentamos la creación silenciada para capturar el error limpio
+                if (!@mkdir($rutaBase, 0777, true)) {
                     $error = error_get_last();
+                    header('Content-Type: application/json');
                     echo json_encode([
-                        'status' => 'error', 
-                        'msg' => 'Error de sistema: ' . ($error['message'] ?? 'Permiso denegado en uploads.')
+                        'status' => 'error',
+                        'msg' => "DIAGNÓSTICO: Usuario PHP: [$userPHP] | " .
+                                "Ruta que falló: [$rutaBase] | " .
+                                "Directorio actual: [$dirActual] | " .
+                                "Error PHP: " . ($error['message'] ?? 'Sin mensaje')
                     ]);
                     return;
                 }
-                // Forzamos los permisos justo después de crearla por si el sistema los restringió
-                chmod($rutaBase, 0777); 
+                // Si la creó, forzamos el permiso máximo para descartar
+                chmod($rutaBase, 0777);
             }
+            // --- FIN DEL BLOQUE ---
 
             // 3. PROCESAMIENTO DE ARCHIVOS
             // Mapeo de name="input" del HTML a prefijo de nombre de archivo oficial
