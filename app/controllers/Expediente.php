@@ -126,7 +126,7 @@ class Expediente extends Controller {
         $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
 
                 // Nos posicionamos en la coordenada que necesites (ejemplo hoja de firmas)
-        $pdf->SetXY(30, 205); 
+        $pdf->SetXY(25, 205); 
 
         // Verificamos si existe el dato antes de pintar
         $tecnico = (isset($datos->nombre_tecnico) && !empty($datos->nombre_tecnico)) 
