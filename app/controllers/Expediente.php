@@ -133,7 +133,7 @@ class Expediente extends Controller {
                 ? $datos->nombre_tecnico 
                 : 'TECNICO NO REGISTRADO';
 
-        $pdf->Cell(80, 0, $this->toLatin1($tecnico), 0, 0, 'C');
+        //$pdf->Cell(80, 0, $this->toLatin1($tecnico), 0, 0, 'C');
 
         // --- PÁGINA 3: AVISO DE PRIVACIDAD ---
         $tplId3 = $pdf->importPage(3);
@@ -156,7 +156,7 @@ class Expediente extends Controller {
                 ? $datos->nombre_tecnico 
                 : 'TECNICO NO REGISTRADO';
 
-        $pdf->Cell(80, 0, $this->toLatin1($tecnico), 0, 0, 'C');
+        //$pdf->Cell(80, 0, $this->toLatin1($tecnico), 0, 0, 'C');
 
         // Salida del PDF
         $pdf->Output('I', "Solicitud_{$datos->folio}.pdf");
