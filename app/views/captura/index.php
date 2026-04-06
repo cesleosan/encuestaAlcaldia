@@ -409,8 +409,15 @@
                                 <input type="number" class="form-control form-control-sm" name="num_animales" id="in_num_animales">
                             </div>
                             <div class="col-md-4">
-                                <label class="small fw-bold text-muted">Tipo de Producción (Origen)</label>
-                                <input type="text" class="form-control form-control-sm bg-light" name="tipo_produccion" readonly>
+                                <label class="small fw-bold text-guinda">Línea de Ayuda a Procesar</label>
+                                <select class="form-select form-select-sm shadow-sm" name="tipo_produccion" id="in_tipo_produccion">
+                                    <option value="">-- Seleccione una --</option>
+                                    <option value="AGRICOLA">AGRÍCOLA</option>
+                                    <option value="PECUARIA">PECUARIA</option>
+                                    <option value="GRANJA_INTEGRAL">GRANJA INTEGRAL</option>
+                                    <option value="HUERTO_URBANO">HUERTO URBANO</option>
+                                </select>
+                                <small class="text-muted" style="font-size: 0.65rem;">Origen detectado: <span id="origen_produccion_text"></span></small>
                             </div>
                         </div>
                     </div>
@@ -823,88 +830,116 @@ $(document).ready(function() {
     // 4. LÓGICA DEL MODAL (CONTROL MANUAL TOTAL)
     // ==========================================
     window.abrirEdicion = function(id) {
-        const reg = rawData.find(i => i.id == id);
-        if (!reg) return;
-        const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
+    const reg = rawData.find(i => i.id == id);
+    if (!reg) return;
+    const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-        $("#formCaptura")[0].reset();
-        $('input[name^="delete_"]').val('0'); 
-        $(".file-preview-container").addClass('d-none');
-        $(".doc-row").css('background-color', '');
-        $(".btn-upload").html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR');
-        
-        $("#reg_id").val(reg.id);
-        $("#spanFolio").text(reg.folio || 'S/F');
-        
-        const pdfLiberado = reg.fase_proceso && reg.fase_proceso !== 'EMPADRONADO';
-        if (pdfLiberado) {
-            $("#btnDescargarPDF").removeClass("d-none").attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
-        } else {
-            $("#btnDescargarPDF").addClass("d-none");
+    // 1. Resetear Formulario y banderas
+    $("#formCaptura")[0].reset();
+    $('input[name^="delete_"]').val('0'); 
+    $(".file-preview-container").addClass('d-none');
+    $(".doc-row").css('background-color', '');
+    $(".btn-upload").html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR');
+    
+    $("#reg_id").val(reg.id);
+    $("#spanFolio").text(reg.folio || 'S/F');
+    
+    // 2. Control de botón de descarga PDF
+    const pdfLiberado = reg.fase_proceso && reg.fase_proceso !== 'EMPADRONADO';
+    if (pdfLiberado) {
+        $("#btnDescargarPDF").removeClass("d-none").attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
+    } else {
+        $("#btnDescargarPDF").addClass("d-none");
+    }
+
+    // 3. Llenado de Identidad
+    const fullNombre = getDatoFinal(reg, "nombre_productor", json);
+    const seg = segmentarNombreCompleto(fullNombre);
+    $("#in_nombre_productor").val(reg.nombre || seg.nombres); 
+    $("#in_paterno").val(reg.apellido_paterno || seg.paterno); 
+    $("#in_materno").val(reg.apellido_materno || seg.materno);
+    $("#in_curp_edit").val(reg.curp);
+    $("#in_rfc").val(reg.rfc);
+
+    // 4. Llenado Masivo de Inputs de Texto/Select/Textarea
+    $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
+        const el = $(this);
+        const name = el.attr('name');
+        // Excluimos campos especiales que ya llenamos o que se manejan manual
+        if (!name || ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp', 'tipo_produccion'].includes(name) || el.attr('type') === 'file' || name.startsWith('check_')) return;
+
+        const valor = getDatoFinal(reg, name, json);
+        if (valor !== undefined && valor !== "") {
+            el.val(valor);
         }
+    });
 
-        // Llenado de Identidad
-        const fullNombre = getDatoFinal(reg, "nombre_productor", json);
-        const seg = segmentarNombreCompleto(fullNombre);
-        $("#in_nombre_productor").val(reg.nombre || seg.nombres); 
-        $("#in_paterno").val(reg.apellido_paterno || seg.paterno); 
-        $("#in_materno").val(reg.apellido_materno || seg.materno);
-        $("#in_curp_edit").val(reg.curp);
-        $("#in_rfc").val(reg.rfc);
+    // 5. ✅ LÓGICA ESPECIAL: TIPO DE PRODUCCIÓN (Línea de Ayuda)
+    const valorProduccionOriginal = getDatoFinal(reg, "tipo_produccion", json);
+    $("#origen_produccion_text").text(valorProduccionOriginal || 'No definido'); // Para mostrar en el <small> del HTML
+    
+    const selectProd = $("#in_tipo_produccion");
+    selectProd.removeClass("is-invalid border-danger");
 
-        // Llenado Masivo de Inputs de Texto/Select
-        $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
-            const el = $(this);
-            const name = el.attr('name');
-            if (!name || ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'].includes(name) || el.attr('type') === 'file' || name.startsWith('check_')) return;
-
-            const valor = getDatoFinal(reg, name, json);
-            if (valor !== undefined && valor !== "") {
-                el.val(valor);
+    if (valorProduccionOriginal) {
+        // Si detectamos comas (múltiples actividades)
+        if (valorProduccionOriginal.includes(',')) {
+            selectProd.val(""); // Dejamos vacío para obligar a elegir
+            selectProd.addClass("is-invalid border-danger");
+            Toast.fire({ icon: 'warning', title: 'Múltiples actividades detectadas. Elija la Línea de Ayuda principal.' });
+        } else {
+            // Si solo es una, intentamos seleccionarla automáticamente
+            const limpio = valorProduccionOriginal.trim().toUpperCase();
+            selectProd.val(limpio);
+            
+            // Si después de intentar asignar el valor está vacío, es que el valor no existe en el select
+            if (selectProd.val() === null || selectProd.val() === "") {
+                 selectProd.addClass("is-invalid border-danger");
             }
-        });
+        }
+    }
 
-        // ✅ CONTROL MANUAL: Cargar los checks EXACTAMENTE como están en la Base de Datos
-        const checksCotejo = [
-            'solicitud', 'identidad', 'domicilio', 'curp_doc', 'rfc_doc', 
-            'manifiesto', 'propiedad', 'finiquito', 'siniiga_doc'
-        ];
-        checksCotejo.forEach(c => {
-            const columnaDB = 'check_' + c;
-            const valorDB = reg[columnaDB];
-            $(`input[name="${columnaDB}"]`).prop('checked', parseInt(valorDB) === 1);
-        });
+    // 6. ✅ CONTROL MANUAL DE CHECKS: Cargar según Base de Datos
+    const checksCotejo = [
+        'solicitud', 'identidad', 'domicilio', 'curp_doc', 'rfc_doc', 
+        'manifiesto', 'propiedad', 'finiquito', 'siniiga_doc'
+    ];
+    checksCotejo.forEach(c => {
+        const columnaDB = 'check_' + c;
+        const valorDB = reg[columnaDB];
+        $(`input[name="${columnaDB}"]`).prop('checked', parseInt(valorDB) === 1);
+    });
 
-        // 🔥 SOLO UI: Mostrar botón "VER ACTUAL" si el archivo existe físicamente
-        fetch(`<?php echo URLROOT; ?>/Captura/verificarArchivos/${id}`)
-            .then(res => res.json())
-            .then(archivos => {
-                archivos.forEach(file => {
-                    const partes = file.tipo.split('_');
-                    let tipoDoc = partes[partes.length - 1].toLowerCase();
-                    if (tipoDoc === 'doc') { tipoDoc = partes[partes.length - 2].toLowerCase() + '_doc'; }
+    // 7. 🔥 VERIFICACIÓN DE ARCHIVOS FÍSICOS (Solo UI)
+    fetch(`<?php echo URLROOT; ?>/Captura/verificarArchivos/${id}`)
+        .then(res => res.json())
+        .then(archivos => {
+            archivos.forEach(file => {
+                const partes = file.tipo.split('_');
+                let tipoDoc = partes[partes.length - 1].toLowerCase();
+                if (tipoDoc === 'doc') { tipoDoc = partes[partes.length - 2].toLowerCase() + '_doc'; }
 
-                    const container = $(`#preview_${tipoDoc}`);
-                    if (container.length) {
-                        container.removeClass('d-none');
-                        container.find('.file-name-text').html(`
-                            <a href="${file.url}" target="_blank" class="text-primary fw-bold text-decoration-none">
-                                <i class="fas fa-eye me-1"></i> VER ARCHIVO ACTUAL
-                            </a>
-                        `);
-                        $(`label[for="file_${tipoDoc}"]`).html('<i class="fas fa-sync me-1"></i> REEMPLAZAR');
-                        container.closest('.doc-row').css('background-color', '#f0faff');
-                    }
-                });
-            })
-            .catch(err => console.error("Error en archivos:", err));
+                const container = $(`#preview_${tipoDoc}`);
+                if (container.length) {
+                    container.removeClass('d-none');
+                    container.find('.file-name-text').html(`
+                        <a href="${file.url}" target="_blank" class="text-primary fw-bold text-decoration-none">
+                            <i class="fas fa-eye me-1"></i> VER ARCHIVO ACTUAL
+                        </a>
+                    `);
+                    $(`label[for="file_${tipoDoc}"]`).html('<i class="fas fa-sync me-1"></i> REEMPLAZAR');
+                    container.closest('.doc-row').css('background-color', '#f0faff');
+                }
+            });
+        })
+        .catch(err => console.error("Error en archivos:", err));
 
-        renderTabResumen(reg, json);
-        window.controlarDependencias(); 
-        bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
-        $("#modalEdicion").modal('show');
-    };
-
+    // 8. Renderizar Resumen y abrir Tab de Identidad
+    renderTabResumen(reg, json);
+    window.controlarDependencias(); 
+    bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
+    $("#modalEdicion").modal('show');
+};
     // ==========================================
     // 5. BÚSQUEDA Y PAGINACIÓN
     // ==========================================
