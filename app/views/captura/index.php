@@ -437,7 +437,7 @@
 
                        <div class="tab-pane fade" id="tab-docs">
     <div class="alert alert-info border-0 shadow-sm small mb-3">
-        <i class="fas fa-file-invoice me-2"></i> <b>Cotejo y Carga de Expediente:</b> Marque los documentos validados y suba los archivos correspondientes (PDF, Imagen, ZIP).
+        <i class="fas fa-file-invoice me-2"></i> <b>Expediente Digital:</b> Los documentos con fondo azul ya existen en el servidor. Puede verlos o reemplazarlos.
     </div>
 
     <div class="card shadow-sm border-0">
@@ -452,12 +452,12 @@
                             <small class="text-muted">Ante la J.U.D. de Desarrollo Rural</small>
                         </span>
                     </div>
-                    <div class="file-upload-wrapper">
-                        <div class="file-preview-container d-none" id="preview_solicitud">
+                    <div class="file-upload-wrapper text-end">
+                        <div class="file-preview-container d-none mb-1" id="preview_solicitud">
                             <div class="file-preview-badge">
-                                <i class="fas fa-paperclip text-primary"></i>
-                                <span class="file-name-text"></span>
-                                <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('solicitud')"></i>
+                                <i class="fas fa-paperclip text-primary me-1"></i>
+                                <span class="file-name-text small fw-bold"></span>
+                                <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('solicitud')"></i>
                             </div>
                         </div>
                         <label for="file_solicitud" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
@@ -475,12 +475,12 @@
                             <small class="text-muted">INE, Pasaporte, Cédula o Cartilla Militar</small>
                         </span>
                     </div>
-                    <div class="file-upload-wrapper">
-                        <div class="file-preview-container d-none" id="preview_identidad">
+                    <div class="file-upload-wrapper text-end">
+                        <div class="file-preview-container d-none mb-1" id="preview_identidad">
                             <div class="file-preview-badge">
-                                <i class="fas fa-paperclip text-primary"></i>
-                                <span class="file-name-text"></span>
-                                <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('identidad')"></i>
+                                <i class="fas fa-paperclip text-primary me-1"></i>
+                                <span class="file-name-text small fw-bold"></span>
+                                <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('identidad')"></i>
                             </div>
                         </div>
                         <label for="file_identidad" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
@@ -498,12 +498,12 @@
                             <small class="text-muted">No mayor a 3 meses de antigüedad</small>
                         </span>
                     </div>
-                    <div class="file-upload-wrapper">
-                        <div class="file-preview-container d-none" id="preview_domicilio">
+                    <div class="file-upload-wrapper text-end">
+                        <div class="file-preview-container d-none mb-1" id="preview_domicilio">
                             <div class="file-preview-badge">
-                                <i class="fas fa-paperclip text-primary"></i>
-                                <span class="file-name-text"></span>
-                                <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('domicilio')"></i>
+                                <i class="fas fa-paperclip text-primary me-1"></i>
+                                <span class="file-name-text small fw-bold"></span>
+                                <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('domicilio')"></i>
                             </div>
                         </div>
                         <label for="file_domicilio" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
@@ -521,12 +521,12 @@
                             <small class="text-muted">Actualizada</small>
                         </span>
                     </div>
-                    <div class="file-upload-wrapper">
-                        <div class="file-preview-container d-none" id="preview_curp_doc">
+                    <div class="file-upload-wrapper text-end">
+                        <div class="file-preview-container d-none mb-1" id="preview_curp_doc">
                             <div class="file-preview-badge">
-                                <i class="fas fa-paperclip text-primary"></i>
-                                <span class="file-name-text"></span>
-                                <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('curp_doc')"></i>
+                                <i class="fas fa-paperclip text-primary me-1"></i>
+                                <span class="file-name-text small fw-bold"></span>
+                                <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('curp_doc')"></i>
                             </div>
                         </div>
                         <label for="file_curp_doc" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
@@ -544,12 +544,12 @@
                             <small class="text-muted">Registro Federal de Contribuyentes</small>
                         </span>
                     </div>
-                    <div class="file-upload-wrapper">
-                        <div class="file-preview-container d-none" id="preview_rfc_doc">
+                    <div class="file-upload-wrapper text-end">
+                        <div class="file-preview-container d-none mb-1" id="preview_rfc_doc">
                             <div class="file-preview-badge">
-                                <i class="fas fa-paperclip text-primary"></i>
-                                <span class="file-name-text"></span>
-                                <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('rfc_doc')"></i>
+                                <i class="fas fa-paperclip text-primary me-1"></i>
+                                <span class="file-name-text small fw-bold"></span>
+                                <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('rfc_doc')"></i>
                             </div>
                         </div>
                         <label for="file_rfc_doc" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
@@ -567,12 +567,12 @@
                             <small class="text-muted">No desempeñar cargo en la Alcaldía</small>
                         </span>
                     </div>
-                    <div class="file-upload-wrapper">
-                        <div class="file-preview-container d-none" id="preview_manifiesto">
+                    <div class="file-upload-wrapper text-end">
+                        <div class="file-preview-container d-none mb-1" id="preview_manifiesto">
                             <div class="file-preview-badge">
-                                <i class="fas fa-paperclip text-primary"></i>
-                                <span class="file-name-text"></span>
-                                <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('manifiesto')"></i>
+                                <i class="fas fa-paperclip text-primary me-1"></i>
+                                <span class="file-name-text small fw-bold"></span>
+                                <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('manifiesto')"></i>
                             </div>
                         </div>
                         <label for="file_manifiesto" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
@@ -590,11 +590,11 @@
                             <small class="text-muted">Documento técnico-legal del predio</small>
                         </span>
                     </div>
-                    <div class="file-upload-wrapper">
-                        <div class="file-preview-container d-none" id="preview_propiedad">
+                    <div class="file-upload-wrapper text-end">
+                        <div class="file-preview-container d-none mb-1" id="preview_propiedad">
                             <div class="file-preview-badge">
-                                <i class="fas fa-paperclip text-primary"></i>
-                                <span class="file-name-text"></span>
+                                <i class="fas fa-paperclip text-primary me-1"></i>
+                                <span class="file-name-text small fw-bold"></span>
                                 <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('propiedad')"></i>
                             </div>
                         </div>
@@ -613,11 +613,11 @@
                             <small class="text-muted">Ex-beneficiarios de programas anteriores</small>
                         </span>
                     </div>
-                    <div class="file-upload-wrapper">
-                        <div class="file-preview-container d-none" id="preview_finiquito">
+                    <div class="file-upload-wrapper text-end">
+                        <div class="file-preview-container d-none mb-1" id="preview_finiquito">
                             <div class="file-preview-badge">
-                                <i class="fas fa-paperclip text-primary"></i>
-                                <span class="file-name-text"></span>
+                                <i class="fas fa-paperclip text-primary me-1"></i>
+                                <span class="file-name-text small fw-bold"></span>
                                 <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('finiquito')"></i>
                             </div>
                         </div>
@@ -636,11 +636,11 @@
                             <small class="text-muted">Únicamente para Unidades Pecuarias</small>
                         </span>
                     </div>
-                    <div class="file-upload-wrapper">
-                        <div class="file-preview-container d-none" id="preview_siniiga_doc">
+                    <div class="file-upload-wrapper text-end">
+                        <div class="file-preview-container d-none mb-1" id="preview_siniiga_doc">
                             <div class="file-preview-badge">
-                                <i class="fas fa-paperclip text-primary"></i>
-                                <span class="file-name-text"></span>
+                                <i class="fas fa-paperclip text-primary me-1"></i>
+                                <span class="file-name-text small fw-bold"></span>
                                 <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('siniiga_doc')"></i>
                             </div>
                         </div>
@@ -849,52 +849,98 @@ $(document).ready(function() {
     $(document).on("change", "#in_tiene_discap, #in_grupo_etnico_edit", window.controlarDependencias);
 
     window.abrirEdicion = function(id) {
-        const reg = rawData.find(i => i.id == id);
-        if (!reg) return;
-        const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
+    const reg = rawData.find(i => i.id == id);
+    if (!reg) return;
+    const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-        $("#formCaptura")[0].reset();
-        $(".file-preview-container").addClass('d-none'); // Resetear previsualizaciones de archivos
-        $(".doc-row").css('background-color', ''); // Resetear colores de fila
+    // 1. Resetear Formulario y UI de Archivos
+    $("#formCaptura")[0].reset();
+    $(".file-preview-container").addClass('d-none'); // Ocultar previews previos
+    $(".doc-row").css('background-color', '');      // Quitar colores de fila
+    $(".btn-upload").html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR'); // Reset botones
+    
+    $("#reg_id").val(reg.id);
+    $("#spanFolio").text(reg.folio || 'S/F');
+    
+    // 2. Configurar botón de descarga PDF oficial
+    $("#btnDescargarPDF")
+        .removeClass("d-none")
+        .attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
+
+    // 3. Llenado de Identidad Principal
+    const fullNombre = getDatoFinal(reg, "nombre_productor", json);
+    const seg = segmentarNombreCompleto(fullNombre);
+    $("#in_nombre_productor").val(reg.nombre || seg.nombres); 
+    $("#in_paterno").val(reg.apellido_paterno || seg.paterno); 
+    $("#in_materno").val(reg.apellido_materno || seg.materno);
+    $("#in_curp_edit").val(reg.curp);
+    $("#in_rfc").val(reg.rfc);
+
+    // 4. Llenado Masivo de Inputs (Texto, Selects, Checkboxes)
+    $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
+        const el = $(this);
+        const name = el.attr('name');
+        const excluidos = ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'];
         
-        $("#reg_id").val(reg.id);
-        $("#spanFolio").text(reg.folio || 'S/F');
-        
-        $("#btnDescargarPDF")
-            .removeClass("d-none")
-            .attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
+        // No procesamos archivos ni campos de identidad manual en este bucle
+        if (!name || excluidos.includes(name) || el.attr('type') === 'file') return;
 
-        // Identidad
-        const fullNombre = getDatoFinal(reg, "nombre_productor", json);
-        const seg = segmentarNombreCompleto(fullNombre);
-        $("#in_nombre_productor").val(reg.nombre || seg.nombres); 
-        $("#in_paterno").val(reg.apellido_paterno || seg.paterno); 
-        $("#in_materno").val(reg.apellido_materno || seg.materno);
-        $("#in_curp_edit").val(reg.curp);
-        $("#in_rfc").val(reg.rfc);
-
-        // Llenado masivo de inputs, selects y checkboxes
-        $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
-            const el = $(this);
-            const name = el.attr('name');
-            const excluidos = ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'];
-            if (!name || excluidos.includes(name) || el.attr('type') === 'file') return;
-
-            const valor = getDatoFinal(reg, name, json);
-            if (valor !== undefined && valor !== "") {
-                if (el.is(':checkbox')) {
-                    el.prop('checked', valor == 1 || valor === 'SI' || valor === true);
-                } else {
-                    el.val(valor);
-                }
+        const valor = getDatoFinal(reg, name, json);
+        if (valor !== undefined && valor !== "") {
+            if (el.is(':checkbox')) {
+                // Forzamos el check si el valor es 1, 'SI' o true
+                el.prop('checked', valor == 1 || valor === 'SI' || valor === true);
+            } else {
+                el.val(valor);
             }
-        });
+        }
+    });
 
-        renderTabResumen(reg, json);
-        window.controlarDependencias(); 
-        bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
-        $("#modalEdicion").modal('show');
-    };
+    // 5. 🔥 NUEVO: RECUPERACIÓN DE EXPEDIENTE DIGITAL (ARCHIVOS)
+    fetch(`<?php echo URLROOT; ?>/Captura/verificarArchivos/${id}`)
+        .then(res => res.json())
+        .then(archivos => {
+            archivos.forEach(file => {
+                // Extraemos el tipo de documento del nombre (ej: FOLIO_IDENTIDAD.pdf -> identidad)
+                const partes = file.tipo.split('_');
+                let tipoDoc = partes[partes.length - 1].toLowerCase();
+                
+                // Mapeo especial para coincidir con tus IDs de previsualización
+                // Si el nombre termina en 'DOC' (como curp_doc), tomamos el segmento anterior
+                if (tipoDoc === 'doc') {
+                    tipoDoc = partes[partes.length - 2].toLowerCase() + '_doc';
+                }
+
+                const container = $(`#preview_${tipoDoc}`);
+                if (container.length) {
+                    container.removeClass('d-none');
+                    // Inyectamos link de visualización UI/UX
+                    container.find('.file-name-text').html(`
+                        <a href="${file.url}" target="_blank" class="text-primary fw-bold text-decoration-none">
+                            <i class="fas fa-eye me-1"></i> VER ARCHIVO ACTUAL
+                        </a>
+                    `);
+                    
+                    // Cambiamos el estilo del botón y la fila para indicar existencia
+                    $(`label[for="file_${tipoDoc}"]`).html('<i class="fas fa-sync me-1"></i> REEMPLAZAR');
+                    container.closest('.doc-row').css('background-color', '#f0faff');
+                    
+                    // Aseguramos que el checkbox de cotejo esté marcado si el archivo existe
+                    $(`input[name="check_${tipoDoc}"]`).prop('checked', true);
+                }
+            });
+        })
+        .catch(err => console.error("Error al recuperar expediente digital:", err));
+
+    // 6. Finalizar Carga de Interfaz
+    renderTabResumen(reg, json);
+    window.controlarDependencias(); 
+    
+    // Regresar siempre a la primera pestaña (Resumen o Datos)
+    bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
+    
+    $("#modalEdicion").modal('show');
+};
 
     // ==========================================
     // 5. PAGINACIÓN Y BÚSQUEDA

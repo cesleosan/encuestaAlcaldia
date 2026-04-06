@@ -146,4 +146,33 @@ class Captura extends Controller {
             }
         }
     }
+
+        /**
+     * Escanea la carpeta del folio y devuelve la lista de archivos existentes
+     */
+    public function verificarArchivos($id) {
+        $registro = $this->encuestaModel->getExpedienteCompleto($id);
+        if (!$registro) { echo json_encode([]); return; }
+
+        $folioCarpeta = str_replace(['/', ' ', '\\'], '-', $registro->folio);
+        $rutaFisica = PUBROOT . '/uploads/expedientes/' . $folioCarpeta;
+        $urlBase = URLROOT . '/public/uploads/expedientes/' . $folioCarpeta;
+
+        $archivosEncontrados = [];
+
+        if (is_dir($rutaFisica)) {
+            $archivos = scandir($rutaFisica);
+            foreach ($archivos as $archivo) {
+                if ($archivo !== '.' && $archivo !== '..') {
+                    // Identificamos el tipo basado en el nombre (ej. TLP-26_IDENTIDAD.pdf)
+                    $archivosEncontrados[] = [
+                        'nombre' => $archivo,
+                        'url'    => $urlBase . '/' . $archivo,
+                        'tipo'   => pathinfo($archivo, PATHINFO_FILENAME)
+                    ];
+                }
+            }
+        }
+        echo json_encode($archivosEncontrados);
+    }
 }
