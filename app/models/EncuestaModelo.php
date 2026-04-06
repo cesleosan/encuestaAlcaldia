@@ -212,7 +212,7 @@ class EncuestaModelo {
                         -- Perfil y Vulnerabilidad
                         tiene_discapacidad = :tiene_discap,
                         cual_discapacidad = :cual_discap,
-                        groupo_etnico = :grupo_etnico,
+                        grupo_etnico = :grupo_etnico,
                         grupo_etnico_cual = :grupo_etnico_cual,
                         escolaridad = :escolaridad, 
                         ocupacion = :ocupacion,
