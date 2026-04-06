@@ -17,26 +17,26 @@ class Expediente extends Controller {
 
     /**
      * Escribe texto ajustando el tamaño de fuente.
-     * Si es MultiCell (como Paraje), centra el bloque verticalmente.
+     * Implementa lógica para MultiCell (Paraje) centrando verticalmente el bloque.
      */
     private function escribirAjustado($pdf, $x, $y, $texto, $anchoMax, $fuenteBase = 8, $esMulti = false) {
         $textoFinal = $this->toLatin1($texto);
         $pdf->SetFont('Arial', '', $fuenteBase);
         
-        // Ajuste de tamaño de fuente dinámico
-        while($pdf->GetStringWidth($textoFinal) > ($esMulti ? $anchoMax * 1.8 : $anchoMax) && $fuenteBase > 5.5) {
-            $fuenteBase -= 0.5;
+        // Ajuste preventivo de fuente si el texto es muy largo
+        while($pdf->GetStringWidth($textoFinal) > ($esMulti ? $anchoMax * 1.8 : $anchoMax) && $fuenteBase > 6) {
+            $fuenteBase -= 0.3;
             $pdf->SetFont('Arial', '', $fuenteBase);
         }
         
         if ($esMulti) {
-            // Si el texto es largo, subimos un poco el cursor Y para que las 2 líneas queden centradas
-            $lineas = ($pdf->GetStringWidth($textoFinal) > $anchoMax) ? 2 : 1;
-            $nuevoY = ($lineas === 2) ? $y - 2.5 : $y - 1; 
+            // Calculamos si el texto ocupará 2 líneas para ajustar el Y
+            $requiereDosLineas = ($pdf->GetStringWidth($textoFinal) > $anchoMax);
+            $yFinal = $requiereDosLineas ? $y - 2.5 : $y - 1;
             
-            $pdf->SetXY($x, $nuevoY);
-            // El alto de celda (3) es pequeño para que las dos líneas queden juntas y quepan en el recuadro
-            $pdf->MultiCell($anchoMax, 3, $textoFinal, 0, 'L');
+            $pdf->SetXY($x, $yFinal);
+            // Interlineado de 2.8 para que no se desborde del recuadro
+            $pdf->MultiCell($anchoMax, 2.8, $textoFinal, 0, 'L');
         } else {
             $pdf->SetXY($x, $y);
             $pdf->Write(0, $textoFinal);
@@ -58,14 +58,14 @@ class Expediente extends Controller {
         $rutaTemplate = APPROOT . '/views/formatos/formatoProductores2026.pdf'; 
         $pdf->setSourceFile($rutaTemplate);
         
-        // --- PÁGINA 1 ---
+        // --- PÁGINA 1: DATOS ---
         $tplId = $pdf->importPage(1);
         $pdf->addPage();
         $pdf->useTemplate($tplId);
-        $pdf->SetFont('Arial', '', 8); 
         $pdf->SetTextColor(0, 0, 0);
 
         // A. Encabezado
+        $pdf->SetFont('Arial', '', 8);
         $pdf->SetXY(65, 53); $pdf->Write(0, $datos->folio ?? '');
         $pdf->SetXY(157, 55); $pdf->Write(0, date('d/m/Y'));
 
@@ -109,16 +109,16 @@ class Expediente extends Controller {
         $this->escribirAjustado($pdf, 75, 187, $datos->tipo_documento_propiedad ?? '', 100);
         $this->escribirAjustado($pdf, 75, 193, $datos->pueblo_colonia_up ?? '', 75);
         
-        // --- AJUSTE PARA PARAJE (Centrado vertical en el recuadro) ---
-        $this->escribirAjustado($pdf, 155, 193, $datos->parajes ?? '', 45, 8, true);
+        // --- AJUSTE QUIRÚRGICO PARA PARAJE ---
+        $this->escribirAjustado($pdf, 152, 193, $datos->parajes ?? '', 42, 7.5, true);
 
         // TENENCIA DE LA TIERRA
-        $this->escribirAjustado($pdf, 75, 199, $datos->tenencia_tierra ?? 'NA', 45);
+        $this->escribirAjustado($pdf, 75, 200, $datos->tenencia_tierra ?? 'NA', 45);
 
-        $this->escribirAjustado($pdf, 75, 205, $datos->especie_cultivo_principal ?? '', 80);
-        $pdf->SetXY(165, 205); $pdf->Write(0, $datos->numero_cabezas_colmenas ?? '0');
+        $this->escribirAjustado($pdf, 75, 206, $datos->especie_cultivo_principal ?? '', 80);
+        $pdf->SetXY(165, 206); $pdf->Write(0, $datos->numero_cabezas_colmenas ?? '0');
 
-        // --- PÁGINA 2 ---
+        // --- PÁGINA 2: FIRMAS ---
         $tplId2 = $pdf->importPage(2);
         $pdf->addPage();
         $pdf->useTemplate($tplId2);
@@ -126,11 +126,13 @@ class Expediente extends Controller {
         
         $pdf->SetFont('Arial', 'B', 8);
         $pdf->SetXY(114, 205); $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
+        
+        // Firma Usuario Logueado (Izquierda) - Vacío si no hay sesión
         $pdf->SetXY(25, 205); 
         $usuarioFirma = (!empty($_SESSION['usuario_nombre'])) ? $_SESSION['usuario_nombre'] : '';
         $pdf->Cell(80, 0, $this->toLatin1(mb_strtoupper($usuarioFirma, 'UTF-8')), 0, 0, 'C');
 
-        // --- PÁGINA 3 ---
+        // --- PÁGINA 3: PRIVACIDAD ---
         $tplId3 = $pdf->importPage(3);
         $pdf->addPage();
         $pdf->useTemplate($tplId3);
@@ -140,7 +142,10 @@ class Expediente extends Controller {
         
         $pdf->SetFont('Arial', 'B', 8);
         $pdf->SetXY(25, 209); $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
-        $pdf->SetXY(110, 209); $pdf->Cell(80, 0, $this->toLatin1(mb_strtoupper($usuarioFirma, 'UTF-8')), 0, 0, 'C');
+        
+        // Firma Usuario Logueado (Abajo Derecha) - Vacío si no hay sesión
+        $pdf->SetXY(110, 209); 
+        $pdf->Cell(80, 0, $this->toLatin1(mb_strtoupper($usuarioFirma, 'UTF-8')), 0, 0, 'C');
 
         $pdf->Output('I', "Solicitud_{$datos->folio}.pdf");
     }
