@@ -109,8 +109,8 @@ class Expediente extends Controller {
         $this->escribirAjustado($pdf, 75, 187, $datos->tipo_documento_propiedad ?? '', 100);
         $this->escribirAjustado($pdf, 75, 193, $datos->pueblo_colonia_up ?? '', 75);
         
-        // --- AJUSTE QUIRÚRGICO PARA PARAJE ---
-        $this->escribirAjustado($pdf, 155, 193, $datos->parajes ?? '', 42, 6, true);
+// Coordenada X=150 (más a la izquierda), Y=193, Ancho=50, Fuente inicial=7
+$this->escribirAjustado($pdf, 150, 193, $datos->parajes ?? '', 50, 7, true);
 
         // TENENCIA DE LA TIERRA
         $this->escribirAjustado($pdf, 75, 198, $datos->tenencia_tierra ?? 'NA', 45);
