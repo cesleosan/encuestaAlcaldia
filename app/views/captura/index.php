@@ -701,7 +701,7 @@ $(document).ready(function() {
     let currentPage = 1;
 
     // ==========================================
-    // 1. CARGA INICIAL
+    // 1. CARGA INICIAL DE DATOS
     // ==========================================
     function cargarDatos() {
         fetch('<?php echo URLROOT; ?>/Encuesta/getEstadisticas')
@@ -789,7 +789,7 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 3. RENDERIZADO DE TABLA (CON LIBERACIÓN DE PDF)
+    // 3. RENDERIZADO DE TABLA (LIBERACIÓN DE PDF)
     // ==========================================
     function renderTable(page) {
         currentPage = page;
@@ -814,7 +814,7 @@ $(document).ready(function() {
                         <button onclick="abrirEdicion(${e.id})" class="btn btn-sm btn-guinda rounded-circle shadow-sm me-1" title="Editar"><i class="fas fa-user-edit"></i></button>
                         ${pdfLiberado ? 
                             `<a href="<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${e.id}" target="_blank" class="btn btn-sm btn-outline-danger rounded-circle shadow-sm" title="Descargar PDF"><i class="fas fa-file-pdf"></i></a>` : 
-                            `<button class="btn btn-sm btn-light rounded-circle text-muted shadow-none" style="cursor:not-allowed;" title="Falta captura" disabled><i class="fas fa-file-pdf"></i></button>`
+                            `<button class="btn btn-sm btn-light rounded-circle text-muted shadow-none" style="cursor:not-allowed;" title="PDF bloqueado: Realice captura" disabled><i class="fas fa-file-pdf"></i></button>`
                         }
                     </td>
                 </tr>
@@ -825,14 +825,14 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // 4. LÓGICA DEL MODAL
+    // 4. LÓGICA DEL MODAL (ABRIR EDICIÓN)
     // ==========================================
     window.abrirEdicion = function(id) {
         const reg = rawData.find(i => i.id == id);
         if (!reg) return;
         const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-        // Reset Form y marcadores de borrado
+        // Reset UI y banderas de borrado físico
         $("#formCaptura")[0].reset();
         $('input[name^="delete_"]').val('0'); 
         $(".file-preview-container").addClass('d-none');
@@ -842,6 +842,7 @@ $(document).ready(function() {
         $("#reg_id").val(reg.id);
         $("#spanFolio").text(reg.folio || 'S/F');
         
+        // Control de botón PDF
         const pdfLiberado = reg.fase_proceso && reg.fase_proceso !== 'EMPADRONADO';
         if (pdfLiberado) {
             $("#btnDescargarPDF").removeClass("d-none").attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
@@ -849,6 +850,7 @@ $(document).ready(function() {
             $("#btnDescargarPDF").addClass("d-none");
         }
 
+        // Identidad
         const fullNombre = getDatoFinal(reg, "nombre_productor", json);
         const seg = segmentarNombreCompleto(fullNombre);
         $("#in_nombre_productor").val(reg.nombre || seg.nombres); 
@@ -857,6 +859,7 @@ $(document).ready(function() {
         $("#in_curp_edit").val(reg.curp);
         $("#in_rfc").val(reg.rfc);
 
+        // Llenado masivo de inputs
         $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
             const el = $(this);
             const name = el.attr('name');
@@ -872,7 +875,7 @@ $(document).ready(function() {
             }
         });
 
-        // Recuperación de Expediente Digital
+        // 🔥 RECUPERACIÓN DE ARCHIVOS EXISTENTES
         fetch(`<?php echo URLROOT; ?>/Captura/verificarArchivos/${id}`)
             .then(res => res.json())
             .then(archivos => {
@@ -893,6 +896,7 @@ $(document).ready(function() {
                         `);
                         $(`label[for="file_${tipoDoc}"]`).html('<i class="fas fa-sync me-1"></i> REEMPLAZAR');
                         container.closest('.doc-row').css('background-color', '#f0faff');
+                        // Sincronizamos checkbox con la existencia física
                         $(`input[name="check_${tipoDoc}"]`).prop('checked', true);
                     }
                 });
@@ -906,7 +910,7 @@ $(document).ready(function() {
     };
 
     // ==========================================
-    // 5. PAGINACIÓN Y BÚSQUEDA
+    // 5. BÚSQUEDA Y PAGINACIÓN
     // ==========================================
     function renderPaginationUI() {
         const totalPages = Math.ceil(filteredData.length / pageSize);
@@ -950,7 +954,7 @@ $(document).ready(function() {
     });
 
     // ==========================================
-    // 6. RESUMEN Y GESTIÓN DE ARCHIVOS (UI)
+    // 6. GESTIÓN DE ARCHIVOS (AUTO-CHECK Y BORRADO)
     // ==========================================
     function renderTabResumen(reg, json) {
         const $resumen = $("#resumenCaptura").empty();
@@ -976,23 +980,31 @@ $(document).ready(function() {
         }
     }
 
+    // ✅ ADICIÓN: MARCAR CHECKBOX AL SUBIR ARCHIVO
     $(document).on('change', '.file-input', function() {
         const input = this;
         const suffix = input.id.replace('file_', '');
         const container = $(`#preview_${suffix}`);
+        const checkbox = $(input).closest('.doc-row').find('.doc-check');
+        const deleteFlag = $(`#delete_${suffix}`);
+
         if (input.files && input.files[0]) {
-            $(`#delete_${suffix}`).val('0'); // Cancelar marca de borrado si sube uno nuevo
+            // UI
             container.find('.file-name-text').text(input.files[0].name);
             container.removeClass('d-none');
-            $(input).closest('.doc-row').find('.doc-check').prop('checked', true);
-            $(input).closest('.doc-row').css('background-color', '#f0fff4');
+            $(input).closest('.doc-row').css('background-color', '#f0fff4'); // Verde tenue
+            
+            // Lógica
+            checkbox.prop('checked', true); // Marcar checkbox automáticamente
+            deleteFlag.val('0'); // Limpiar orden de borrado si existía
         }
     });
 
+    // ✅ ADICIÓN: ELIMINAR FÍSICAMENTE Y DESMARCAR
     window.eliminarArchivo = function(suffix) {
         Swal.fire({
             title: '¿Quitar archivo?',
-            text: "Se marcará para eliminación física al guardar.",
+            text: "El registro se desmarcará y el archivo se borrará físicamente al guardar.",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
@@ -1000,11 +1012,14 @@ $(document).ready(function() {
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
-                $(`#delete_${suffix}`).val('1'); // ACTIVAR MARCA DE BORRADO PARA PHP
-                $(`#file_${suffix}`).val(''); 
+                // Lógica Servidor
+                $(`#delete_${suffix}`).val('1'); // Señal de borrado para PHP
+                $(`input[name="check_${suffix}"]`).prop('checked', false); // Desmarcar bit BD
+                $(`#file_${suffix}`).val(''); // Limpiar input file
+                
+                // UI
                 $(`#preview_${suffix}`).addClass('d-none');
-                $(`input[name="check_${suffix}"]`).prop('checked', false);
-                $(`#preview_${suffix}`).closest('.doc-row').css('background-color', '#fff5f5');
+                $(`#preview_${suffix}`).closest('.doc-row').css('background-color', '#fff5f5'); // Rojo tenue (marcado para borrar)
                 $(`label[for="file_${suffix}"]`).html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR');
             }
         });
@@ -1019,7 +1034,7 @@ $(document).ready(function() {
 });
 
 // ==========================================
-// 7. ACCIONES GLOBALES (GUARDAR)
+// 7. ACCIONES DE GUARDADO FINAL
 // ==========================================
 function confirmarGuardado() {
     $("#formCaptura input[type='text'], #formCaptura textarea").each(function() {
@@ -1037,7 +1052,7 @@ function confirmarGuardado() {
 
     Swal.fire({
         title: '¿Guardar cambios?',
-        text: "Se actualizará el expediente y los archivos marcados se borrarán.",
+        text: "Se actualizará el expediente oficial y se procesarán los archivos marcados.",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#773357',
@@ -1056,7 +1071,7 @@ function confirmarGuardado() {
             })
             .catch(err => {
                 console.error(err);
-                Swal.fire('Error', 'Respuesta inesperada del servidor', 'error');
+                Swal.fire('Error', 'Falla de comunicación con el servidor', 'error');
             });
         }
     });
