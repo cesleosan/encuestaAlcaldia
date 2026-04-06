@@ -1,22 +1,19 @@
 <?php
+
 class EncuestaModelo {
     private $db;
-    private $ultimoError; // Propiedad para capturar errores técnicos de MariaDB
+    private $ultimoError;
 
     public function __construct() {
         $this->db = new Database;
     }
 
-    /**
-     * Captura y devuelve el último error ocurrido en la base de datos
-     */
     public function getError() {
         return $this->ultimoError;
     }
 
     /**
      * 1. Verificar si ya existe el CURP
-     * Regla: Solo una encuesta por persona
      */
     public function existeCurp($curp) {
         $this->db->query('SELECT folio FROM encuestas WHERE curp = :curp');
@@ -26,82 +23,127 @@ class EncuestaModelo {
     }
 
     /**
-     * Obtiene colonias iniciales para precarga
+     * 2. Obtener registro completo por ID
      */
-    public function getColoniasTlalpan($limit = 10) {
-        $this->db->query("SELECT id, nombre_asentamiento AS asentamiento, codigo_postal 
-                        FROM cat_colonias 
-                        LIMIT :limit");
-        $this->db->bind(':limit', $limit);
-        return $this->db->resultSet();
+    public function getExpedienteCompleto($id) {
+        $this->db->query("SELECT * FROM encuestas WHERE id = :id");
+        $this->db->bind(':id', $id);
+        return $this->db->single();
     }
 
     /**
-     * Busca colonias por código postal
+     * 🔥 ACTUALIZACIÓN INTEGRAL (Sincronizada al 100% con MariaDB)
+     * Este método usa las llaves enviadas por el controlador corregido.
      */
-    public function getColoniasPorCP($cp) {
-        $this->db->query("SELECT id, nombre_asentamiento AS asentamiento, codigo_postal 
-                        FROM cat_colonias 
-                        WHERE codigo_postal = :cp 
-                        ORDER BY nombre_asentamiento ASC");
-        $this->db->bind(':cp', $cp);
-        return $this->db->resultSet();
-    }
-
-    /**
-     * 2. Guardar la Encuesta (Versión de Campo Original)
-     */
-    public function agregar($datos) {
+    public function actualizarExpediente($data) {
         try {
-            $sql = 'INSERT INTO encuestas (
-                        folio, usuario_id, curp, nombre, apellido_paterno, apellido_materno,
-                        fecha_nacimiento, sexo, tiempo_residencia_tlalpan, tiempo_residencia_cdmx,
-                        calle, numero_exterior, colonia_id, colonia_nombre, latitud, longitud, 
-                        actividad_principal, superficie_total, volumen_total, unidad_medida,
-                        respuestas_json, estatus, fecha_conclusion
-                    ) VALUES (
-                        :folio, :usuario_id, :curp, :nombre, :paterno, :materno,
-                        :nacimiento, :sexo, :res_tlalpan, :res_cdmx,
-                        :calle, :num_ext, :colonia_id, :colonia_nom, :lat, :lon,
-                        :actividad, :superficie, :volumen, :unidad,
-                        :json, :estatus, :fecha_fin
-                    )';
-            
+            $sql = "UPDATE encuestas SET 
+                        -- Identidad
+                        curp = :curp, 
+                        rfc = :rfc,
+                        nombre = :nombre, 
+                        apellido_paterno = :apellido_paterno, 
+                        apellido_materno = :apellido_materno, 
+                        tipo_id = :tipo_id,
+                        numero_id = :numero_id,
+                        -- Perfil y Social
+                        estado_civil = :estado_civil,
+                        escolaridad = :escolaridad, 
+                        ocupacion = :ocupacion,
+                        tiene_discapacidad = :tiene_discapacidad,
+                        cual_discapacidad = :cual_discapacidad,
+                        grupo_etnico = :grupo_etnico,
+                        grupo_etnico_cual = :grupo_etnico_cual,
+                        -- Ubicación
+                        calle = :calle,
+                        colonia_nombre = :colonia_nombre,
+                        codigo_postal = :codigo_postal,
+                        tel_particular = :tel_particular,
+                        tel_casa = :tel_casa,
+                        tel_familiar = :tel_familiar,
+                        -- Producción
+                        linea_ayuda = :linea_ayuda,
+                        registro_siniiga = :registro_siniiga,
+                        num_total_predios = :num_total_predios,
+                        superficie_total = :superficie_total,
+                        tipo_documento_propiedad = :tipo_documento_propiedad,
+                        pueblo_colonia_up = :pueblo_colonia_up,
+                        parajes = :parajes,
+                        tenencia_tierra = :tenencia_tierra,
+                        especie_cultivo_principal = :especie_cultivo_principal,
+                        numero_cabezas_colmenas = :numero_cabezas_colmenas,
+                        -- Bits de Cotejo
+                        check_solicitud = :check_solicitud,
+                        check_identidad = :check_identidad,
+                        check_domicilio = :check_domicilio,
+                        check_curp_doc = :check_curp_doc,
+                        check_rfc_doc = :check_rfc_doc,
+                        check_manifiesto = :check_manifiesto,
+                        check_propiedad = :check_propiedad,
+                        check_finiquito = :check_finiquito,
+                        check_siniiga_doc = :check_siniiga_doc,
+                        -- Control
+                        fase_proceso = :fase_proceso,
+                        respuestas_json = :respuestas_json
+                    WHERE id = :id";
+
             $this->db->query($sql);
             
-            $this->db->bind(':folio', $datos['folio']);
-            $this->db->bind(':usuario_id', $datos['usuario_id']);
-            $this->db->bind(':curp', $datos['curp']);
-            $this->db->bind(':nombre', $datos['nombre']);
-            $this->db->bind(':paterno', $datos['paterno']);
-            $this->db->bind(':materno', $datos['materno']);
-            $this->db->bind(':nacimiento', $datos['fecha_nacimiento']);
-            $this->db->bind(':sexo', $datos['sexo']);
-            $this->db->bind(':res_tlalpan', $datos['tiempo_tlalpan']);
-            $this->db->bind(':res_cdmx', $datos['tiempo_cdmx']);
-            $this->db->bind(':calle', $datos['calle']);
-            $this->db->bind(':num_ext', $datos['num_ext']);
-            $this->db->bind(':colonia_id', $datos['colonia_id'] ?? null);
-            $this->db->bind(':colonia_nom', $datos['colonia_nombre']);
-            
-            $lat = ($datos['latitud'] !== '' && $datos['latitud'] !== 0) ? $datos['latitud'] : null;
-            $lon = ($datos['longitud'] !== '' && $datos['longitud'] !== 0) ? $datos['longitud'] : null;
-            $this->db->bind(':lat', $lat);
-            $this->db->bind(':lon', $lon);
+            // Bindeo de Identidad (Llaves actualizadas)
+            $this->db->bind(':id', $data['id']);
+            $this->db->bind(':curp', $data['curp']);
+            $this->db->bind(':rfc', $data['rfc']);
+            $this->db->bind(':nombre', $data['nombre']);
+            $this->db->bind(':apellido_paterno', $data['apellido_paterno']);
+            $this->db->bind(':apellido_materno', $data['apellido_materno']);
+            $this->db->bind(':tipo_id', $data['tipo_id']);
+            $this->db->bind(':numero_id', $data['numero_id']);
 
-            $this->db->bind(':actividad', $datos['actividad_principal']);
-            $this->db->bind(':superficie', $datos['superficie_total']);
-            $this->db->bind(':volumen', $datos['volumen_total']);
-            $this->db->bind(':unidad', $datos['unidad_medida']);
+            // Bindeo de Perfil
+            $this->db->bind(':estado_civil', $data['estado_civil']);
+            $this->db->bind(':escolaridad', $data['escolaridad']);
+            $this->db->bind(':ocupacion', $data['ocupacion']);
+            $this->db->bind(':tiene_discapacidad', $data['tiene_discapacidad']);
+            $this->db->bind(':cual_discapacidad', $data['cual_discapacidad']);
+            $this->db->bind(':grupo_etnico', $data['grupo_etnico']);
+            $this->db->bind(':grupo_etnico_cual', $data['grupo_etnico_cual']);
 
-            $this->db->bind(':estatus', $datos['estatus']);
-            $this->db->bind(':fecha_fin', $datos['fecha_conclusion']); 
-            $this->db->bind(':json', $datos['respuestas_completas']);
+            // Bindeo de Ubicación
+            $this->db->bind(':calle', $data['calle']);
+            $this->db->bind(':colonia_nombre', $data['colonia_nombre']);
+            $this->db->bind(':codigo_postal', $data['codigo_postal']);
+            $this->db->bind(':tel_particular', $data['tel_particular']);
+            $this->db->bind(':tel_casa', $data['tel_casa']);
+            $this->db->bind(':tel_familiar', $data['tel_familiar']);
 
-            if ($this->db->execute()) {
-                return $datos['folio']; 
-            }
-            return false;
+            // Bindeo de Datos Técnicos
+            $this->db->bind(':linea_ayuda', $data['linea_ayuda']);
+            $this->db->bind(':registro_siniiga', $data['registro_siniiga']);
+            $this->db->bind(':num_total_predios', $data['num_total_predios']);
+            $this->db->bind(':superficie_total', $data['superficie_total']);
+            $this->db->bind(':tipo_documento_propiedad', $data['tipo_documento_propiedad']);
+            $this->db->bind(':pueblo_colonia_up', $data['pueblo_colonia_up']);
+            $this->db->bind(':parajes', $data['parajes']);
+            $this->db->bind(':tenencia_tierra', $data['tenencia_tierra']);
+            $this->db->bind(':especie_cultivo_principal', $data['especie_cultivo_principal']);
+            $this->db->bind(':numero_cabezas_colmenas', $data['numero_cabezas_colmenas']);
+
+            // Bindeo de Checklist (TINYINT)
+            $this->db->bind(':check_solicitud', $data['check_solicitud']);
+            $this->db->bind(':check_identidad', $data['check_identidad']);
+            $this->db->bind(':check_domicilio', $data['check_domicilio']);
+            $this->db->bind(':check_curp_doc', $data['check_curp_doc']);
+            $this->db->bind(':check_rfc_doc', $data['check_rfc_doc']);
+            $this->db->bind(':check_manifiesto', $data['check_manifiesto']);
+            $this->db->bind(':check_propiedad', $data['check_propiedad']);
+            $this->db->bind(':check_finiquito', $data['check_finiquito']);
+            $this->db->bind(':check_siniiga_doc', $data['check_siniiga_doc']);
+
+            // Control y JSON
+            $this->db->bind(':fase_proceso', $data['fase_proceso']);
+            $this->db->bind(':respuestas_json', $data['json']);
+
+            return $this->db->execute();
         } catch (PDOException $e) {
             $this->ultimoError = $e->getMessage();
             return false;
@@ -109,31 +151,13 @@ class EncuestaModelo {
     }
 
     /**
-     * Obtiene el ID más alto registrado
+     * Métodos para Dashboards y Estadísticas
      */
-    public function obtenerUltimoId() {
-        $this->db->query("SELECT MAX(id) as ultimo FROM encuestas");
-        $row = $this->db->single();
-        return $row->ultimo ?? 0;
-    }
-
-    /**
-     * Coordenadas para el Dashboard
-     */
-    public function obtenerCoordenadasMapa() {
-        $this->db->query("SELECT folio, latitud, longitud, actividad_principal 
-                        FROM encuestas 
-                        WHERE latitud IS NOT NULL AND longitud IS NOT NULL");
-        return $this->db->resultSet();
-    }
-
-    /**
-     * Conteos para gráficas
-     */
-    public function getConteoActividades() {
-        $this->db->query("SELECT actividad_principal, COUNT(*) as total 
-                        FROM encuestas 
-                        GROUP BY actividad_principal");
+    public function getListadoMaestro() {
+        $this->db->query("SELECT e.*, u.nombre_completo as encuestador 
+                        FROM encuestas e
+                        LEFT JOIN usuarios u ON e.usuario_id = u.id 
+                        ORDER BY e.fecha_inicio DESC");
         return $this->db->resultSet();
     }
 
@@ -147,181 +171,15 @@ class EncuestaModelo {
         return $this->db->single();
     }
 
-    public function getProduccionPorColonia() {
-        $this->db->query("SELECT colonia_nombre, COUNT(*) as total, SUM(superficie_total) as hectareas 
-                        FROM encuestas WHERE colonia_nombre IS NOT NULL 
-                        GROUP BY colonia_nombre ORDER BY hectareas DESC LIMIT 10");
+    public function getColoniasTlalpan($limit = 10) {
+        $this->db->query("SELECT id, nombre_asentamiento AS asentamiento, codigo_postal FROM cat_colonias LIMIT :limit");
+        $this->db->bind(':limit', $limit);
         return $this->db->resultSet();
     }
 
-    public function getProblemasPrincipales() {
-        $this->db->query("SELECT JSON_UNQUOTE(JSON_EXTRACT(respuestas_json, '$.11[2].value')) as problema, COUNT(*) as total
-                        FROM encuestas WHERE respuestas_json IS NOT NULL AND JSON_VALID(respuestas_json) 
-                        GROUP BY problema HAVING problema IS NOT NULL");
+    public function getColoniasPorCP($cp) {
+        $this->db->query("SELECT id, nombre_asentamiento AS asentamiento, codigo_postal FROM cat_colonias WHERE codigo_postal = :cp ORDER BY nombre_asentamiento ASC");
+        $this->db->bind(':cp', $cp);
         return $this->db->resultSet();
-    }
-
-    /**
-     * Listado Maestro (Soporta todas las columnas nuevas)
-     */
-    public function getListadoMaestro() {
-        $this->db->query("SELECT e.*, u.nombre_completo as encuestador 
-                        FROM encuestas e
-                        LEFT JOIN usuarios u ON e.usuario_id = u.id 
-                        ORDER BY e.fecha_inicio DESC");
-        return $this->db->resultSet();
-    }
-
-    public function getTendenciaDiaria() {
-        $this->db->query("SELECT DATE(fecha_inicio) as fecha, COUNT(*) as total 
-                        FROM encuestas GROUP BY DATE(fecha_inicio) ORDER BY fecha ASC");
-        return $this->db->resultSet();
-    }
-
-    public function getEncuestaById($id) {
-        $this->db->query("SELECT * FROM encuestas WHERE id = :id");
-        $this->db->bind(':id', $id);
-        return $this->db->single();
-    }
-
-    /**
-     * 🔥 NUEVO: Obtiene el expediente para el Generador PDF (61 campos)
-     */
-    public function getExpedienteCompleto($id) {
-        $this->db->query("SELECT * FROM encuestas WHERE id = :id");
-        $this->db->bind(':id', $id);
-        return $this->db->single();
-    }
-
-    /**
-     * 🔥 ACTUALIZACIÓN INTEGRAL (Versión 1000% Completa)
-     * Procesa los 61 campos de la base de datos desde el Modal de Edición
-     */
-public function actualizarExpediente($data) {
-        try {
-            $sql = "UPDATE encuestas SET 
-                        -- Identidad
-                        nombre = :nombre, 
-                        apellido_paterno = :paterno, 
-                        apellido_materno = :materno, 
-                        curp = :curp, 
-                        rfc = :rfc,
-                        tipo_id = :tipo_id,
-                        numero_id = :numero_id,
-                        -- Perfil y Vulnerabilidad
-                        tiene_discapacidad = :tiene_discap,
-                        cual_discapacidad = :cual_discap,
-                        grupo_etnico = :grupo_etnico,
-                        grupo_etnico_cual = :grupo_etnico_cual,
-                        escolaridad = :escolaridad, 
-                        ocupacion = :ocupacion,
-                        estado_civil = :estado_civil,
-                        -- Ubicación y Contacto
-                        calle = :calle,
-                        colonia_nombre = :colonia,
-                        codigo_postal = :cp,
-                        tel_particular = :tel_part,
-                        tel_casa = :tel_casa,
-                        tel_familiar = :tel_fam,
-                        -- Datos Técnicos
-                        linea_ayuda = :linea_ayuda,
-                        registro_siniiga = :siniiga,
-                        num_total_predios = :num_predios,
-                        superficie_total = :superficie, 
-                        tipo_documento_propiedad = :tipo_doc,
-                        pueblo_colonia_up = :colonia_up,
-                        parajes = :parajes,
-                        tenencia_tierra = :tenencia,
-                        especie_cultivo_principal = :especie,
-                        numero_cabezas_colmenas = :cabezas,
-                        -- Checklist Documentos (TINYINT 0/1)
-                        check_solicitud = :check_sol,
-                        check_identidad = :check_id,
-                        check_domicilio = :check_dom,
-                        check_curp_doc = :check_curp,
-                        check_rfc_doc = :check_rfc,
-                        check_manifiesto = :check_man,
-                        check_propiedad = :check_prop,
-                        check_finiquito = :check_fin,
-                        check_siniiga_doc = :check_sin,
-                        -- Control
-                        fase_proceso = :fase, 
-                        observaciones_capturista = :obs,
-                        respuestas_json = :json 
-                    WHERE id = :id";
-
-            $this->db->query($sql);
-            
-            // Bindeos Identidad
-            $this->db->bind(':id', $data['id']);
-            $this->db->bind(':nombre', $data['nombre_productor']);
-            $this->db->bind(':paterno', $data['paterno']);
-            $this->db->bind(':materno', $data['materno']);
-            $this->db->bind(':curp', $data['curp']);
-            $this->db->bind(':rfc', $data['rfc'] ?? null);
-            $this->db->bind(':tipo_id', $data['tipo_id'] ?? null);
-            $this->db->bind(':numero_id', $data['numero_id'] ?? null);
-
-            // Bindeos Perfil
-            $this->db->bind(':tiene_discap', $data['tiene_discapacidad'] ?? 'NO');
-            $this->db->bind(':cual_discap', $data['cual_discapacidad'] ?? 'NA');
-            $this->db->bind(':grupo_etnico', $data['grupo_etnico'] ?? 'NO');
-            $this->db->bind(':grupo_etnico_cual', $data['grupo_etnico_cual'] ?? 'NA');
-            $this->db->bind(':escolaridad', $data['grado_estudios'] ?? null); 
-            $this->db->bind(':ocupacion', $data['ocupacion'] ?? null);
-            $this->db->bind(':estado_civil', $data['estado_civil'] ?? null);
-
-            // Bindeos Ubicación
-            $this->db->bind(':calle', $data['calle_numero'] ?? null);
-            $this->db->bind(':colonia', $data['pueblo_colonia'] ?? null);
-            $this->db->bind(':cp', $data['cp'] ?? null);
-            $this->db->bind(':tel_part', $data['tel_particular'] ?? null);
-            $this->db->bind(':tel_casa', $data['tel_casa'] ?? null);
-            $this->db->bind(':tel_fam', $data['tel_recados'] ?? null);
-
-            // Bindeos Técnicos
-            $this->db->bind(':linea_ayuda', $data['linea_ayuda'] ?? null);
-            $this->db->bind(':siniiga', $data['siniiga_status'] ?? 'NO');
-            $this->db->bind(':num_predios', $data['num_total_predios'] ?? 1);
-            $this->db->bind(':superficie', $data['superficie_prod'] ?? 0);
-            $this->db->bind(':tipo_doc', $data['tipo_documento_prop'] ?? null);
-            $this->db->bind(':colonia_up', $data['pueblo_colonia_up'] ?? null);
-            $this->db->bind(':parajes', $data['parajes'] ?? null);
-            $this->db->bind(':tenencia', $data['tenencia_tierra'] ?? 'NA');
-            $this->db->bind(':especie', $data['cultivo_principal'] ?? null);
-            $this->db->bind(':cabezas', $data['num_animales'] ?? 0);
-
-            // Bindeos Checklist (Asegura que siempre se bindeen como 0 o 1)
-            $this->db->bind(':check_sol', $data['check_solicitud']);
-            $this->db->bind(':check_id', $data['check_identidad']);
-            $this->db->bind(':check_dom', $data['check_domicilio']);
-            $this->db->bind(':check_curp', $data['check_curp_doc']);
-            $this->db->bind(':check_rfc', $data['check_rfc_doc']);
-            $this->db->bind(':check_man', $data['check_manifiesto']);
-            $this->db->bind(':check_prop', $data['check_propiedad']);
-            $this->db->bind(':check_fin', $data['check_finiquito']);
-            $this->db->bind(':check_sin', $data['check_siniiga_doc']);
-
-            // Control
-            $this->db->bind(':fase', $data['fase_proceso']);
-            $this->db->bind(':obs', $data['observaciones_capturista'] ?? '');
-            $this->db->bind(':json', $data['json']);
-
-            return $this->db->execute();
-        } catch (Exception $e) {
-            $this->ultimoError = $e->getMessage();
-            return false;
-        }
-    }
-
-    /**
-     * Actualizar solo Fase (Usado en flujos rápidos)
-     */
-    public function actualizarFase($data) {
-        $this->db->query("UPDATE encuestas SET fase_proceso = :fase, respuestas_json = :json WHERE id = :id");
-        $this->db->bind(':id', $data['id']);
-        $this->db->bind(':fase', $data['fase']);
-        $this->db->bind(':json', $data['json']);
-        return $this->db->execute();
     }
 }

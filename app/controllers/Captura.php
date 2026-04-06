@@ -5,11 +5,15 @@ class Captura extends Controller {
 
     public function __construct() {
         if (session_status() === PHP_SESSION_NONE) session_start();
+        
+        // Seguridad: Solo roles autorizados
         if (!isset($_SESSION['user_id']) || !in_array($_SESSION['rol'], ['root', 'supervisor', 'capturista'])) {
             header('Location: ' . URLROOT . '/Auth');
             exit;
         }
+        
         $this->encuestaModel = $this->model('EncuestaModelo');
+
         if (!defined('PUBROOT')) {
             define('PUBROOT', dirname(APPROOT) . '/public');
         }
@@ -19,109 +23,147 @@ class Captura extends Controller {
         $this->view('captura/index');
     }
 
-public function actualizarExpediente($data) {
-    // Preparamos la consulta con los nombres EXACTOS de tu MariaDB
-    $this->db->query("UPDATE encuestas SET 
-        curp = :curp,
-        rfc = :rfc,
-        nombre = :nombre,
-        apellido_paterno = :apellido_paterno,
-        apellido_materno = :apellido_materno,
-        tipo_id = :tipo_id,
-        numero_id = :numero_id,
-        estado_civil = :estado_civil,
-        escolaridad = :escolaridad,
-        ocupacion = :ocupacion,
-        tiene_discapacidad = :tiene_discapacidad,
-        cual_discapacidad = :cual_discapacidad,
-        grupo_etnico = :grupo_etnico,
-        grupo_etnico_cual = :grupo_etnico_cual,
-        calle = :calle,
-        colonia_nombre = :colonia_nombre,
-        codigo_postal = :codigo_postal,
-        tel_particular = :tel_particular,
-        tel_casa = :tel_casa,
-        tel_familiar = :tel_familiar,
-        linea_ayuda = :linea_ayuda,
-        registro_siniiga = :registro_siniiga,
-        num_total_predios = :num_total_predios,
-        superficie_total = :superficie_total,
-        tipo_documento_propiedad = :tipo_documento_propiedad,
-        pueblo_colonia_up = :pueblo_colonia_up,
-        parajes = :parajes,
-        tenencia_tierra = :tenencia_tierra,
-        especie_cultivo_principal = :especie_cultivo_principal,
-        numero_cabezas_colmenas = :numero_cabezas_colmenas,
-        fase_proceso = :fase_proceso,
-        check_solicitud = :check_solicitud,
-        check_identidad = :check_identidad,
-        check_domicilio = :check_domicilio,
-        check_curp_doc = :check_curp_doc,
-        check_rfc_doc = :check_rfc_doc,
-        check_manifiesto = :check_manifiesto,
-        check_propiedad = :check_propiedad,
-        check_finiquito = :check_finiquito,
-        check_siniiga_doc = :check_siniiga_doc,
-        respuestas_json = :respuestas_json
-    WHERE id = :id");
+    /**
+     * MÉTODO PRINCIPAL: Recibe el POST, gestiona archivos y actualiza BD
+     */
+    public function actualizar() {
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $id = $_POST['id'];
+            
+            // 1. Obtener registro actual para el Folio
+            $registro = $this->encuestaModel->getExpedienteCompleto($id);
+            if (!$registro) {
+                echo json_encode(['status' => 'error', 'msg' => 'No se encontró el registro']);
+                return;
+            }
 
-    // Vinculamos los datos usando las llaves que configuramos en el Controlador
-    $this->db->bind(':id', $data['id']);
-    $this->db->bind(':curp', $data['curp']);
-    $this->db->bind(':rfc', $data['rfc']);
-    $this->db->bind(':nombre', $data['nombre']);
-    $this->db->bind(':apellido_paterno', $data['apellido_paterno']);
-    $this->db->bind(':apellido_materno', $data['apellido_materno']);
-    $this->db->bind(':tipo_id', $data['tipo_id']);
-    $this->db->bind(':numero_id', $data['numero_id']);
-    $this->db->bind(':estado_civil', $data['estado_civil']);
-    $this->db->bind(':escolaridad', $data['escolaridad']);
-    $this->db->bind(':ocupacion', $data['ocupacion']);
-    $this->db->bind(':tiene_discapacidad', $data['tiene_discapacidad']);
-    $this->db->bind(':cual_discapacidad', $data['cual_discapacidad']);
-    $this->db->bind(':grupo_etnico', $data['grupo_etnico']);
-    $this->db->bind(':grupo_etnico_cual', $data['grupo_etnico_cual']);
-    $this->db->bind(':calle', $data['calle']);
-    $this->db->bind(':colonia_nombre', $data['colonia_nombre']);
-    $this->db->bind(':codigo_postal', $data['codigo_postal']);
-    $this->db->bind(':tel_particular', $data['tel_particular']);
-    $this->db->bind(':tel_casa', $data['tel_casa']);
-    $this->db->bind(':tel_familiar', $data['tel_familiar']);
-    $this->db->bind(':linea_ayuda', $data['linea_ayuda']);
-    $this->db->bind(':registro_siniiga', $data['registro_siniiga']);
-    $this->db->bind(':num_total_predios', $data['num_total_predios']);
-    $this->db->bind(':superficie_total', $data['superficie_total']);
-    $this->db->bind(':tipo_documento_propiedad', $data['tipo_documento_propiedad']);
-    $this->db->bind(':pueblo_colonia_up', $data['pueblo_colonia_up']);
-    $this->db->bind(':parajes', $data['parajes']);
-    $this->db->bind(':tenencia_tierra', $data['tenencia_tierra']);
-    $this->db->bind(':especie_cultivo_principal', $data['especie_cultivo_principal']);
-    $this->db->bind(':numero_cabezas_colmenas', $data['numero_cabezas_colmenas']);
-    $this->db->bind(':fase_proceso', $data['fase_proceso']);
-    
-    // Bits de Cotejo
-    $this->db->bind(':check_solicitud', $data['check_solicitud']);
-    $this->db->bind(':check_identidad', $data['check_identidad']);
-    $this->db->bind(':check_domicilio', $data['check_domicilio']);
-    $this->db->bind(':check_curp_doc', $data['check_curp_doc']);
-    $this->db->bind(':check_rfc_doc', $data['check_rfc_doc']);
-    $this->db->bind(':check_manifiesto', $data['check_manifiesto']);
-    $this->db->bind(':check_propiedad', $data['check_propiedad']);
-    $this->db->bind(':check_finiquito', $data['check_finiquito']);
-    $this->db->bind(':check_siniiga_doc', $data['check_siniiga_doc']);
-    
-    $this->db->bind(':respuestas_json', $data['json']);
+            $folioCarpeta = str_replace(['/', ' ', '\\'], '-', $registro->folio);
+            $rutaBase = PUBROOT . '/uploads/expedientes/' . $folioCarpeta;
 
-    return $this->db->execute();
-}
+            // 2. GESTIÓN DE ARCHIVOS (BORRADO Y CARGA)
+            $mapeoDoc = [
+                'solicitud'   => ['file' => 'SOLICITUD',   'col' => 'check_solicitud'],
+                'identidad'   => ['file' => 'IDENTIDAD',   'col' => 'check_identidad'],
+                'domicilio'   => ['file' => 'DOMICILIO',   'col' => 'check_domicilio'],
+                'curp_doc'    => ['file' => 'CURP',        'col' => 'check_curp_doc'],
+                'rfc_doc'     => ['file' => 'RFC',         'col' => 'check_rfc_doc'],
+                'manifiesto'  => ['file' => 'MANIFIESTO',   'col' => 'check_manifiesto'],
+                'propiedad'   => ['file' => 'PROPIEDAD',   'col' => 'check_propiedad'],
+                'finiquito'   => ['file' => 'FINIQUITO',   'col' => 'check_finiquito'],
+                'siniiga_doc' => ['file' => 'SINIIGA',     'col' => 'check_siniiga_doc']
+            ];
 
+            $dbChecks = [];
+
+            foreach ($mapeoDoc as $key => $info) {
+                $columna = $info['col'];
+                $prefijo = $info['file'];
+
+                // A) ELIMINACIÓN FÍSICA (Si se activó la 'X')
+                if (isset($_POST['delete_' . $key]) && $_POST['delete_' . $key] == '1') {
+                    $patron = $rutaBase . '/' . $folioCarpeta . '_' . $prefijo . '.*';
+                    $archivosViejos = glob($patron);
+                    if ($archivosViejos) {
+                        foreach ($archivosViejos as $f) { @unlink($f); }
+                    }
+                    $dbChecks[$columna] = 0;
+                } 
+                // B) CARGA DE ARCHIVO NUEVO
+                elseif (isset($_FILES['file_' . $key]) && $_FILES['file_' . $key]['error'] === UPLOAD_ERR_OK) {
+                    if (!is_dir($rutaBase)) { @mkdir($rutaBase, 0775, true); }
+                    
+                    $ext = strtolower(pathinfo($_FILES['file_' . $key]['name'], PATHINFO_EXTENSION));
+                    $nombreFinal = $folioCarpeta . "_" . $prefijo . "." . $ext;
+                    $destino = $rutaBase . "/" . $nombreFinal;
+
+                    if (move_uploaded_file($_FILES['file_' . $key]['tmp_name'], $destino)) {
+                        chmod($destino, 0664);
+                        $dbChecks[$columna] = 1;
+                    } else {
+                        $dbChecks[$columna] = isset($_POST[$columna]) ? 1 : 0;
+                    }
+                } 
+                // C) ESTADO MANUAL (Si no hay cambios de archivo)
+                else {
+                    $dbChecks[$columna] = isset($_POST[$columna]) ? 1 : 0;
+                }
+            }
+
+            // 3. PREPARACIÓN DE DATA PARA EL MODELO (Mapeo exacto a MariaDB)
+            $data = [
+                'id'                => $id,
+                'curp'              => mb_strtoupper($_POST['curp'], 'UTF-8'),
+                'rfc'               => mb_strtoupper($_POST['rfc'], 'UTF-8'),
+                'nombre'            => mb_strtoupper($_POST['nombre_productor'], 'UTF-8'),
+                'apellido_paterno'  => mb_strtoupper($_POST['paterno'], 'UTF-8'),
+                'apellido_materno'  => mb_strtoupper($_POST['materno'], 'UTF-8'),
+                'tipo_id'           => !empty($_POST['tipo_id']) ? $_POST['tipo_id'] : $registro->tipo_id,
+                'numero_id'         => $_POST['numero_id'] ?? '',
+                'estado_civil'      => $_POST['estado_civil'] ?? '',
+                'escolaridad'       => $_POST['grado_estudios'] ?? '',
+                'ocupacion'         => mb_strtoupper($_POST['ocupacion'], 'UTF-8'),
+                'tiene_discapacidad'=> $_POST['tiene_discapacidad'] ?? 'NO',
+                'cual_discapacidad' => mb_strtoupper($_POST['cual_discapacidad'] ?? 'NA', 'UTF-8'),
+                'grupo_etnico'      => $_POST['grupo_etnico'] ?? 'NO',
+                'grupo_etnico_cual' => mb_strtoupper($_POST['grupo_etnico_cual'] ?? 'NA', 'UTF-8'),
+                'calle'             => mb_strtoupper($_POST['calle_numero'], 'UTF-8'),
+                'colonia_nombre'    => mb_strtoupper($_POST['pueblo_colonia'], 'UTF-8'),
+                'codigo_postal'     => $_POST['cp'] ?? '',
+                'tel_particular'    => $_POST['tel_particular'] ?? '',
+                'tel_casa'          => $_POST['tel_casa'] ?? '',
+                'tel_familiar'      => $_POST['tel_recados'] ?? '',
+                'linea_ayuda'       => $_POST['tipo_produccion'] ?? 'AGRICOLA',
+                'registro_siniiga'  => $_POST['siniiga_status'] ?? 'NO',
+                'num_total_predios' => $_POST['num_total_predios'] ?? 1,
+                'superficie_total'  => $_POST['superficie_prod'] ?? 0,
+                'tipo_documento_propiedad' => mb_strtoupper($_POST['tipo_documento_prop'] ?? '', 'UTF-8'),
+                'pueblo_colonia_up' => mb_strtoupper($_POST['pueblo_colonia_up'] ?? '', 'UTF-8'),
+                'parajes'           => mb_strtoupper($_POST['parajes'] ?? 'NA', 'UTF-8'),
+                'tenencia_tierra'   => !empty($_POST['tenencia_tierra']) ? $_POST['tenencia_tierra'] : 'NA',
+                'especie_cultivo_principal' => mb_strtoupper($_POST['cultivo_principal'] ?? '', 'UTF-8'),
+                'numero_cabezas_colmenas'   => $_POST['num_animales'] ?? 0,
+                
+                // Fases
+                'fase_proceso'      => ($registro->fase_proceso == 'EMPADRONADO') 
+                                        ? 'SOLICITUD_INGRESADA' 
+                                        : ($_POST['fase_proceso'] ?? $registro->fase_proceso),
+                
+                // Checks Calculados
+                'check_solicitud'   => $dbChecks['check_solicitud'],
+                'check_identidad'   => $dbChecks['check_identidad'],
+                'check_domicilio'   => $dbChecks['check_domicilio'],
+                'check_curp_doc'    => $dbChecks['check_curp_doc'],
+                'check_rfc_doc'     => $dbChecks['check_rfc_doc'],
+                'check_manifiesto'  => $dbChecks['check_manifiesto'],
+                'check_propiedad'   => $dbChecks['check_propiedad'],
+                'check_finiquito'   => $dbChecks['check_finiquito'],
+                'check_siniiga_doc' => $dbChecks['check_siniiga_doc'],
+                
+                'json'              => $registro->respuestas_json 
+            ];
+
+            // 4. EJECUTAR EN EL MODELO
+            if ($this->encuestaModel->actualizarExpediente($data)) {
+                echo json_encode(['status' => 'success', 'msg' => '¡Expediente actualizado con éxito!']);
+            } else {
+                echo json_encode(['status' => 'error', 'msg' => 'Error al actualizar el registro en la base de datos.']);
+            }
+        }
+    }
+
+    /**
+     * Escanea archivos físicos para mostrar botón "VER ACTUAL"
+     */
     public function verificarArchivos($id) {
         $registro = $this->encuestaModel->getExpedienteCompleto($id);
         if (!$registro) { echo json_encode([]); return; }
+
         $folioCarpeta = str_replace(['/', ' ', '\\'], '-', $registro->folio);
         $rutaFisica = PUBROOT . '/uploads/expedientes/' . $folioCarpeta;
         $urlBase = URLROOT . '/uploads/expedientes/' . $folioCarpeta;
+
         $archivosEncontrados = [];
+
         if (is_dir($rutaFisica)) {
             $archivos = scandir($rutaFisica);
             foreach ($archivos as $archivo) {
