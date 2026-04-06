@@ -708,7 +708,7 @@ $(document).ready(function() {
     let currentPage = 1;
 
     // ==========================================
-    // 0. CONFIGURACIÓN DE NOTIFICACIONES (Soluciona el error ReferenceError: Toast)
+    // 0. CONFIGURACIÓN DE NOTIFICACIONES
     // ==========================================
     const Toast = Swal.mixin({
         toast: true,
@@ -732,7 +732,7 @@ $(document).ready(function() {
                 rawData = data.maestro || [];
                 filteredData = [...rawData];
                 actualizarKPIs(rawData);
-                renderTable(currentPage);
+                renderTable(1); // Empezamos siempre en la 1
             })
             .catch(err => console.error("Error al obtener datos:", err));
     }
@@ -881,7 +881,6 @@ $(document).ready(function() {
             if (valor !== undefined && valor !== "") { el.val(valor); }
         });
 
-        // ✅ LÓGICA ESPECIAL: TIPO DE PRODUCCIÓN
         const valorProduccionOriginal = getDatoFinal(reg, "tipo_produccion", json);
         $("#origen_produccion_text").text(valorProduccionOriginal || 'No definido'); 
         const selectProd = $("#in_tipo_produccion");
@@ -898,7 +897,6 @@ $(document).ready(function() {
             }
         }
 
-        // ✅ CONTROL MANUAL DE CHECKS
         const checksCotejo = ['solicitud', 'identidad', 'domicilio', 'curp_doc', 'rfc_doc', 'manifiesto', 'propiedad', 'finiquito', 'siniiga_doc'];
         checksCotejo.forEach(c => {
             const columnaDB = 'check_' + c;
@@ -931,37 +929,61 @@ $(document).ready(function() {
     };
 
     // ==========================================
-    // 5. BÚSQUEDA Y PAGINACIÓN
+    // 5. BÚSQUEDA Y PAGINACIÓN (CORREGIDA)
     // ==========================================
     function renderPaginationUI() {
         const totalPages = Math.ceil(filteredData.length / pageSize);
         const container = $("#paginationControls").empty();
         if (totalPages <= 1) return;
+
         const delta = 2;
         const range = [];
         for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) { range.push(i); }
+            if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
+                range.push(i);
+            }
         }
+
         let l;
         range.forEach(i => {
             if (l) {
-                if (i - l === 2) container.append(`<li class="page-item"><a class="page-link shadow-sm" href="#" data-page="${l + 1}">${l + 1}</a></li>`);
-                else if (i - l !== 1) container.append(`<li class="page-item disabled"><span class="page-link border-0">...</span></li>`);
+                if (i - l === 2) {
+                    container.append(createPageItem(l + 1));
+                } else if (i - l !== 1) {
+                    container.append('<li class="page-item disabled"><span class="page-link border-0">...</span></li>');
+                }
             }
-            container.append(`<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link shadow-sm" href="#" data-page="${i}">${i}</a></li>`);
+            container.append(createPageItem(i));
             l = i;
         });
+
+        // Evento de clic corregido para que no se pierda
+        container.find('.page-link-btn').on('click', function(e) {
+            e.preventDefault();
+            const page = parseInt($(this).data('page'));
+            renderTable(page);
+        });
+    }
+
+    function createPageItem(i) {
+        const activeClass = (i === currentPage) ? 'active' : '';
+        return `<li class="page-item ${activeClass}"><a class="page-link shadow-sm page-link-btn" href="#" data-page="${i}">${i}</a></li>`;
     }
 
     $("#tablaSearch").on("keyup", function() {
         const val = $(this).val().toLowerCase().trim();
         filteredData = (val === "") ? [...rawData] : rawData.filter(e => {
             const nom = `${e.nombre || ''} ${e.apellido_paterno || ''} ${e.apellido_materno || ''}`.toLowerCase();
-            return nom.includes(val) || (e.folio || "").toLowerCase().includes(val) || (e.curp || "").toLowerCase().includes(val);
+            const fol = (e.folio || "").toLowerCase();
+            const cur = (e.curp || "").toLowerCase();
+            return nom.includes(val) || fol.includes(val) || cur.includes(val);
         });
         renderTable(1);
     });
 
+    // ==========================================
+    // 6. RESUMEN Y GESTIÓN DE ARCHIVOS UI
+    // ==========================================
     function renderTabResumen(reg, json) {
         const $resumen = $("#resumenCaptura").empty();
         const config = { "1. Registro": ["tecnico_nombre", "folio", "fase_proceso"], "2. Identidad": ["nombre_productor", "curp", "rfc", "sexo", "grado_estudios"], "3. Ubicación": ["calle_numero", "pueblo_colonia", "cp", "tel_particular"], "4. Perfil": ["ocupacion", "grupo_etnico"], "5. Producción": ["tipo_produccion", "superficie_prod", "cultivo_principal"] };
@@ -1009,6 +1031,9 @@ $(document).ready(function() {
     };
 });
 
+// ==========================================
+// 7. ACCIONES DE GUARDADO FINAL
+// ==========================================
 function confirmarGuardado() {
     const lineaAyuda = $("#in_tipo_produccion").val();
     if (!lineaAyuda || lineaAyuda === "") {
@@ -1019,19 +1044,24 @@ function confirmarGuardado() {
             text: 'Por favor, seleccione una Línea de Ayuda válida antes de guardar.',
             confirmButtonColor: '#773357'
         });
-        return; // Detiene la ejecución, no envía nada al servidor
+        return;
     }
+
     $("#formCaptura input[type='text'], #formCaptura textarea").each(function() { $(this).val($(this).val().toUpperCase()); });
     const inputsDisabled = $("#formCaptura").find(':disabled');
     inputsDisabled.prop('disabled', false);
+    
     const formElement = document.getElementById('formCaptura');
     const formData = new FormData(formElement);
+    
     const listadoChecks = ['check_solicitud', 'check_identidad', 'check_domicilio', 'check_curp_doc', 'check_rfc_doc', 'check_manifiesto', 'check_propiedad', 'check_finiquito', 'check_siniiga_doc'];
     listadoChecks.forEach(c => {
         const el = document.getElementsByName(c)[0];
         formData.set(c, (el && el.checked) ? 1 : 0);
     });
+    
     inputsDisabled.prop('disabled', true);
+    
     Swal.fire({ title: '¿Guardar cambios?', text: "Se actualizará el expediente oficial y los checks manuales.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#773357', confirmButtonText: 'Sí, guardar' }).then((result) => {
         if (result.isConfirmed) {
             Swal.fire({ title: 'Procesando...', didOpen: () => { Swal.showLoading() } });
@@ -1051,5 +1081,6 @@ function confirmarSalida() {
         if (result.isConfirmed) window.location.href = '<?php echo URLROOT; ?>/Auth/logout';
     });
 }
+
 window.confirmarSalida = confirmarSalida;
 </script>
