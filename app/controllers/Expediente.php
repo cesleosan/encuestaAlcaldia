@@ -43,7 +43,7 @@ class Expediente extends Controller {
 
         // A. Encabezado (Folio y Fecha)
         $pdf->SetXY(65, 53); $pdf->Write(0, $datos->folio ?? '');
-        $fecha = ($datos->fecha_inicio) ? date('d/m/Y', strtotime($datos->fecha_inicio)) : date('d/m/Y');
+        $fecha = date('d/m/Y');
         $pdf->SetXY(157, 55); $pdf->Write(0, $fecha);
 
         // B. Identidad del Solicitante
@@ -141,7 +141,7 @@ class Expediente extends Controller {
         $pdf->useTemplate($tplId3);
         $pdf->SetFont('Arial', '', 8); 
         $pdf->SetXY(65, 70); $pdf->Write(0, $datos->folio ?? '');
-        $fecha = ($datos->fecha_inicio) ? date('d/m/Y', strtotime($datos->fecha_inicio)) : date('d/m/Y');
+       $fecha = date('d/m/Y');
         $pdf->SetXY(160, 68); $pdf->Write(0, $fecha);
         $pdf->SetFont('Arial', 'B', 9);
         // Firma última página
