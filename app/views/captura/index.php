@@ -1010,6 +1010,17 @@ $(document).ready(function() {
 });
 
 function confirmarGuardado() {
+    const lineaAyuda = $("#in_tipo_produccion").val();
+    if (!lineaAyuda || lineaAyuda === "") {
+        $("#in_tipo_produccion").addClass("is-invalid border-danger").focus();
+        Swal.fire({
+            icon: 'error',
+            title: 'Campo Obligatorio',
+            text: 'Por favor, seleccione una Línea de Ayuda válida antes de guardar.',
+            confirmButtonColor: '#773357'
+        });
+        return; // Detiene la ejecución, no envía nada al servidor
+    }
     $("#formCaptura input[type='text'], #formCaptura textarea").each(function() { $(this).val($(this).val().toUpperCase()); });
     const inputsDisabled = $("#formCaptura").find(':disabled');
     inputsDisabled.prop('disabled', false);
