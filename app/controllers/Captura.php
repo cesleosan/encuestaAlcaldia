@@ -143,7 +143,9 @@ class Captura extends Controller {
             'num_animales'      => $_POST['num_animales'] ?? 0,
             
             // Lógica de Adán: Si está en EMPADRONADO, subir a SOLICITUD_INGRESADA
-            'fase_proceso' => ($registro->fase_proceso == 'EMPADRONADO') ? 'SOLICITUD_INGRESADA' : $_POST['fase_proceso'],
+            'fase_proceso' => ($registro->fase_proceso == 'EMPADRONADO') 
+                                            ? 'SOLICITUD_INGRESADA' 
+                                            : ($_POST['fase_proceso'] ?? $registro->fase_proceso),
             
             // Cotejo (Checkboxes)
             'check_solicitud'   => isset($_POST['check_solicitud']) ? 1 : 0,
