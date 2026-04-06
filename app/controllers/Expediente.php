@@ -122,7 +122,7 @@ class Expediente extends Controller {
         $pdf->SetFont('Arial', 'B', 9);
         
         // Firma Solicitante
-        $pdf->SetXY(120, 190); 
+        $pdf->SetXY(110, 210); 
         $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
 
         // --- PÁGINA 3: AVISO DE PRIVACIDAD ---
@@ -131,8 +131,8 @@ class Expediente extends Controller {
         $pdf->useTemplate($tplId3);
         
         // Firma última página
-        //$pdf->SetXY(25, 267); 
-        //$pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
+        $pdf->SetXY(110, 210); 
+        $pdf->Cell(80, 0, $this->toLatin1($nombreFull), 0, 0, 'C');
 
         // Salida del PDF
         $pdf->Output('I', "Solicitud_{$datos->folio}.pdf");
