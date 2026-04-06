@@ -437,7 +437,7 @@
                 </div>
             </div>
 
-                       <div class="tab-pane fade" id="tab-docs">
+<div class="tab-pane fade" id="tab-docs">
     <div class="alert alert-info border-0 shadow-sm small mb-3">
         <i class="fas fa-file-invoice me-2"></i> <b>Expediente Digital:</b> Los documentos con fondo azul ya existen en el servidor. Puede verlos o reemplazarlos.
     </div>
@@ -455,6 +455,7 @@
                         </span>
                     </div>
                     <div class="file-upload-wrapper text-end">
+                        <input type="hidden" name="delete_solicitud" id="delete_solicitud" value="0">
                         <div class="file-preview-container d-none mb-1" id="preview_solicitud">
                             <div class="file-preview-badge">
                                 <i class="fas fa-paperclip text-primary me-1"></i>
@@ -478,6 +479,7 @@
                         </span>
                     </div>
                     <div class="file-upload-wrapper text-end">
+                        <input type="hidden" name="delete_identidad" id="delete_identidad" value="0">
                         <div class="file-preview-container d-none mb-1" id="preview_identidad">
                             <div class="file-preview-badge">
                                 <i class="fas fa-paperclip text-primary me-1"></i>
@@ -501,6 +503,7 @@
                         </span>
                     </div>
                     <div class="file-upload-wrapper text-end">
+                        <input type="hidden" name="delete_domicilio" id="delete_domicilio" value="0">
                         <div class="file-preview-container d-none mb-1" id="preview_domicilio">
                             <div class="file-preview-badge">
                                 <i class="fas fa-paperclip text-primary me-1"></i>
@@ -524,6 +527,7 @@
                         </span>
                     </div>
                     <div class="file-upload-wrapper text-end">
+                        <input type="hidden" name="delete_curp_doc" id="delete_curp_doc" value="0">
                         <div class="file-preview-container d-none mb-1" id="preview_curp_doc">
                             <div class="file-preview-badge">
                                 <i class="fas fa-paperclip text-primary me-1"></i>
@@ -547,6 +551,7 @@
                         </span>
                     </div>
                     <div class="file-upload-wrapper text-end">
+                        <input type="hidden" name="delete_rfc_doc" id="delete_rfc_doc" value="0">
                         <div class="file-preview-container d-none mb-1" id="preview_rfc_doc">
                             <div class="file-preview-badge">
                                 <i class="fas fa-paperclip text-primary me-1"></i>
@@ -570,6 +575,7 @@
                         </span>
                     </div>
                     <div class="file-upload-wrapper text-end">
+                        <input type="hidden" name="delete_manifiesto" id="delete_manifiesto" value="0">
                         <div class="file-preview-container d-none mb-1" id="preview_manifiesto">
                             <div class="file-preview-badge">
                                 <i class="fas fa-paperclip text-primary me-1"></i>
@@ -593,11 +599,12 @@
                         </span>
                     </div>
                     <div class="file-upload-wrapper text-end">
+                        <input type="hidden" name="delete_propiedad" id="delete_propiedad" value="0">
                         <div class="file-preview-container d-none mb-1" id="preview_propiedad">
                             <div class="file-preview-badge">
                                 <i class="fas fa-paperclip text-primary me-1"></i>
                                 <span class="file-name-text small fw-bold"></span>
-                                <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('propiedad')"></i>
+                                <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('propiedad')"></i>
                             </div>
                         </div>
                         <label for="file_propiedad" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
@@ -616,11 +623,12 @@
                         </span>
                     </div>
                     <div class="file-upload-wrapper text-end">
+                        <input type="hidden" name="delete_finiquito" id="delete_finiquito" value="0">
                         <div class="file-preview-container d-none mb-1" id="preview_finiquito">
                             <div class="file-preview-badge">
                                 <i class="fas fa-paperclip text-primary me-1"></i>
                                 <span class="file-name-text small fw-bold"></span>
-                                <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('finiquito')"></i>
+                                <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('finiquito')"></i>
                             </div>
                         </div>
                         <label for="file_finiquito" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
@@ -639,11 +647,12 @@
                         </span>
                     </div>
                     <div class="file-upload-wrapper text-end">
+                        <input type="hidden" name="delete_siniiga_doc" id="delete_siniiga_doc" value="0">
                         <div class="file-preview-container d-none mb-1" id="preview_siniiga_doc">
                             <div class="file-preview-badge">
                                 <i class="fas fa-paperclip text-primary me-1"></i>
                                 <span class="file-name-text small fw-bold"></span>
-                                <i class="fas fa-times-circle remove-file" onclick="eliminarArchivo('siniiga_doc')"></i>
+                                <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('siniiga_doc')"></i>
                             </div>
                         </div>
                         <label for="file_siniiga_doc" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
@@ -737,45 +746,23 @@ $(document).ready(function() {
     function getDatoFinal(reg, campoBuscado, json) {
         const nombreFisico = `${reg.nombre || ''} ${reg.apellido_paterno || ''} ${reg.apellido_materno || ''}`.trim();
         const mapaFisico = {
-            "folio": reg.folio,
-            "curp": reg.curp,
-            "rfc": reg.rfc,
-            "nombre_productor": nombreFisico,
-            "pueblo_colonia": reg.colonia_nombre,
-            "superficie_prod": reg.superficie_total,
-            "fase_proceso": reg.fase_proceso,
-            "tipo_produccion": reg.actividad_principal,
-            "grado_estudios": reg.escolaridad,
-            "ocupacion": reg.ocupacion,
-            "estado_civil": reg.estado_civil,
-            "calle_numero": reg.calle,
-            "cp": reg.codigo_postal,
-            "tipo_id": reg.tipo_id,
-            "numero_id": reg.numero_id,
-            "tiene_discapacidad": reg.tiene_discapacidad,
-            "cual_discapacidad": reg.cual_discapacidad,
-            "grupo_etnico": reg.grupo_etnico,
-            "grupo_etnico_cual": reg.grupo_etnico_cual,
-            "tel_particular": reg.tel_particular,
-            "tel_casa": reg.tel_casa,
-            "tel_recados": reg.tel_familiar,
-            "linea_ayuda": reg.linea_ayuda,
-            "siniiga_status": reg.registro_siniiga,
-            "num_total_predios": reg.num_total_predios,
-            "tipo_documento_prop": reg.tipo_documento_propiedad,
-            "pueblo_colonia_up": reg.pueblo_colonia_up,
-            "parajes": reg.parajes,
-            "tenencia_tierra": reg.tenencia_tierra,
-            "cultivo_principal": reg.especie_cultivo_principal,
-            "num_animales": reg.numero_cabezas_colmenas,
-            "check_solicitud": reg.check_solicitud,
-            "check_identidad": reg.check_identidad,
-            "check_domicilio": reg.check_domicilio,
-            "check_curp_doc": reg.check_curp_doc,
-            "check_rfc_doc": reg.check_rfc_doc,
-            "check_manifiesto": reg.check_manifiesto,
-            "check_propiedad": reg.check_propiedad,
-            "check_finiquito": reg.check_finiquito,
+            "folio": reg.folio, "curp": reg.curp, "rfc": reg.rfc, "nombre_productor": nombreFisico,
+            "pueblo_colonia": reg.colonia_nombre, "superficie_prod": reg.superficie_total,
+            "fase_proceso": reg.fase_proceso, "tipo_produccion": reg.actividad_principal,
+            "grado_estudios": reg.escolaridad, "ocupacion": reg.ocupacion, "estado_civil": reg.estado_civil,
+            "calle_numero": reg.calle, "cp": reg.codigo_postal, "tipo_id": reg.tipo_id,
+            "numero_id": reg.numero_id, "tiene_discapacidad": reg.tiene_discapacidad,
+            "cual_discapacidad": reg.cual_discapacidad, "grupo_etnico": reg.grupo_etnico,
+            "grupo_etnico_cual": reg.grupo_etnico_cual, "tel_particular": reg.tel_particular,
+            "tel_casa": reg.tel_casa, "tel_recados": reg.tel_familiar, "linea_ayuda": reg.linea_ayuda,
+            "siniiga_status": reg.registro_siniiga, "num_total_predios": reg.num_total_predios,
+            "tipo_documento_prop": reg.tipo_documento_propiedad, "pueblo_colonia_up": reg.pueblo_colonia_up,
+            "parajes": reg.parajes, "tenencia_tierra": reg.tenencia_tierra,
+            "cultivo_principal": reg.especie_cultivo_principal, "num_animales": reg.numero_cabezas_colmenas,
+            "check_solicitud": reg.check_solicitud, "check_identidad": reg.check_identidad,
+            "check_domicilio": reg.check_domicilio, "check_curp_doc": reg.check_curp_doc,
+            "check_rfc_doc": reg.check_rfc_doc, "check_manifiesto": reg.check_manifiesto,
+            "check_propiedad": reg.check_propiedad, "check_finiquito": reg.check_finiquito,
             "check_siniiga_doc": reg.check_siniiga_doc
         };
 
@@ -811,8 +798,6 @@ $(document).ready(function() {
 
         items.forEach(e => {
             const faseLimpia = (e.fase_proceso || 'EMPADRONADO').replace(/_/g, ' ');
-            
-            // ✅ Lógica de Adán: Solo se libera el PDF si NO está en EMPADRONADO
             const pdfLiberado = e.fase_proceso && e.fase_proceso !== 'EMPADRONADO';
 
             tbody.append(`
@@ -826,10 +811,9 @@ $(document).ready(function() {
                     <td class="text-center fw-bold text-secondary">${parseFloat(e.superficie_total || 0).toFixed(2)} ha</td>
                     <td class="text-center">
                         <button onclick="abrirEdicion(${e.id})" class="btn btn-sm btn-guinda rounded-circle shadow-sm me-1" title="Editar"><i class="fas fa-user-edit"></i></button>
-                        
                         ${pdfLiberado ? 
                             `<a href="<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${e.id}" target="_blank" class="btn btn-sm btn-outline-danger rounded-circle shadow-sm" title="Descargar PDF"><i class="fas fa-file-pdf"></i></a>` : 
-                            `<button class="btn btn-sm btn-light rounded-circle text-muted shadow-none" style="cursor:not-allowed;" title="PDF bloqueado: Capture datos para liberar" disabled><i class="fas fa-file-pdf"></i></button>`
+                            `<button class="btn btn-sm btn-light rounded-circle text-muted shadow-none" style="cursor:not-allowed;" title="Falta captura" disabled><i class="fas fa-file-pdf"></i></button>`
                         }
                     </td>
                 </tr>
@@ -842,29 +826,14 @@ $(document).ready(function() {
     // ==========================================
     // 4. LÓGICA DEL MODAL
     // ==========================================
-    window.controlarDependencias = function() {
-        if ($("#in_tiene_discap").val() === "SI") {
-            $("#in_cual_discap").prop("disabled", false).removeClass("bg-light");
-        } else {
-            $("#in_cual_discap").val("NA").prop("disabled", true).addClass("bg-light");
-        }
-        const grupoEtnico = $("#in_grupo_etnico_edit").val();
-        if (grupoEtnico === "SI") {
-            $("#in_grupo_cual").prop("disabled", false).removeClass("bg-light");
-        } else {
-            $("#in_grupo_cual").val("NA").prop("disabled", true).addClass("bg-light");
-        }
-    };
-
-    $(document).on("change", "#in_tiene_discap, #in_grupo_etnico_edit", window.controlarDependencias);
-
     window.abrirEdicion = function(id) {
         const reg = rawData.find(i => i.id == id);
         if (!reg) return;
         const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-        // 1. Resetear Formulario y UI
+        // Reset Form y marcadores de borrado
         $("#formCaptura")[0].reset();
+        $('input[name^="delete_"]').val('0'); 
         $(".file-preview-container").addClass('d-none');
         $(".doc-row").css('background-color', '');
         $(".btn-upload").html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR');
@@ -872,17 +841,13 @@ $(document).ready(function() {
         $("#reg_id").val(reg.id);
         $("#spanFolio").text(reg.folio || 'S/F');
         
-        // 2. Liberar PDF en el modal si corresponde
         const pdfLiberado = reg.fase_proceso && reg.fase_proceso !== 'EMPADRONADO';
         if (pdfLiberado) {
-            $("#btnDescargarPDF")
-                .removeClass("d-none")
-                .attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
+            $("#btnDescargarPDF").removeClass("d-none").attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
         } else {
             $("#btnDescargarPDF").addClass("d-none");
         }
 
-        // 3. Llenado de Identidad
         const fullNombre = getDatoFinal(reg, "nombre_productor", json);
         const seg = segmentarNombreCompleto(fullNombre);
         $("#in_nombre_productor").val(reg.nombre || seg.nombres); 
@@ -891,12 +856,10 @@ $(document).ready(function() {
         $("#in_curp_edit").val(reg.curp);
         $("#in_rfc").val(reg.rfc);
 
-        // 4. Llenado Masivo
         $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
             const el = $(this);
             const name = el.attr('name');
-            const excluidos = ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'];
-            if (!name || excluidos.includes(name) || el.attr('type') === 'file') return;
+            if (!name || ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp'].includes(name) || el.attr('type') === 'file') return;
 
             const valor = getDatoFinal(reg, name, json);
             if (valor !== undefined && valor !== "") {
@@ -908,7 +871,7 @@ $(document).ready(function() {
             }
         });
 
-        // 5. RECUPERACIÓN DE ARCHIVOS
+        // Recuperación de Expediente Digital
         fetch(`<?php echo URLROOT; ?>/Captura/verificarArchivos/${id}`)
             .then(res => res.json())
             .then(archivos => {
@@ -933,7 +896,7 @@ $(document).ready(function() {
                     }
                 });
             })
-            .catch(err => console.error("Error al recuperar expediente digital:", err));
+            .catch(err => console.error("Error en archivos:", err));
 
         renderTabResumen(reg, json);
         window.controlarDependencias(); 
@@ -948,18 +911,13 @@ $(document).ready(function() {
         const totalPages = Math.ceil(filteredData.length / pageSize);
         const container = $("#paginationControls").empty();
         if (totalPages <= 1) return;
-
         const delta = 2;
         const range = [];
         const rangeWithDots = [];
         let l;
-
         for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
-                range.push(i);
-            }
+            if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) { range.push(i); }
         }
-
         for (let i of range) {
             if (l) {
                 if (i - l === 2) rangeWithDots.push(l + 1);
@@ -968,67 +926,51 @@ $(document).ready(function() {
             rangeWithDots.push(i);
             l = i;
         }
-
         container.append(`<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link shadow-sm" href="#" data-page="${currentPage - 1}">&laquo;</a></li>`);
-
         rangeWithDots.forEach(i => {
             if (i === '...') container.append(`<li class="page-item disabled"><span class="page-link border-0">...</span></li>`);
             else container.append(`<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link shadow-sm" href="#" data-page="${i}">${i}</a></li>`);
         });
-
         container.append(`<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link shadow-sm" href="#" data-page="${currentPage + 1}">&raquo;</a></li>`);
-
         container.find('a').on('click', function(e) {
             e.preventDefault();
             const page = parseInt($(this).attr('data-page'));
-            if (page >= 1 && page <= totalPages) {
-                renderTable(page);
-                document.querySelector('.card-header').scrollIntoView({ behavior: 'smooth' });
-            }
+            if (page >= 1 && page <= totalPages) { renderTable(page); }
         });
     }
 
     $("#tablaSearch").on("keyup", function() {
         const val = $(this).val().toLowerCase().trim();
-        if (val === "") filteredData = [...rawData];
-        else {
-            filteredData = rawData.filter(e => {
-                const nombreCompleto = `${e.nombre || ''} ${e.apellido_paterno || ''} ${e.apellido_materno || ''}`.toLowerCase();
-                return nombreCompleto.includes(val) || (e.folio || "").toLowerCase().includes(val) || (e.curp || "").toLowerCase().includes(val);
-            });
-        }
+        filteredData = (val === "") ? [...rawData] : rawData.filter(e => {
+            const nom = `${e.nombre || ''} ${e.apellido_paterno || ''} ${e.apellido_materno || ''}`.toLowerCase();
+            return nom.includes(val) || (e.folio || "").toLowerCase().includes(val) || (e.curp || "").toLowerCase().includes(val);
+        });
         renderTable(1);
     });
 
     // ==========================================
-    // 6. RESUMEN Y MANEJO DE FILES UI
+    // 6. RESUMEN Y GESTIÓN DE ARCHIVOS (UI)
     // ==========================================
     function renderTabResumen(reg, json) {
         const $resumen = $("#resumenCaptura").empty();
         const config = {
-            "1. Registro y Control": ["tecnico_nombre", "folio", "fase_proceso"],
-            "2. Identidad Productor": ["nombre_productor", "curp", "rfc", "sexo", "fecha_nacimiento", "estado_civil", "grado_estudios"],
-            "3. Ubicación y Contacto": ["calle_numero", "pueblo_colonia", "cp", "latitud", "longitud", "tel_particular", "tel_recados", "email"],
-            "4. Perfil Social": ["ocupacion", "tiempo_residencia", "tiempo_residencia_cdmx", "dependientes_economicos", "servicios_salud", "grupo_etnico"],
-            "5. Vivienda": ["material_pisos", "combustible_cocina", "bienes_vivienda", "tipo_agua"],
-            "6. Datos Técnicos y Producción": ["situacion_unidad", "tipo_produccion", "cats_agricola", "detalle_hortalizas", "superficie_prod", "volumen_prod", "unidad_medida", "otra_unidad_texto"],
-            "7. Economía y Mercado": ["ingreso_mensual", "dependencia_economica", "destino_produccion", "financiamiento", "insumos_agricolas", "maquinaria", "problema_principal", "dificultades_comercializacion"],
-            "8. Aspectos Sociales y Cierre": ["participacion_mujeres", "nuevas_generaciones", "capacitaciones_deseadas", "observaciones"]
+            "1. Registro": ["tecnico_nombre", "folio", "fase_proceso"],
+            "2. Identidad": ["nombre_productor", "curp", "rfc", "sexo", "grado_estudios"],
+            "3. Ubicación": ["calle_numero", "pueblo_colonia", "cp", "tel_particular"],
+            "4. Perfil": ["ocupacion", "grupo_etnico"],
+            "5. Producción": ["tipo_produccion", "superficie_prod", "cultivo_principal"]
         };
-
         for (const [titulo, campos] of Object.entries(config)) {
-            let filas = "";
-            let tieneDatos = false;
+            let filas = ""; let tieneDatos = false;
             campos.forEach(c => {
                 let val = getDatoFinal(reg, c, json);
                 if (val && val !== "") {
                     tieneDatos = true;
-                    let displayVal = val.toString().toUpperCase().replace(/_/g, ' ');
-                    filas += `<tr><td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td><td class="fw-bold py-2 text-dark">${displayVal}</td></tr>`;
+                    filas += `<tr><td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td><td class="fw-bold py-2 text-dark small">${val.toString().toUpperCase()}</td></tr>`;
                 }
             });
             if (tieneDatos) {
-                $resumen.append(`<div class="col-md-6 mb-3"><div class="card h-100 border-0 shadow-sm" style="border-radius: 12px;"><div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small"><i class="fas fa-check-circle me-2 text-success"></i>${titulo}</div><div class="card-body p-0"><table class="table table-sm mb-0" style="font-size:0.75rem;"><tbody>${filas}</tbody></table></div></div></div>`);
+                $resumen.append(`<div class="col-md-6 mb-3"><div class="card h-100 border-0 shadow-sm"><div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small">${titulo}</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>${filas}</tbody></table></div></div></div>`);
             }
         }
     }
@@ -1037,29 +979,46 @@ $(document).ready(function() {
         const input = this;
         const suffix = input.id.replace('file_', '');
         const container = $(`#preview_${suffix}`);
-        const checkbox = $(input).closest('.doc-row').find('.doc-check');
-
         if (input.files && input.files[0]) {
-            const fileName = input.files[0].name;
-            container.find('.file-name-text').text(fileName);
+            $(`#delete_${suffix}`).val('0'); // Cancelar marca de borrado si sube uno nuevo
+            container.find('.file-name-text').text(input.files[0].name);
             container.removeClass('d-none');
-            checkbox.prop('checked', true);
+            $(input).closest('.doc-row').find('.doc-check').prop('checked', true);
             $(input).closest('.doc-row').css('background-color', '#f0fff4');
         }
     });
 
     window.eliminarArchivo = function(suffix) {
-        const input = $(`#file_${suffix}`);
-        const container = $(`#preview_${suffix}`);
-        const row = input.closest('.doc-row');
-        input.val(''); 
-        container.addClass('d-none'); 
-        row.css('background-color', ''); 
+        Swal.fire({
+            title: '¿Quitar archivo?',
+            text: "Se marcará para eliminación física al guardar.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Sí, quitar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $(`#delete_${suffix}`).val('1'); // ACTIVAR MARCA DE BORRADO PARA PHP
+                $(`#file_${suffix}`).val(''); 
+                $(`#preview_${suffix}`).addClass('d-none');
+                $(`input[name="check_${suffix}"]`).prop('checked', false);
+                $(`#preview_${suffix}`).closest('.doc-row').css('background-color', '#fff5f5');
+                $(`label[for="file_${suffix}"]`).html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR');
+            }
+        });
+    };
+
+    window.controlarDependencias = function() {
+        const disc = $("#in_tiene_discap").val() === "SI";
+        $("#in_cual_discap").prop("disabled", !disc).toggleClass("bg-light", !disc);
+        const etnia = $("#in_grupo_etnico_edit").val() === "SI";
+        $("#in_grupo_cual").prop("disabled", !etnia).toggleClass("bg-light", !etnia);
     };
 });
 
 // ==========================================
-// 7. ACCIONES GLOBALES
+// 7. ACCIONES GLOBALES (GUARDAR)
 // ==========================================
 function confirmarGuardado() {
     $("#formCaptura input[type='text'], #formCaptura textarea").each(function() {
@@ -1069,9 +1028,7 @@ function confirmarGuardado() {
     const inputsDisabled = $("#formCaptura").find(':disabled');
     inputsDisabled.prop('disabled', false);
 
-    const formElement = document.getElementById('formCaptura');
-    const formData = new FormData(formElement);
-
+    const formData = new FormData(document.getElementById('formCaptura'));
     const checks = ['check_solicitud', 'check_identidad', 'check_domicilio', 'check_curp_doc', 'check_rfc_doc', 'check_manifiesto', 'check_propiedad', 'check_finiquito', 'check_siniiga_doc'];
     checks.forEach(c => { if (!formData.has(c)) formData.append(c, 0); });
 
@@ -1079,7 +1036,7 @@ function confirmarGuardado() {
 
     Swal.fire({
         title: '¿Guardar cambios?',
-        text: "Se actualizará el expediente oficial y se subirá la documentación en MAYÚSCULAS",
+        text: "Se actualizará el expediente y los archivos marcados se borrarán.",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#773357',
@@ -1093,12 +1050,12 @@ function confirmarGuardado() {
                 if(data.status === 'success') {
                     Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload());
                 } else {
-                    Swal.fire('Error', data.msg || 'No se pudo actualizar', 'error');
+                    Swal.fire('Error', data.msg || 'Falla en servidor', 'error');
                 }
             })
             .catch(err => {
                 console.error(err);
-                Swal.fire('Error', 'Falla de comunicación con el servidor', 'error');
+                Swal.fire('Error', 'Respuesta inesperada del servidor', 'error');
             });
         }
     });
@@ -1107,12 +1064,10 @@ function confirmarGuardado() {
 function confirmarSalida() {
     Swal.fire({
         title: '¿Cerrar sesión?',
-        text: "Cualquier cambio no guardado se perderá.",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#dc3545',
-        confirmButtonText: '<i class="fas fa-sign-out-alt me-2"></i>SÍ, SALIR',
-        cancelButtonText: 'CANCELAR',
+        confirmButtonText: 'SÍ, SALIR',
         reverseButtons: true
     }).then((result) => {
         if (result.isConfirmed) window.location.href = '<?php echo URLROOT; ?>/Auth/logout';
