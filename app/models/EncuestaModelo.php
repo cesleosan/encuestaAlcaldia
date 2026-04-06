@@ -13,17 +13,51 @@ class EncuestaModelo {
     }
 
     /**
-     * 1. Verificar si ya existe el CURP
+     * Llenado de la Tabla Principal y Buscador
      */
-    public function existeCurp($curp) {
-        $this->db->query('SELECT folio FROM encuestas WHERE curp = :curp');
-        $this->db->bind(':curp', $curp);
-        $row = $this->db->single();
-        return $row ? $row->folio : false;
+    public function getListadoMaestro() {
+        $this->db->query("SELECT e.*, u.nombre_completo as encuestador 
+                        FROM encuestas e
+                        LEFT JOIN usuarios u ON e.usuario_id = u.id 
+                        ORDER BY e.fecha_inicio DESC");
+        return $this->db->resultSet();
     }
 
     /**
-     * 2. Obtener registro completo por ID
+     * Datos para los cuadros de arriba (KPIs)
+     */
+    public function getDashboardKPIs() {
+        $this->db->query("SELECT 
+            COUNT(*) as total_encuestas,
+            IFNULL(SUM(superficie_total), 0) as total_hectareas,
+            COUNT(DISTINCT usuario_id) as tecnicos_activos,
+            (SELECT COUNT(*) FROM cat_colonias) as colonias_cobertura
+            FROM encuestas");
+        return $this->db->single();
+    }
+
+    /**
+     * Datos para las Gráficas
+     */
+    public function getConteoActividades() {
+        $this->db->query("SELECT actividad_principal, COUNT(*) as total FROM encuestas GROUP BY actividad_principal");
+        return $this->db->resultSet();
+    }
+
+    public function getProduccionPorColonia() {
+        $this->db->query("SELECT colonia_nombre, COUNT(*) as total, SUM(superficie_total) as hectareas 
+                        FROM encuestas WHERE colonia_nombre IS NOT NULL 
+                        GROUP BY colonia_nombre ORDER BY hectareas DESC LIMIT 10");
+        return $this->db->resultSet();
+    }
+
+    public function getTendenciaDiaria() {
+        $this->db->query("SELECT DATE(fecha_inicio) as fecha, COUNT(*) as total FROM encuestas GROUP BY DATE(fecha_inicio) ORDER BY fecha ASC");
+        return $this->db->resultSet();
+    }
+
+    /**
+     * Obtener un solo expediente para el Modal o PDF
      */
     public function getExpedienteCompleto($id) {
         $this->db->query("SELECT * FROM encuestas WHERE id = :id");
@@ -32,21 +66,18 @@ class EncuestaModelo {
     }
 
     /**
-     * 🔥 ACTUALIZACIÓN INTEGRAL (Sincronizada al 100% con MariaDB)
-     * Este método usa las llaves enviadas por el controlador corregido.
+     * 🔥 ACTUALIZACIÓN INTEGRAL (Sincronizada con el Controlador y MariaDB)
      */
     public function actualizarExpediente($data) {
         try {
             $sql = "UPDATE encuestas SET 
-                        -- Identidad
-                        curp = :curp, 
-                        rfc = :rfc,
                         nombre = :nombre, 
                         apellido_paterno = :apellido_paterno, 
                         apellido_materno = :apellido_materno, 
+                        curp = :curp, 
+                        rfc = :rfc,
                         tipo_id = :tipo_id,
                         numero_id = :numero_id,
-                        -- Perfil y Social
                         estado_civil = :estado_civil,
                         escolaridad = :escolaridad, 
                         ocupacion = :ocupacion,
@@ -54,14 +85,12 @@ class EncuestaModelo {
                         cual_discapacidad = :cual_discapacidad,
                         grupo_etnico = :grupo_etnico,
                         grupo_etnico_cual = :grupo_etnico_cual,
-                        -- Ubicación
                         calle = :calle,
                         colonia_nombre = :colonia_nombre,
                         codigo_postal = :codigo_postal,
                         tel_particular = :tel_particular,
                         tel_casa = :tel_casa,
                         tel_familiar = :tel_familiar,
-                        -- Producción
                         linea_ayuda = :linea_ayuda,
                         registro_siniiga = :registro_siniiga,
                         num_total_predios = :num_total_predios,
@@ -72,7 +101,6 @@ class EncuestaModelo {
                         tenencia_tierra = :tenencia_tierra,
                         especie_cultivo_principal = :especie_cultivo_principal,
                         numero_cabezas_colmenas = :numero_cabezas_colmenas,
-                        -- Bits de Cotejo
                         check_solicitud = :check_solicitud,
                         check_identidad = :check_identidad,
                         check_domicilio = :check_domicilio,
@@ -82,14 +110,13 @@ class EncuestaModelo {
                         check_propiedad = :check_propiedad,
                         check_finiquito = :check_finiquito,
                         check_siniiga_doc = :check_siniiga_doc,
-                        -- Control
                         fase_proceso = :fase_proceso,
                         respuestas_json = :respuestas_json
                     WHERE id = :id";
 
             $this->db->query($sql);
             
-            // Bindeo de Identidad (Llaves actualizadas)
+            // Bindeo de Identidad
             $this->db->bind(':id', $data['id']);
             $this->db->bind(':curp', $data['curp']);
             $this->db->bind(':rfc', $data['rfc']);
@@ -116,7 +143,7 @@ class EncuestaModelo {
             $this->db->bind(':tel_casa', $data['tel_casa']);
             $this->db->bind(':tel_familiar', $data['tel_familiar']);
 
-            // Bindeo de Datos Técnicos
+            // Bindeo de Técnicos
             $this->db->bind(':linea_ayuda', $data['linea_ayuda']);
             $this->db->bind(':registro_siniiga', $data['registro_siniiga']);
             $this->db->bind(':num_total_predios', $data['num_total_predios']);
@@ -139,7 +166,6 @@ class EncuestaModelo {
             $this->db->bind(':check_finiquito', $data['check_finiquito']);
             $this->db->bind(':check_siniiga_doc', $data['check_siniiga_doc']);
 
-            // Control y JSON
             $this->db->bind(':fase_proceso', $data['fase_proceso']);
             $this->db->bind(':respuestas_json', $data['json']);
 
@@ -151,26 +177,8 @@ class EncuestaModelo {
     }
 
     /**
-     * Métodos para Dashboards y Estadísticas
+     * Utilidades de Catalogo
      */
-    public function getListadoMaestro() {
-        $this->db->query("SELECT e.*, u.nombre_completo as encuestador 
-                        FROM encuestas e
-                        LEFT JOIN usuarios u ON e.usuario_id = u.id 
-                        ORDER BY e.fecha_inicio DESC");
-        return $this->db->resultSet();
-    }
-
-    public function getDashboardKPIs() {
-        $this->db->query("SELECT 
-            COUNT(*) as total_encuestas,
-            IFNULL(SUM(superficie_total), 0) as total_hectareas,
-            COUNT(DISTINCT usuario_id) as tecnicos_activos,
-            (SELECT COUNT(*) FROM cat_colonias) as colonias_cobertura
-            FROM encuestas");
-        return $this->db->single();
-    }
-
     public function getColoniasTlalpan($limit = 10) {
         $this->db->query("SELECT id, nombre_asentamiento AS asentamiento, codigo_postal FROM cat_colonias LIMIT :limit");
         $this->db->bind(':limit', $limit);
