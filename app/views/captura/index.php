@@ -831,7 +831,11 @@ $(document).ready(function() {
         position: 'top-end',
         showConfirmButton: false,
         timer: 3000,
-        timerProgressBar: true
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer)
+            toast.addEventListener('mouseleave', Swal.resumeTimer)
+        }
     });
 
     // ==========================================
@@ -860,7 +864,74 @@ $(document).ready(function() {
     cargarDatos();
 
     // ==========================================
-    // 2. RENDERIZADO DE TABLA Y BÚSQUEDA
+    // 2. UTILIDADES DE PROCESAMIENTO
+    // ==========================================
+    function segmentarNombreCompleto(nombreCompleto) {
+        if (!nombreCompleto || nombreCompleto === '---') return { nombres: '', paterno: '', materno: '' };
+        let palabras = nombreCompleto.trim().toUpperCase().split(/\s+/);
+        let result = { nombres: '', paterno: '', materno: '' };
+        if (palabras.length >= 3) {
+            result.materno = palabras.pop();
+            result.paterno = palabras.pop();
+            result.nombres = palabras.join(' '); 
+        } else if (palabras.length === 2) {
+            result.nombres = palabras[0];
+            result.paterno = palabras[1];
+        } else {
+            result.nombres = palabras[0];
+        }
+        return result;
+    }
+
+    function obtenerDatoFinal(reg, campoBuscado, json) {
+        const nombreFisico = `${reg.nombre || ''} ${reg.apellido_paterno || ''} ${reg.apellido_materno || ''}`.trim();
+        const mapaFisico = {
+            "folio": reg.folio, "curp": reg.curp, "rfc": reg.rfc, "nombre_productor": nombreFisico,
+            "nombre": reg.nombre, "apellido_paterno": reg.apellido_paterno, "apellido_materno": reg.apellido_materno,
+            "pueblo_colonia": reg.colonia_nombre, "superficie_prod": reg.superficie_total,
+            "fase_proceso": reg.fase_proceso, "tipo_produccion": reg.linea_ayuda,
+            "grado_estudios": reg.escolaridad, "ocupacion": reg.ocupacion, "estado_civil": reg.estado_civil,
+            "calle_numero": reg.calle, "cp": reg.codigo_postal, "tipo_id": reg.tipo_id,
+            "numero_id": reg.numero_id, "tiene_discapacidad": reg.tiene_discapacidad,
+            "cual_discapacidad": reg.cual_discapacidad, "grupo_etnico": reg.grupo_etnico,
+            "grupo_etnico_cual": reg.grupo_etnico_cual, "tel_particular": reg.tel_particular,
+            "tel_casa": reg.tel_casa, "tel_recados": reg.tel_familiar, "linea_ayuda": reg.linea_ayuda,
+            "siniiga_status": reg.registro_siniiga, "num_total_predios": reg.num_total_predios,
+            "tipo_documento_prop": reg.tipo_documento_propiedad, "pueblo_colonia_up": reg.pueblo_colonia_up,
+            "parajes": reg.parajes, "tenencia_tierra": reg.tenencia_tierra,
+            "cultivo_principal": reg.especie_cultivo_principal, "num_animales": reg.numero_cabezas_colmenas,
+            "latitud_verif": reg.latitud_verif, "longitud_verif": reg.longitud_verif
+        };
+
+        if (mapaFisico[campoBuscado] !== undefined && mapaFisico[campoBuscado] !== null && mapaFisico[campoBuscado] !== "") {
+            return limpiarResultado(mapaFisico[campoBuscado], campoBuscado);
+        }
+
+        if (!json) return limpiarResultado('', campoBuscado);
+
+        for (let seccion in json) {
+            let contenido = json[seccion];
+            if (seccion === "6" && contenido[campoBuscado]) return limpiarResultado(contenido[campoBuscado], campoBuscado);
+            if (Array.isArray(contenido)) {
+                const found = contenido.find(i => (i.name || '').replace('[]', '') === campoBuscado);
+                if (found) return limpiarResultado(found.value, campoBuscado);
+            } else if (seccion === campoBuscado) {
+                return limpiarResultado(contenido, campoBuscado);
+            }
+        }
+        return limpiarResultado('', campoBuscado);
+    }
+
+    function limpiarResultado(valor, campo) {
+        const numFields = ['latitud_verif', 'longitud_verif', 'latitud', 'longitud', 'superficie_prod', 'superficie_total', 'volumen_prod', 'num_total_predios', 'num_animales', 'cabezas'];
+        if (numFields.includes(campo)) {
+            return (valor === '---' || !valor || valor === "") ? "" : valor;
+        }
+        return (!valor || valor === "") ? "---" : valor;
+    }
+
+    // ==========================================
+    // 3. RENDERIZADO DE TABLA
     // ==========================================
     function renderTable(page) {
         currentPage = page;
@@ -876,7 +947,7 @@ $(document).ready(function() {
                 <tr>
                     <td class="ps-3 fw-bold text-guinda">${e.folio || 'S/F'}</td>
                     <td class="small">
-                        <div class="fw-bold text-dark">${e.nombre || ''} ${e.apellido_paterno || ''} ${e.apellido_materno || ''}</div>
+                        <div class="fw-bold text-dark">${e.nombre || ''} ${e.apellido_paterno || ''}</div>
                         <div class="text-muted" style="font-size: 0.7rem;">${e.curp || 'SIN CURP'}</div>
                     </td>
                     <td><span class="badge badge-fase fase-${e.fase_proceso || 'EMPADRONADO'}">${faseLimpia}</span></td>
@@ -934,72 +1005,6 @@ $(document).ready(function() {
     });
 
     // ==========================================
-    // 3. UTILERÍAS DE EXTRACCIÓN Y LIMPIEZA
-    // ==========================================
-    function obtenerDatoFinal(reg, campoBuscado, json) {
-        // Mapeo de columnas físicas reales
-        const mapaFisico = {
-            "folio": reg.folio, "curp": reg.curp, "rfc": reg.rfc,
-            "nombre": reg.nombre, "apellido_paterno": reg.apellido_paterno, "apellido_materno": reg.apellido_materno,
-            "nombre_productor": `${reg.nombre || ''} ${reg.apellido_paterno || ''} ${reg.apellido_materno || ''}`.trim(),
-            "pueblo_colonia": reg.colonia_nombre, "superficie_prod": reg.superficie_total, "superficie_total": reg.superficie_total,
-            "fase_proceso": reg.fase_proceso, "tipo_produccion": reg.linea_ayuda, "linea_ayuda": reg.linea_ayuda,
-            "grado_estudios": reg.escolaridad, "ocupacion": reg.ocupacion, "estado_civil": reg.estado_civil,
-            "calle_numero": reg.calle, "cp": reg.codigo_postal, "tipo_id": reg.tipo_id, "numero_id": reg.numero_id,
-            "tiene_discapacidad": reg.tiene_discapacidad, "cual_discapacidad": reg.cual_discapacidad,
-            "grupo_etnico": reg.grupo_etnico, "grupo_etnico_cual": reg.grupo_etnico_cual,
-            "tel_particular": reg.tel_particular, "tel_casa": reg.tel_casa, "tel_recados": reg.tel_familiar,
-            "siniiga_status": reg.registro_siniiga, "num_total_predios": reg.num_total_predios,
-            "tipo_documento_prop": reg.tipo_documento_propiedad, "pueblo_colonia_up": reg.pueblo_colonia_up,
-            "parajes": reg.parajes, "tenencia_tierra": reg.tenencia_tierra,
-            "cultivo_principal": reg.especie_cultivo_principal, "num_animales": reg.numero_cabezas_colmenas,
-            "latitud_verif": reg.latitud_verif, "longitud_verif": reg.longitud_verif
-        };
-
-        if (mapaFisico[campoBuscado] !== undefined && mapaFisico[campoBuscado] !== null && mapaFisico[campoBuscado] !== "") {
-            return limpiarResultado(mapaFisico[campoBuscado], campoBuscado);
-        }
-
-        if (!json) return limpiarResultado('', campoBuscado);
-        
-        for (let seccion in json) {
-            let contenido = json[seccion];
-            if (seccion === "6" && contenido[campoBuscado]) return limpiarResultado(contenido[campoBuscado], campoBuscado);
-            if (Array.isArray(contenido)) {
-                const found = contenido.find(i => (i.name || '').replace('[]', '') === campoBuscado);
-                if (found) return limpiarResultado(found.value, campoBuscado);
-            } else if (seccion === campoBuscado) {
-                return limpiarResultado(contenido, campoBuscado);
-            }
-        }
-        return limpiarResultado('', campoBuscado);
-    }
-
-    function limpiarResultado(valor, campo) {
-        const numFields = ['latitud_verif', 'longitud_verif', 'superficie_prod', 'superficie_total', 'volumen_prod', 'num_total_predios', 'num_animales', 'cabezas'];
-        if (numFields.includes(campo)) {
-            return (valor === '---' || !valor) ? "" : valor;
-        }
-        return (valor === undefined || valor === null || valor === "") ? "---" : valor;
-    }
-
-    function segmentarNombreCompleto(nombreCompleto) {
-        if (!nombreCompleto || nombreCompleto === '---') return { nombres: '', paterno: '', materno: '' };
-        let palabras = nombreCompleto.trim().toUpperCase().split(/\s+/);
-        let result = { nombres: '', paterno: '', materno: '' };
-        if (palabras.length >= 3) {
-            result.materno = palabras.pop();
-            result.paterno = palabras.pop();
-            result.nombres = palabras.join(' '); 
-        } else if (palabras.length === 2) {
-            result.nombres = palabras[0]; result.paterno = palabras[1];
-        } else {
-            result.nombres = palabras[0];
-        }
-        return result;
-    }
-
-    // ==========================================
     // 4. LÓGICA DEL MODAL (ABRIR Y CARGAR)
     // ==========================================
     window.abrirEdicion = function(id) {
@@ -1020,6 +1025,15 @@ $(document).ready(function() {
         $("#reg_id").val(reg.id);
         $("#spanFolio").text(reg.folio || 'S/F');
         
+        // Lógica botón PDF
+        const pdfLiberado = reg.fase_proceso && reg.fase_proceso !== 'EMPADRONADO';
+        if (pdfLiberado) {
+            $("#btnDescargarPDF").removeClass("d-none").attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
+        } else {
+            $("#btnDescargarPDF").addClass("d-none");
+        }
+
+        // Carga Identidad
         const fullNombre = obtenerDatoFinal(reg, "nombre_productor", json);
         const seg = segmentarNombreCompleto(fullNombre);
         $("#in_nombre_productor").val(reg.nombre || seg.nombres); 
@@ -1032,12 +1046,12 @@ $(document).ready(function() {
         $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
             const el = $(this);
             const name = el.attr('name');
-            if (!name || ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp', 'tipo_produccion'].includes(name) || el.attr('type') === 'file' || name.startsWith('check_')) return;
+            if (!name || ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp', 'tipo_produccion', 'latitud_verif', 'longitud_verif'].includes(name) || el.attr('type') === 'file' || name.startsWith('check_')) return;
             const valor = obtenerDatoFinal(reg, name, json);
             if (valor !== undefined && valor !== "" && valor !== "---") { el.val(valor); }
         });
 
-        // Línea de Ayuda Especial
+        // Línea de Ayuda
         const valProd = obtenerDatoFinal(reg, "tipo_produccion", json);
         $("#origen_produccion_text").text(valProd || 'No definido'); 
         if (valProd && valProd !== "---") {
@@ -1054,7 +1068,7 @@ $(document).ready(function() {
         $("#in_lat_verif").val(obtenerDatoFinal(reg, "latitud_verif", json));
         $("#in_lon_verif").val(obtenerDatoFinal(reg, "longitud_verif", json));
 
-        // Checks Cotejo
+        // Checks Documentos
         ['solicitud', 'identidad', 'domicilio', 'curp_doc', 'rfc_doc', 'manifiesto', 'propiedad', 'finiquito', 'siniiga_doc'].forEach(c => {
             $(`input[name="check_${c}"]`).prop('checked', parseInt(reg['check_' + c]) === 1);
         });
@@ -1141,7 +1155,7 @@ $(document).ready(function() {
 });
 
 // ==========================================
-// 6. ACCIÓN DE GUARDADO FINAL
+// 6. ACCIÓN DE GUARDADO FINAL (CORREGIDA)
 // ==========================================
 function confirmarGuardado() {
     const lineaAyuda = $("#in_tipo_produccion").val();
@@ -1150,12 +1164,25 @@ function confirmarGuardado() {
         return;
     }
 
-    $("#formCaptura input[type='text'], #formCaptura textarea").each(function() { $(this).val($(this).val().toUpperCase()); });
+    // Mayúsculas
+    $("#formCaptura input[type='text'], #formCaptura textarea").each(function() { 
+        $(this).val($(this).val().toUpperCase()); 
+    });
     
     const disabledFields = $("#formCaptura").find(':disabled').prop('disabled', false);
     const formData = new FormData(document.getElementById('formCaptura'));
     
-    ['check_solicitud', 'check_identidad', 'check_domicilio', 'check_curp_doc', 'check_rfc_doc', 'check_manifiesto', 'check_propiedad', 'check_finiquito', 'check_siniiga_doc'].forEach(c => {
+    // BLINDAJE PARA CAMPOS NUMÉRICOS (Evita error 1366 de MariaDB)
+    const numericFields = ['superficie_prod', 'num_total_predios', 'num_animales', 'volumen_prod', 'latitud_verif', 'longitud_verif'];
+    numericFields.forEach(f => {
+        if (!formData.get(f) || formData.get(f).trim() === "" || formData.get(f) === "---") {
+            formData.set(f, "0");
+        }
+    });
+
+    // Checkboxes
+    const listChecks = ['check_solicitud', 'check_identidad', 'check_domicilio', 'check_curp_doc', 'check_rfc_doc', 'check_manifiesto', 'check_propiedad', 'check_finiquito', 'check_siniiga_doc'];
+    listChecks.forEach(c => {
         formData.set(c, $(`input[name="${c}"]`).is(':checked') ? 1 : 0);
     });
     
@@ -1176,6 +1203,8 @@ function confirmarGuardado() {
 }
 
 function confirmarSalida() {
-    Swal.fire({ title: '¿Salir?', icon: 'warning', showCancelButton: true, confirmButtonText: 'SÍ' }).then((r) => { if (r.isConfirmed) window.location.href = '<?php echo URLROOT; ?>/Auth/logout'; });
+    Swal.fire({ title: '¿Salir?', icon: 'warning', showCancelButton: true, confirmButtonText: 'SÍ' }).then((r) => { 
+        if (r.isConfirmed) window.location.href = '<?php echo URLROOT; ?>/Auth/logout'; 
+    });
 }
 </script>
