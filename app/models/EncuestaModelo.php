@@ -328,6 +328,20 @@ public function getEvidencias($encuestaId) {
     return $this->db->resultSet();
 }
 
+// Obtener los datos de una sola evidencia
+public function getEvidenciaById($id) {
+    $this->db->query("SELECT ruta_archivo FROM encuesta_evidencias WHERE id = :id");
+    $this->db->bind(':id', $id);
+    return $this->db->single();
+}
+
+// Borrar el registro de la tabla
+public function eliminarEvidenciaRow($id) {
+    $this->db->query("DELETE FROM encuesta_evidencias WHERE id = :id");
+    $this->db->bind(':id', $id);
+    return $this->db->execute();
+}
+
 public function guardarEvidenciaFoto($encuestaId, $ruta) {
         try {
             $this->db->query("INSERT INTO encuesta_evidencias (encuesta_id, ruta_archivo) 

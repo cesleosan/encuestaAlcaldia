@@ -240,4 +240,35 @@ public function getFotosEvidencia($id) {
     // 4. Detener la ejecución de PHP aquí mismo
     exit;
 }
+
+public function eliminarEvidencia($fotoId) {
+    // Limpieza de salida para evitar errores de JSON
+    if (ob_get_length()) ob_clean();
+    header('Content-Type: application/json');
+
+    try {
+        // 1. Pedir al modelo la información de la foto
+        $foto = $this->encuestaModel->getEvidenciaById($fotoId);
+
+        if ($foto) {
+            // 2. Borrar archivo físico del servidor
+            $rutaFisica = PUBROOT . '/' . $foto->ruta_archivo;
+            if (file_exists($rutaFisica)) {
+                unlink($rutaFisica);
+            }
+
+            // 3. Pedir al modelo que borre el registro en la BD
+            if ($this->encuestaModel->eliminarEvidenciaRow($fotoId)) {
+                echo json_encode(['status' => 'success', 'msg' => 'Evidencia eliminada']);
+            } else {
+                throw new Exception("Error al eliminar el registro de la base de datos");
+            }
+        } else {
+            throw new Exception("La evidencia no existe");
+        }
+    } catch (Exception $e) {
+        echo json_encode(['status' => 'error', 'msg' => $e->getMessage()]);
+    }
+    exit;
+}
 }

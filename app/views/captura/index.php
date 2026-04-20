@@ -170,6 +170,46 @@
     background: var(--guinda);
     color: white;
 }
+.foto-evidencia-wrapper {
+    position: relative;
+    aspect-ratio: 1/1;
+    overflow: hidden;
+    border-radius: 10px;
+    border: 2px solid #ddd;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    background: #000;
+}
+
+.foto-evidencia-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.3s;
+}
+
+.btn-eliminar-foto {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(220, 53, 69, 0.9); /* Rojo semitransparente */
+    color: white;
+    border: 1px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    z-index: 20;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.btn-eliminar-foto:hover {
+    background: #dc3545;
+    transform: scale(1.1);
+}
 </style>
 <div class="container-fluid py-4">
     <div class="row mb-4">
@@ -1104,12 +1144,16 @@ window.abrirEdicion = function(id) {
             if (fotos && fotos.length > 0) {
                 fotos.forEach(foto => {
                     galeriaEvidencias.append(`
-                        <div class="col-4 col-md-3 mb-2">
-                            <div class="foto-evidencia-wrapper" style="position:relative; aspect-ratio:1/1; overflow:hidden; border-radius:10px; border:2px solid var(--guinda);">
+                        <div class="col-4 col-md-3 mb-2 foto-item-db" id="evidencia_row_${foto.id}">
+                            <div class="foto-evidencia-wrapper">
+                                <button type="button" class="btn-eliminar-foto" onclick="borrarEvidencia(${foto.id})" title="Eliminar foto permanentemente">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                
                                 <a href="${foto.url}" target="_blank">
-                                    <img src="${foto.url}" class="w-100 h-100" style="object-fit:cover;">
+                                    <img src="${foto.url}" class="w-100 h-100">
                                 </a>
-                                <div class="bg-guinda text-white text-center position-absolute bottom-0 w-100" style="font-size:9px; opacity:0.9; padding:2px 0;">GUARDADA</div>
+                                <div class="bg-guinda text-white text-center position-absolute bottom-0 w-100" style="font-size:9px; padding:2px 0; opacity:0.8;">GUARDADA</div>
                             </div>
                         </div>
                     `);
@@ -1127,6 +1171,47 @@ window.abrirEdicion = function(id) {
     window.controlarDependencias(); 
     bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
     $("#modalEdicion").modal('show');
+};
+window.borrarEvidencia = function(fotoId) {
+    Swal.fire({
+        title: '¿Eliminar evidencia?',
+        text: "Esta acción borrará la foto permanentemente del servidor.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, borrar',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Animación de carga
+            $(`#evidencia_row_${fotoId}`).css('opacity', '0.5');
+
+            fetch(`<?php echo URLROOT; ?>/Captura/eliminarEvidencia/${fotoId}`, {
+                method: 'POST'
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    $(`#evidencia_row_${fotoId}`).fadeOut(300, function() { 
+                        $(this).remove(); 
+                        if ($("#galeria_evidencias").children().length === 0) {
+                            $("#galeria_evidencias").html(`<div class="col-12 text-center py-5 text-muted empty-msg"><i class="fas fa-images fa-3x mb-2 opacity-25"></i><p class="small mb-0">No hay fotos capturadas.</p></div>`);
+                        }
+                    });
+                    Toast.fire({ icon: 'success', title: 'Foto eliminada' });
+                } else {
+                    $(`#evidencia_row_${fotoId}`).css('opacity', '1');
+                    Swal.fire('Error', data.msg, 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
+            });
+        }
+    });
 };
 
     function renderTabResumen(reg, json) {
