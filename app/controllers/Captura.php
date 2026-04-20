@@ -176,37 +176,30 @@ $lon_verif = filter_var($_POST['longitud_verif'], FILTER_SANITIZE_NUMBER_FLOAT, 
         }
     }
 }
-// En app/controllers/Captura.php
-public function getFotosEvidencia($id) {
-    $fotos = $this->encuestaModel->getEvidencias($id);
-    $data = [];
-    foreach ($fotos as $f) {
-        $data[] = [
-            'id' => $f->id,
-            'url' => URLROOT . '/' . $f->ruta_archivo
-        ];
-    }
-    echo json_encode($data);
-}
-    public function verificarArchivos($id) {
-        $registro = $this->encuestaModel->getExpedienteCompleto($id);
-        if (!$registro) { echo json_encode([]); return; }
-        $folioCarpeta = str_replace(['/', ' ', '\\'], '-', $registro->folio);
-        $rutaFisica = PUBROOT . '/uploads/expedientes/' . $folioCarpeta;
-        $urlBase = URLROOT . '/uploads/expedientes/' . $folioCarpeta;
-        $archivosEncontrados = [];
-        if (is_dir($rutaFisica)) {
-            $archivos = scandir($rutaFisica);
-            foreach ($archivos as $archivo) {
-                if ($archivo !== '.' && $archivo !== '..') {
-                    $archivosEncontrados[] = [
-                        'nombre' => $archivo,
-                        'url'    => $urlBase . '/' . $archivo,
-                        'tipo'   => pathinfo($archivo, PATHINFO_FILENAME)
-                    ];
-                }
+
+// En Captura.php
+public function verificarArchivos($id) {
+    $registro = $this->encuestaModel->getEncuestaById($id);
+    $folioCarpeta = str_replace(['/', ' ', '\\'], '-', $registro->folio);
+    $ruta = PUBROOT . '/uploads/expedientes/' . $folioCarpeta;
+    
+    $archivos = [];
+    if (is_dir($ruta)) {
+        $files = scandir($ruta);
+        foreach ($files as $f) {
+            if ($f !== '.' && $f !== '..') {
+                // Esta lógica extrae el tipo (SOLICITUD, CURP, etc) del nombre del archivo
+                // asumiendo que tus archivos se llaman FOLIO_TIPO.ext
+                $partes = explode('_', pathinfo($f, PATHINFO_FILENAME));
+                $tipo = end($partes); 
+
+                $archivos[] = [
+                    'tipo' => $tipo,
+                    'url'  => URLROOT . '/uploads/expedientes/' . $folioCarpeta . '/' . $f
+                ];
             }
         }
-        echo json_encode($archivosEncontrados);
     }
+    echo json_encode($archivos);
+}
 }

@@ -1008,27 +1008,26 @@ $(document).ready(function() {
     // 4. LÓGICA DEL MODAL (ABRIR Y CARGAR)
     // ==========================================
 window.abrirEdicion = function(id) {
-    // 1. Obtener datos del registro y parsear JSON
     const reg = rawData.find(i => i.id == id);
     if (!reg) return;
     const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-    // 2. Limpieza total y Reseteo de Formulario
+    // 1. Reset total del formulario y estilos
     $("#formCaptura")[0].reset();
     $('input[name^="delete_"]').val('0'); 
     $(".file-preview-container").addClass('d-none');
     $(".doc-row").css('background-color', '');
     $(".btn-upload").html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR');
     
-    // Limpieza de Pestaña 4 (Verificación)
+    // Limpieza Verificación
     $("#in_lat_verif, #in_lon_verif, #input_evidencias").val('');
     const galeriaEvidencias = $("#galeria_evidencias").empty();
 
-    // 3. Metadatos básicos
+    // 2. Carga de datos base
     $("#reg_id").val(reg.id);
     $("#spanFolio").text(reg.folio || 'S/F');
     
-    // 4. Lógica de impresión PDF
+    // Botón PDF
     const pdfLiberado = reg.fase_proceso && reg.fase_proceso !== 'EMPADRONADO';
     if (pdfLiberado) {
         $("#btnDescargarPDF").removeClass("d-none").attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
@@ -1036,7 +1035,7 @@ window.abrirEdicion = function(id) {
         $("#btnDescargarPDF").addClass("d-none");
     }
 
-    // 5. Carga de Identidad y Segmentación
+    // 3. Nombres e Identidad
     const fullNombre = obtenerDatoFinal(reg, "nombre_productor", json);
     const seg = segmentarNombreCompleto(fullNombre);
     $("#in_nombre_productor").val(reg.nombre || seg.nombres); 
@@ -1045,7 +1044,7 @@ window.abrirEdicion = function(id) {
     $("#in_curp_edit").val(reg.curp);
     $("#in_rfc").val(reg.rfc);
 
-    // 6. Llenado automático de inputs desde el JSON
+    // 4. Llenado de Inputs automáticos (evitando basura ---)
     $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
         const el = $(this);
         const name = el.attr('name');
@@ -1054,56 +1053,65 @@ window.abrirEdicion = function(id) {
         if (valor !== undefined && valor !== "" && valor !== "---") { el.val(valor); }
     });
 
-    // 7. Línea de Ayuda (Producción)
+    // 5. Línea de Ayuda y GPS
     const valProd = obtenerDatoFinal(reg, "tipo_produccion", json);
-    $("#origen_produccion_text").text(valProd || 'No definido'); 
-    const selectProd = $("#in_tipo_produccion");
     if (valProd && valProd !== "---") {
-        selectProd.removeClass("is-invalid border-danger");
-        if (valProd.includes(',')) {
-            selectProd.val("").addClass("is-invalid border-danger");
-            Toast.fire({ icon: 'warning', title: 'Elija la Línea de Ayuda principal.' });
-        } else {
-            selectProd.val(valProd.trim().toUpperCase());
-        }
+        $("#in_tipo_produccion").val(valProd.trim().toUpperCase()).removeClass("is-invalid");
     }
-
-    // 8. Coordenadas de Verificación
     $("#in_lat_verif").val(obtenerDatoFinal(reg, "latitud_verif", json));
     $("#in_lon_verif").val(obtenerDatoFinal(reg, "longitud_verif", json));
 
-    // 9. Sincronizar Checkboxes de Documentos (Base de Datos Física)
-    const checksDocs = ['solicitud', 'identidad', 'domicilio', 'curp_doc', 'rfc_doc', 'manifiesto', 'propiedad', 'finiquito', 'siniiga_doc'];
-    checksDocs.forEach(c => {
+    // 6. Marcar Checks según Base de Datos (Columnas Físicas)
+    const listadoDocs = ['solicitud', 'identidad', 'domicilio', 'curp_doc', 'rfc_doc', 'manifiesto', 'propiedad', 'finiquito', 'siniiga_doc'];
+    listadoDocs.forEach(c => {
         $(`input[name="check_${c}"]`).prop('checked', parseInt(reg['check_' + c]) === 1);
     });
 
-    // 10. CARGA AJAX: DOCUMENTACIÓN (Lo que se perdía)
+    // ================================================================
+    // 7. CARGA DE ARCHIVOS DE DOCUMENTACIÓN (Pestaña 3) - CORRECCIÓN VITAL
+    // ================================================================
     fetch(`<?php echo URLROOT; ?>/Captura/verificarArchivos/${id}`)
         .then(res => res.json())
         .then(archivos => {
+            console.log("Archivos encontrados:", archivos); // DEBUG PARA TI EN CONSOLA
+            
             archivos.forEach(file => {
-                // Normalizamos el tipo de archivo que viene del servidor (ej: "CURP" -> "curp_doc")
-                let tipoServidor = file.tipo.toUpperCase();
-                let mapaLocal = {
-                    'SOLICITUD': 'solicitud', 'IDENTIDAD': 'identidad', 'DOMICILIO': 'domicilio',
-                    'CURP': 'curp_doc', 'RFC': 'rfc_doc', 'MANIFIESTO': 'manifiesto',
-                    'PROPIEDAD': 'propiedad', 'FINIQUITO': 'finiquito', 'SINIIGA': 'siniiga_doc'
+                // Mapa para conectar el prefijo del archivo con el ID del HTML
+                const mapaDocs = {
+                    'SOLICITUD': 'solicitud',
+                    'IDENTIDAD': 'identidad',
+                    'DOMICILIO': 'domicilio',
+                    'CURP':      'curp_doc',    // El servidor manda CURP, el HTML tiene curp_doc
+                    'RFC':       'rfc_doc',     // El servidor manda RFC, el HTML tiene rfc_doc
+                    'MANIFIESTO':'manifiesto',
+                    'PROPIEDAD': 'propiedad',
+                    'FINIQUITO': 'finiquito',
+                    'SINIIGA':   'siniiga_doc'
                 };
-                
-                let idLocal = mapaLocal[tipoServidor];
-                const container = $(`#preview_${idLocal}`);
-                
-                if (container.length) {
-                    container.removeClass('d-none');
-                    container.find('.file-name-text').html(`<a href="${file.url}" target="_blank" class="text-primary fw-bold text-decoration-none small"><i class="fas fa-eye me-1"></i>VER ARCHIVO</a>`);
-                    $(`label[for="file_${idLocal}"]`).html('<i class="fas fa-sync me-1"></i> REEMPLAZAR');
-                    container.closest('.doc-row').css('background-color', '#f0faff');
+
+                const tipoMayus = file.tipo.toUpperCase();
+                const idHTML = mapaDocs[tipoMayus];
+
+                if (idHTML) {
+                    const container = $(`#preview_${idHTML}`);
+                    if (container.length) {
+                        container.removeClass('d-none');
+                        container.find('.file-name-text').html(`
+                            <a href="${file.url}" target="_blank" class="text-primary fw-bold text-decoration-none small">
+                                <i class="fas fa-eye me-1"></i> VER ARCHIVO ACTUAL
+                            </a>
+                        `);
+                        $(`label[for="file_${idHTML}"]`).html('<i class="fas fa-sync me-1"></i> REEMPLAZAR');
+                        container.closest('.doc-row').css('background-color', '#f0faff');
+                        // Asegurar que el check visual esté marcado si hay archivo
+                        $(`input[name="check_${idHTML}"]`).prop('checked', true);
+                    }
                 }
             });
-        });
+        })
+        .catch(err => console.error("Error al cargar documentos:", err));
 
-    // 11. CARGA AJAX: FOTOS DE EVIDENCIA (Verificación)
+    // 8. CARGA DE FOTOS DE EVIDENCIA (Pestaña 4)
     fetch(`<?php echo URLROOT; ?>/Captura/getFotosEvidencia/${id}`)
         .then(res => res.json())
         .then(fotos => {
@@ -1115,7 +1123,7 @@ window.abrirEdicion = function(id) {
                                 <a href="${foto.url}" target="_blank">
                                     <img src="${foto.url}" class="w-100 h-100" style="object-fit:cover;">
                                 </a>
-                                <div class="bg-guinda text-white text-center position-absolute bottom-0 w-100" style="font-size:9px; opacity:0.9; padding:2px 0;">GUARDADA</div>
+                                <div class="bg-guinda text-white text-center position-absolute bottom-0 w-100" style="font-size:9px; padding:2px 0;">GUARDADA</div>
                             </div>
                         </div>
                     `);
@@ -1125,7 +1133,7 @@ window.abrirEdicion = function(id) {
             }
         });
 
-    // 12. UI Final
+    // 9. Finalizar UI
     renderTabResumen(reg, json);
     window.controlarDependencias(); 
     bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
