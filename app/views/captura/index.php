@@ -1023,13 +1023,12 @@ window.abrirEdicion = function(id) {
     $("#in_lat_verif, #in_lon_verif, #input_evidencias").val('');
     const galeriaEvidencias = $("#galeria_evidencias").empty();
 
-    // 2. Carga de datos base
+    // 2. Metadatos
     $("#reg_id").val(reg.id);
     $("#spanFolio").text(reg.folio || 'S/F');
     
     // Botón PDF
-    const pdfLiberado = reg.fase_proceso && reg.fase_proceso !== 'EMPADRONADO';
-    if (pdfLiberado) {
+    if (reg.fase_proceso && reg.fase_proceso !== 'EMPADRONADO') {
         $("#btnDescargarPDF").removeClass("d-none").attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
     } else {
         $("#btnDescargarPDF").addClass("d-none");
@@ -1044,7 +1043,7 @@ window.abrirEdicion = function(id) {
     $("#in_curp_edit").val(reg.curp);
     $("#in_rfc").val(reg.rfc);
 
-    // 4. Llenado de Inputs automáticos (evitando basura ---)
+    // 4. Llenado de Inputs (Limpiando basura numéricas)
     $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
         const el = $(this);
         const name = el.attr('name');
@@ -1061,59 +1060,46 @@ window.abrirEdicion = function(id) {
     $("#in_lat_verif").val(obtenerDatoFinal(reg, "latitud_verif", json));
     $("#in_lon_verif").val(obtenerDatoFinal(reg, "longitud_verif", json));
 
-    // 6. Marcar Checks según Base de Datos (Columnas Físicas)
+    // 6. Marcar Checks de Documentos
     const listadoDocs = ['solicitud', 'identidad', 'domicilio', 'curp_doc', 'rfc_doc', 'manifiesto', 'propiedad', 'finiquito', 'siniiga_doc'];
     listadoDocs.forEach(c => {
         $(`input[name="check_${c}"]`).prop('checked', parseInt(reg['check_' + c]) === 1);
     });
 
-    // ================================================================
-    // 7. CARGA DE ARCHIVOS DE DOCUMENTACIÓN (Pestaña 3) - CORRECCIÓN VITAL
-    // ================================================================
+    // 7. CARGA DE DOCUMENTOS (Pestaña 3)
     fetch(`<?php echo URLROOT; ?>/Captura/verificarArchivos/${id}`)
         .then(res => res.json())
         .then(archivos => {
-            console.log("Archivos encontrados:", archivos); // DEBUG PARA TI EN CONSOLA
-            
             archivos.forEach(file => {
-                // Mapa para conectar el prefijo del archivo con el ID del HTML
                 const mapaDocs = {
-                    'SOLICITUD': 'solicitud',
-                    'IDENTIDAD': 'identidad',
-                    'DOMICILIO': 'domicilio',
-                    'CURP':      'curp_doc',    // El servidor manda CURP, el HTML tiene curp_doc
-                    'RFC':       'rfc_doc',     // El servidor manda RFC, el HTML tiene rfc_doc
-                    'MANIFIESTO':'manifiesto',
-                    'PROPIEDAD': 'propiedad',
-                    'FINIQUITO': 'finiquito',
-                    'SINIIGA':   'siniiga_doc'
+                    'SOLICITUD': 'solicitud', 'IDENTIDAD': 'identidad', 'DOMICILIO': 'domicilio',
+                    'CURP': 'curp_doc', 'RFC': 'rfc_doc', 'MANIFIESTO':'manifiesto',
+                    'PROPIEDAD': 'propiedad', 'FINIQUITO': 'finiquito', 'SINIIGA': 'siniiga_doc'
                 };
-
-                const tipoMayus = file.tipo.toUpperCase();
-                const idHTML = mapaDocs[tipoMayus];
-
+                const idHTML = mapaDocs[file.tipo.toUpperCase()];
                 if (idHTML) {
                     const container = $(`#preview_${idHTML}`);
                     if (container.length) {
                         container.removeClass('d-none');
-                        container.find('.file-name-text').html(`
-                            <a href="${file.url}" target="_blank" class="text-primary fw-bold text-decoration-none small">
-                                <i class="fas fa-eye me-1"></i> VER ARCHIVO ACTUAL
-                            </a>
-                        `);
+                        container.find('.file-name-text').html(`<a href="${file.url}" target="_blank" class="text-primary fw-bold text-decoration-none small"><i class="fas fa-eye me-1"></i> VER ARCHIVO</a>`);
                         $(`label[for="file_${idHTML}"]`).html('<i class="fas fa-sync me-1"></i> REEMPLAZAR');
                         container.closest('.doc-row').css('background-color', '#f0faff');
-                        // Asegurar que el check visual esté marcado si hay archivo
                         $(`input[name="check_${idHTML}"]`).prop('checked', true);
                     }
                 }
             });
-        })
-        .catch(err => console.error("Error al cargar documentos:", err));
+        });
 
-    // 8. CARGA DE FOTOS DE EVIDENCIA (Pestaña 4)
+    // 8. CARGA DE FOTOS DE EVIDENCIA (Pestaña 4) - CON PROTECCIÓN CONTRA HTML
     fetch(`<?php echo URLROOT; ?>/Captura/getFotosEvidencia/${id}`)
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error("Respuesta del servidor no es OK");
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                throw new TypeError("El servidor mandó HTML en lugar de JSON. Revisa el controlador PHP.");
+            }
+            return res.json();
+        })
         .then(fotos => {
             if (fotos && fotos.length > 0) {
                 fotos.forEach(foto => {
@@ -1123,7 +1109,7 @@ window.abrirEdicion = function(id) {
                                 <a href="${foto.url}" target="_blank">
                                     <img src="${foto.url}" class="w-100 h-100" style="object-fit:cover;">
                                 </a>
-                                <div class="bg-guinda text-white text-center position-absolute bottom-0 w-100" style="font-size:9px; padding:2px 0;">GUARDADA</div>
+                                <div class="bg-guinda text-white text-center position-absolute bottom-0 w-100" style="font-size:9px; opacity:0.9; padding:2px 0;">GUARDADA</div>
                             </div>
                         </div>
                     `);
@@ -1131,9 +1117,12 @@ window.abrirEdicion = function(id) {
             } else {
                 galeriaEvidencias.html(`<div class="col-12 text-center py-5 text-muted empty-msg"><i class="fas fa-images fa-3x mb-2 opacity-25"></i><p class="small mb-0">No hay fotos capturadas.</p></div>`);
             }
+        })
+        .catch(err => {
+            console.error("Error en evidencias:", err);
+            galeriaEvidencias.html(`<div class="alert alert-warning small m-2">Error al cargar evidencias: ${err.message}</div>`);
         });
 
-    // 9. Finalizar UI
     renderTabResumen(reg, json);
     window.controlarDependencias(); 
     bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
