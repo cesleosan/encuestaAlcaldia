@@ -818,28 +818,24 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 $(document).ready(function() {
+    // ==========================================
+    // 0. GLOBALES Y CONFIGURACIÓN
+    // ==========================================
     let rawData = [];
     let filteredData = [];
     const pageSize = 10;
     let currentPage = 1;
 
-    // ==========================================
-    // 0. CONFIGURACIÓN DE NOTIFICACIONES
-    // ==========================================
     const Toast = Swal.mixin({
         toast: true,
         position: 'top-end',
         showConfirmButton: false,
         timer: 3000,
-        timerProgressBar: true,
-        didOpen: (toast) => {
-            toast.addEventListener('mouseenter', Swal.stopTimer)
-            toast.addEventListener('mouseleave', Swal.resumeTimer)
-        }
+        timerProgressBar: true
     });
 
     // ==========================================
-    // 1. CARGA INICIAL DE DATOS
+    // 1. CARGA DE DATOS Y KPIs
     // ==========================================
     function cargarDatos() {
         fetch('<?php echo URLROOT; ?>/Encuesta/getEstadisticas')
@@ -848,86 +844,23 @@ $(document).ready(function() {
                 rawData = data.maestro || [];
                 filteredData = [...rawData];
                 actualizarKPIs(rawData);
-                renderTable(1); // Empezamos siempre en la 1
+                renderTable(1);
             })
             .catch(err => console.error("Error al obtener datos:", err));
     }
 
+    function actualizarKPIs(data) {
+        $("#kpi-total").text(data.length);
+        $("#kpi-solicitudes").text(data.filter(i => i.fase_proceso === 'SOLICITUD_INGRESADA').length);
+        $("#kpi-pendientes").text(data.filter(i => i.fase_proceso === 'VALIDACION_DOCS').length);
+        $("#kpi-revision").text(data.filter(i => i.fase_proceso === 'EN_REVISION').length);
+        $("#kpi-aprobados").text(data.filter(i => i.fase_proceso === 'APROBADO').length);
+    }
+
     cargarDatos();
 
-function actualizarKPIs(data) {
-    $("#kpi-total").text(data.length);
-    
-    $("#kpi-solicitudes").text(data.filter(i => i.fase_proceso === 'SOLICITUD_INGRESADA').length);
-    
-    $("#kpi-pendientes").text(data.filter(i => i.fase_proceso === 'VALIDACION_DOCS').length);
-    
-    $("#kpi-revision").text(data.filter(i => i.fase_proceso === 'EN_REVISION').length);
-    
-    $("#kpi-aprobados").text(data.filter(i => i.fase_proceso === 'APROBADO').length);
-}
-
     // ==========================================
-    // 2. UTILIDADES DE PROCESAMIENTO
-    // ==========================================
-    function segmentarNombreCompleto(nombreCompleto) {
-        if (!nombreCompleto) return { nombres: '', paterno: '', materno: '' };
-        let palabras = nombreCompleto.trim().toUpperCase().split(/\s+/);
-        let result = { nombres: '', paterno: '', materno: '' };
-        if (palabras.length >= 3) {
-            result.materno = palabras.pop();
-            result.paterno = palabras.pop();
-            result.nombres = palabras.join(' '); 
-        } else if (palabras.length === 2) {
-            result.nombres = palabras[0];
-            result.paterno = palabras[1];
-        } else {
-            result.nombres = palabras[0];
-        }
-        return result;
-    }
-
-    function getDatoFinal(reg, campoBuscado, json) {
-        const nombreFisico = `${reg.nombre || ''} ${reg.apellido_paterno || ''} ${reg.apellido_materno || ''}`.trim();
-        const mapaFisico = {
-            "folio": reg.folio, "curp": reg.curp, "rfc": reg.rfc, "nombre_productor": nombreFisico,
-            "pueblo_colonia": reg.colonia_nombre, "superficie_prod": reg.superficie_total,
-            "fase_proceso": reg.fase_proceso, "tipo_produccion": reg.linea_ayuda,
-            "grado_estudios": reg.escolaridad, "ocupacion": reg.ocupacion, "estado_civil": reg.estado_civil,
-            "calle_numero": reg.calle, "cp": reg.codigo_postal, "tipo_id": reg.tipo_id,
-            "numero_id": reg.numero_id, "tiene_discapacidad": reg.tiene_discapacidad,
-            "cual_discapacidad": reg.cual_discapacidad, "grupo_etnico": reg.grupo_etnico,
-            "grupo_etnico_cual": reg.grupo_etnico_cual, "tel_particular": reg.tel_particular,
-            "tel_casa": reg.tel_casa, "tel_recados": reg.tel_familiar, "linea_ayuda": reg.linea_ayuda,
-            "siniiga_status": reg.registro_siniiga, "num_total_predios": reg.num_total_predios,
-            "tipo_documento_prop": reg.tipo_documento_propiedad, "pueblo_colonia_up": reg.pueblo_colonia_up,
-            "parajes": reg.parajes, "tenencia_tierra": reg.tenencia_tierra,
-            "cultivo_principal": reg.especie_cultivo_principal, "num_animales": reg.numero_cabezas_colmenas
-        };
-
-        if (mapaFisico[campoBuscado] !== undefined && mapaFisico[campoBuscado] !== null && mapaFisico[campoBuscado] !== "") {
-            return mapaFisico[campoBuscado];
-        }
-        if (!json) return '';
-        for (let seccion in json) {
-            let contenido = json[seccion];
-            if (seccion === "6" && contenido[campoBuscado]) return contenido[campoBuscado];
-            if (Array.isArray(contenido)) {
-                let resultados = [];
-                contenido.forEach(item => {
-                    let clean = item.name ? item.name.replace('[]', '') : '';
-                    if (clean === campoBuscado && item.value) resultados.push(item.value);
-                });
-                if (resultados.length > 0) return resultados.join(', ');
-            } else if (seccion === campoBuscado) {
-                return contenido;
-            }
-        }
-        return '';
-    }
-
-    // ==========================================
-    // 3. RENDERIZADO DE TABLA
+    // 2. RENDERIZADO DE TABLA Y BÚSQUEDA
     // ==========================================
     function renderTable(page) {
         currentPage = page;
@@ -961,237 +894,28 @@ function actualizarKPIs(data) {
         $("#tableInfo").html(`Mostrando <b>${items.length}</b> de <b>${filteredData.length}</b> registros`);
         renderPaginationUI();
     }
-function obtenerDatoFinal(reg, campoBuscado, json) {
-    // 1. Mapeo de columnas físicas reales de la tabla 'encuestas'
-    const mapaFisico = {
-        "tecnico_nombre": reg.encuestador,
-        "folio": reg.folio,
-        "curp": reg.curp,
-        "rfc": reg.rfc,
-        "nombre": reg.nombre,
-        "apellido_paterno": reg.apellido_paterno,
-        "apellido_materno": reg.apellido_materno,
-        "nombre_productor": `${reg.nombre || ''} ${reg.apellido_paterno || ''} ${reg.apellido_materno || ''}`.trim(),
-        "pueblo_colonia": reg.colonia_nombre,
-        "superficie_prod": reg.superficie_total,
-        "latitud_verif": reg.latitud_verif,
-        "longitud_verif": reg.longitud_verif,
-        "fase_proceso": reg.fase_proceso
-    };
 
-    // Si el campo existe en la tabla física y tiene contenido, lo devolvemos
-    if (mapaFisico[campoBuscado] !== undefined && mapaFisico[campoBuscado] !== null && mapaFisico[campoBuscado] !== "") {
-        return mapaFisico[campoBuscado];
-    }
-
-    // 2. Si no es físico, buscamos en el JSON
-    if (!json) return limpiarResultado('', campoBuscado);
-    
-    // Caso especial Sección 6 (Geolocalización/Dirección en el JSON original)
-    if (json["6"] && json["6"][campoBuscado]) {
-        return limpiarResultado(json["6"][campoBuscado], campoBuscado);
-    }
-
-    // Barrido por secciones del JSON (1, 2, 3... hasta 50)
-    for (let sec in json) {
-        let contenido = json[sec];
-        if (Array.isArray(contenido)) {
-            // Buscamos el objeto que tenga el atributo name coincidente
-            const found = contenido.find(i => i.name === campoBuscado || i.name === campoBuscado + '[]');
-            if (found) return limpiarResultado(found.value, campoBuscado);
-        } else if (typeof contenido === 'object' && contenido !== null) {
-            if (contenido[campoBuscado]) return limpiarResultado(contenido[campoBuscado], campoBuscado);
-        } else if (typeof contenido === 'string' && sec === campoBuscado) {
-            return limpiarResultado(contenido, campoBuscado);
-        }
-    }
-
-    return limpiarResultado('', campoBuscado);
-}
-
-/**
- * Función auxiliar para evitar que los campos numéricos lleven basura
- */
-function limpiarResultado(valor, campo) {
-    const camposNumericos = [
-        'latitud_verif', 'longitud_verif', 'latitud', 'longitud', 
-        'superficie_prod', 'volumen_prod', 'superficie_total', 
-        'num_total_predios', 'num_animales', 'cabezas'
-    ];
-
-    if (camposNumericos.includes(campo)) {
-        // Si es numérico y no hay valor o es el guion, devolver vacío para la BD
-        return (valor === '---' || !valor) ? "" : valor;
-    }
-
-    // Para campos de texto, si no hay nada, ponemos los guiones visuales
-    return (valor === undefined || valor === null || valor === "") ? "---" : valor;
-}
-    // ==========================================
-    // 4. LÓGICA DEL MODAL
-    // ==========================================
-    window.abrirEdicion = function(id) {
-    // 1. Localización de datos y parsing
-    const reg = rawData.find(i => i.id == id);
-    if (!reg) return;
-    const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
-
-    // 2. Limpieza profunda del formulario antes de cargar
-    $("#formCaptura")[0].reset();
-    $('input[name^="delete_"]').val('0'); 
-    $(".file-preview-container").addClass('d-none');
-    $(".doc-row").css('background-color', '');
-    $(".btn-upload").html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR');
-    
-    // --- NUEVO: Limpieza específica de la Pestaña de Verificación ---
-    $("#in_lat_verif").val(''); 
-    $("#in_lon_verif").val('');
-    $("#input_evidencias").val('');
-    $("#galeria_evidencias").html(`
-        <div class="col-12 text-center py-5 text-muted empty-msg">
-            <i class="fas fa-images fa-3x mb-2 opacity-25"></i>
-            <p class="small mb-0">No hay fotos capturadas.<br>Use el botón "Añadir Fotos" para empezar.</p>
-        </div>
-    `);
-
-    // 3. Carga de metadatos básicos
-    $("#reg_id").val(reg.id);
-    $("#spanFolio").text(reg.folio || 'S/F');
-    
-    // 4. Lógica del botón PDF (Solo si no es fase EMPADRONADO)
-    const pdfLiberado = reg.fase_proceso && reg.fase_proceso !== 'EMPADRONADO';
-    if (pdfLiberado) {
-        $("#btnDescargarPDF").removeClass("d-none").attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
-    } else {
-        $("#btnDescargarPDF").addClass("d-none");
-    }
-
-    // 5. Carga de Identidad (Segmentación de nombre)
-    const fullNombre = getDatoFinal(reg, "nombre_productor", json);
-    const seg = segmentarNombreCompleto(fullNombre);
-    $("#in_nombre_productor").val(reg.nombre || seg.nombres); 
-    $("#in_paterno").val(reg.apellido_paterno || seg.paterno); 
-    $("#in_materno").val(reg.apellido_materno || seg.materno);
-    $("#in_curp_edit").val(reg.curp);
-    $("#in_rfc").val(reg.rfc);
-
-    // 6. Automatización de llenado de inputs desde el JSON
-    $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
-        const el = $(this);
-        const name = el.attr('name');
-        // Saltamos campos que ya manejamos manualmente o archivos/checks
-        if (!name || ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp', 'tipo_produccion', 'latitud_verif', 'longitud_verif'].includes(name) || el.attr('type') === 'file' || name.startsWith('check_')) return;
-        
-        const valor = getDatoFinal(reg, name, json);
-        if (valor !== undefined && valor !== "") { 
-            el.val(valor); 
-        }
-    });
-
-    // 7. Lógica especial para Línea de Ayuda (Producción)
-    const valorProduccionOriginal = getDatoFinal(reg, "tipo_produccion", json);
-    $("#origen_produccion_text").text(valorProduccionOriginal || 'No definido'); 
-    const selectProd = $("#in_tipo_produccion");
-    selectProd.removeClass("is-invalid border-danger");
-    
-    if (valorProduccionOriginal) {
-        if (valorProduccionOriginal.includes(',')) {
-            selectProd.val(""); 
-            selectProd.addClass("is-invalid border-danger");
-            Toast.fire({ icon: 'warning', title: 'Múltiples actividades detectadas. Elija la Línea de Ayuda principal.' });
-        } else {
-            const limpio = valorProduccionOriginal.trim().toUpperCase();
-            selectProd.val(limpio);
-            if (selectProd.val() === null || selectProd.val() === "") { 
-                selectProd.addClass("is-invalid border-danger"); 
-            }
-        }
-    }
-
-    // 8. Carga de Checks de Cotejo (Desde columnas físicas de la BD)
-    const checksCotejo = ['solicitud', 'identidad', 'domicilio', 'curp_doc', 'rfc_doc', 'manifiesto', 'propiedad', 'finiquito', 'siniiga_doc'];
-    checksCotejo.forEach(c => {
-        const columnaDB = 'check_' + c;
-        const valorDB = reg[columnaDB];
-        $(`input[name="${columnaDB}"]`).prop('checked', parseInt(valorDB) === 1);
-    });
-
-    // 9. Carga de Archivos existentes en el servidor (AJAX)
-    fetch(`<?php echo URLROOT; ?>/Captura/verificarArchivos/${id}`)
-        .then(res => res.json())
-        .then(archivos => {
-            archivos.forEach(file => {
-                const partes = file.tipo.split('_');
-                let tipoDoc = partes[partes.length - 1].toLowerCase();
-                if (tipoDoc === 'doc') { 
-                    tipoDoc = partes[partes.length - 2].toLowerCase() + '_doc'; 
-                }
-                const container = $(`#preview_${tipoDoc}`);
-                if (container.length) {
-                    container.removeClass('d-none');
-                    container.find('.file-name-text').html(`<a href="${file.url}" target="_blank" class="text-primary fw-bold text-decoration-none"><i class="fas fa-eye me-1"></i> VER ARCHIVO ACTUAL</a>`);
-                    $(`label[for="file_${tipoDoc}"]`).html('<i class="fas fa-sync me-1"></i> REEMPLAZAR');
-                    container.closest('.doc-row').css('background-color', '#f0faff');
-                }
-            });
-        })
-        .catch(err => console.error("Error en carga de archivos:", err));
-
-    // --- NUEVO: Carga de datos de la Pestaña 4 (Verificación) ---
-    // Si ya existen coordenadas guardadas en la BD o JSON, las cargamos
-// --- NUEVO: Carga de datos de la Pestaña 4 (Verificación) ---
-let latPrev = getDatoFinal(reg, "latitud_verif", json);
-let lonPrev = getDatoFinal(reg, "longitud_verif", json);
-
-// Si el valor es el default '---', lo dejamos vacío para que el input esté limpio
-if (latPrev === '---' || latPrev === null) latPrev = '';
-if (lonPrev === '---' || lonPrev === null) lonPrev = '';
-
-    // 10. Finalización de UI
-    renderTabResumen(reg, json); // Pestaña 1
-    window.controlarDependencias(); // Lógica de visibilidad de campos
-    
-    // Asegurar que inicie en la Pestaña 1
-    const firstTabEl = document.querySelector('#tabExpediente li:first-child a');
-    bootstrap.Tab.getOrCreateInstance(firstTabEl).show();
-    
-    // Mostrar el modal
-    $("#modalEdicion").modal('show');
-};
-    // ==========================================
-    // 5. BÚSQUEDA Y PAGINACIÓN (CORREGIDA)
-    // ==========================================
     function renderPaginationUI() {
         const totalPages = Math.ceil(filteredData.length / pageSize);
         const container = $("#paginationControls").empty();
         if (totalPages <= 1) return;
-
         const delta = 2;
         const range = [];
         for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
-                range.push(i);
-            }
+            if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) range.push(i);
         }
-
         let l;
         range.forEach(i => {
             if (l) {
-                if (i - l === 2) {
-                    container.append(createPageItem(l + 1));
-                } else if (i - l !== 1) {
-                    container.append('<li class="page-item disabled"><span class="page-link border-0">...</span></li>');
-                }
+                if (i - l === 2) container.append(createPageItem(l + 1));
+                else if (i - l !== 1) container.append('<li class="page-item disabled"><span class="page-link border-0">...</span></li>');
             }
             container.append(createPageItem(i));
             l = i;
         });
-
-        // Evento de clic corregido para que no se pierda
         container.find('.page-link-btn').on('click', function(e) {
             e.preventDefault();
-            const page = parseInt($(this).data('page'));
-            renderTable(page);
+            renderTable(parseInt($(this).data('page')));
         });
     }
 
@@ -1204,54 +928,209 @@ if (lonPrev === '---' || lonPrev === null) lonPrev = '';
         const val = $(this).val().toLowerCase().trim();
         filteredData = (val === "") ? [...rawData] : rawData.filter(e => {
             const nom = `${e.nombre || ''} ${e.apellido_paterno || ''} ${e.apellido_materno || ''}`.toLowerCase();
-            const fol = (e.folio || "").toLowerCase();
-            const cur = (e.curp || "").toLowerCase();
-            return nom.includes(val) || fol.includes(val) || cur.includes(val);
+            return nom.includes(val) || (e.folio || "").toLowerCase().includes(val) || (e.curp || "").toLowerCase().includes(val);
         });
         renderTable(1);
     });
 
     // ==========================================
-    // 6. RESUMEN Y GESTIÓN DE ARCHIVOS UI
+    // 3. UTILERÍAS DE EXTRACCIÓN Y LIMPIEZA
     // ==========================================
+    function obtenerDatoFinal(reg, campoBuscado, json) {
+        // Mapeo de columnas físicas reales
+        const mapaFisico = {
+            "folio": reg.folio, "curp": reg.curp, "rfc": reg.rfc,
+            "nombre": reg.nombre, "apellido_paterno": reg.apellido_paterno, "apellido_materno": reg.apellido_materno,
+            "nombre_productor": `${reg.nombre || ''} ${reg.apellido_paterno || ''} ${reg.apellido_materno || ''}`.trim(),
+            "pueblo_colonia": reg.colonia_nombre, "superficie_prod": reg.superficie_total, "superficie_total": reg.superficie_total,
+            "fase_proceso": reg.fase_proceso, "tipo_produccion": reg.linea_ayuda, "linea_ayuda": reg.linea_ayuda,
+            "grado_estudios": reg.escolaridad, "ocupacion": reg.ocupacion, "estado_civil": reg.estado_civil,
+            "calle_numero": reg.calle, "cp": reg.codigo_postal, "tipo_id": reg.tipo_id, "numero_id": reg.numero_id,
+            "tiene_discapacidad": reg.tiene_discapacidad, "cual_discapacidad": reg.cual_discapacidad,
+            "grupo_etnico": reg.grupo_etnico, "grupo_etnico_cual": reg.grupo_etnico_cual,
+            "tel_particular": reg.tel_particular, "tel_casa": reg.tel_casa, "tel_recados": reg.tel_familiar,
+            "siniiga_status": reg.registro_siniiga, "num_total_predios": reg.num_total_predios,
+            "tipo_documento_prop": reg.tipo_documento_propiedad, "pueblo_colonia_up": reg.pueblo_colonia_up,
+            "parajes": reg.parajes, "tenencia_tierra": reg.tenencia_tierra,
+            "cultivo_principal": reg.especie_cultivo_principal, "num_animales": reg.numero_cabezas_colmenas,
+            "latitud_verif": reg.latitud_verif, "longitud_verif": reg.longitud_verif
+        };
+
+        if (mapaFisico[campoBuscado] !== undefined && mapaFisico[campoBuscado] !== null && mapaFisico[campoBuscado] !== "") {
+            return limpiarResultado(mapaFisico[campoBuscado], campoBuscado);
+        }
+
+        if (!json) return limpiarResultado('', campoBuscado);
+        
+        for (let seccion in json) {
+            let contenido = json[seccion];
+            if (seccion === "6" && contenido[campoBuscado]) return limpiarResultado(contenido[campoBuscado], campoBuscado);
+            if (Array.isArray(contenido)) {
+                const found = contenido.find(i => (i.name || '').replace('[]', '') === campoBuscado);
+                if (found) return limpiarResultado(found.value, campoBuscado);
+            } else if (seccion === campoBuscado) {
+                return limpiarResultado(contenido, campoBuscado);
+            }
+        }
+        return limpiarResultado('', campoBuscado);
+    }
+
+    function limpiarResultado(valor, campo) {
+        const numFields = ['latitud_verif', 'longitud_verif', 'superficie_prod', 'superficie_total', 'volumen_prod', 'num_total_predios', 'num_animales', 'cabezas'];
+        if (numFields.includes(campo)) {
+            return (valor === '---' || !valor) ? "" : valor;
+        }
+        return (valor === undefined || valor === null || valor === "") ? "---" : valor;
+    }
+
+    function segmentarNombreCompleto(nombreCompleto) {
+        if (!nombreCompleto || nombreCompleto === '---') return { nombres: '', paterno: '', materno: '' };
+        let palabras = nombreCompleto.trim().toUpperCase().split(/\s+/);
+        let result = { nombres: '', paterno: '', materno: '' };
+        if (palabras.length >= 3) {
+            result.materno = palabras.pop();
+            result.paterno = palabras.pop();
+            result.nombres = palabras.join(' '); 
+        } else if (palabras.length === 2) {
+            result.nombres = palabras[0]; result.paterno = palabras[1];
+        } else {
+            result.nombres = palabras[0];
+        }
+        return result;
+    }
+
+    // ==========================================
+    // 4. LÓGICA DEL MODAL (ABRIR Y CARGAR)
+    // ==========================================
+    window.abrirEdicion = function(id) {
+        const reg = rawData.find(i => i.id == id);
+        if (!reg) return;
+        const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
+
+        $("#formCaptura")[0].reset();
+        $('input[name^="delete_"]').val('0'); 
+        $(".file-preview-container").addClass('d-none');
+        $(".doc-row").css('background-color', '');
+        $(".btn-upload").html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR');
+        
+        // Limpiar Verificación
+        $("#in_lat_verif, #in_lon_verif, #input_evidencias").val('');
+        $("#galeria_evidencias").html(`<div class="col-12 text-center py-5 text-muted empty-msg"><i class="fas fa-images fa-3x mb-2 opacity-25"></i><p class="small mb-0">No hay fotos capturadas.<br>Use el botón "Añadir Fotos" para empezar.</p></div>`);
+
+        $("#reg_id").val(reg.id);
+        $("#spanFolio").text(reg.folio || 'S/F');
+        
+        const fullNombre = obtenerDatoFinal(reg, "nombre_productor", json);
+        const seg = segmentarNombreCompleto(fullNombre);
+        $("#in_nombre_productor").val(reg.nombre || seg.nombres); 
+        $("#in_paterno").val(reg.apellido_paterno || seg.paterno); 
+        $("#in_materno").val(reg.apellido_materno || seg.materno);
+        $("#in_curp_edit").val(reg.curp);
+        $("#in_rfc").val(reg.rfc);
+
+        // Llenado automático de inputs/selects
+        $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
+            const el = $(this);
+            const name = el.attr('name');
+            if (!name || ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp', 'tipo_produccion'].includes(name) || el.attr('type') === 'file' || name.startsWith('check_')) return;
+            const valor = obtenerDatoFinal(reg, name, json);
+            if (valor !== undefined && valor !== "" && valor !== "---") { el.val(valor); }
+        });
+
+        // Línea de Ayuda Especial
+        const valProd = obtenerDatoFinal(reg, "tipo_produccion", json);
+        $("#origen_produccion_text").text(valProd || 'No definido'); 
+        if (valProd && valProd !== "---") {
+            const selectProd = $("#in_tipo_produccion");
+            if (valProd.includes(',')) {
+                selectProd.val("").addClass("is-invalid border-danger");
+                Toast.fire({ icon: 'warning', title: 'Múltiples actividades. Elija la principal.' });
+            } else {
+                selectProd.val(valProd.trim().toUpperCase()).removeClass("is-invalid border-danger");
+            }
+        }
+
+        // GPS Verificación
+        $("#in_lat_verif").val(obtenerDatoFinal(reg, "latitud_verif", json));
+        $("#in_lon_verif").val(obtenerDatoFinal(reg, "longitud_verif", json));
+
+        // Checks Cotejo
+        ['solicitud', 'identidad', 'domicilio', 'curp_doc', 'rfc_doc', 'manifiesto', 'propiedad', 'finiquito', 'siniiga_doc'].forEach(c => {
+            $(`input[name="check_${c}"]`).prop('checked', parseInt(reg['check_' + c]) === 1);
+        });
+
+        // Archivos existentes
+        fetch(`<?php echo URLROOT; ?>/Captura/verificarArchivos/${id}`)
+            .then(res => res.json())
+            .then(archivos => {
+                archivos.forEach(file => {
+                    let tipoDoc = file.tipo.toLowerCase().replace('check_', '').replace('file_', '');
+                    const container = $(`#preview_${tipoDoc}`);
+                    if (container.length) {
+                        container.removeClass('d-none').find('.file-name-text').html(`<a href="${file.url}" target="_blank" class="text-primary fw-bold text-decoration-none"><i class="fas fa-eye me-1"></i> VER ACTUAL</a>`);
+                        $(`label[for="file_${tipoDoc}"]`).html('<i class="fas fa-sync me-1"></i> REEMPLAZAR');
+                        container.closest('.doc-row').css('background-color', '#f0faff');
+                    }
+                });
+            });
+
+        renderTabResumen(reg, json);
+        window.controlarDependencias(); 
+        bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
+        $("#modalEdicion").modal('show');
+    };
+
     function renderTabResumen(reg, json) {
         const $resumen = $("#resumenCaptura").empty();
-        const config = { "1. Registro": ["tecnico_nombre", "folio", "fase_proceso"], "2. Identidad": ["nombre_productor", "curp", "rfc", "sexo", "grado_estudios"], "3. Ubicación": ["calle_numero", "pueblo_colonia", "cp", "tel_particular"], "4. Perfil": ["ocupacion", "grupo_etnico"], "5. Producción": ["tipo_produccion", "superficie_prod", "cultivo_principal"] };
+        const config = { "1. Registro": ["folio", "fase_proceso"], "2. Identidad": ["nombre_productor", "curp", "rfc", "sexo", "grado_estudios"], "3. Ubicación": ["calle_numero", "pueblo_colonia", "cp", "tel_particular"], "4. Perfil": ["ocupacion", "grupo_etnico"], "5. Producción": ["tipo_produccion", "superficie_prod", "cultivo_principal"] };
         for (const [titulo, campos] of Object.entries(config)) {
-            let filas = ""; let tieneDatos = false;
+            let filas = "";
             campos.forEach(c => {
-                let val = getDatoFinal(reg, c, json);
-                if (val && val !== "") { tieneDatos = true; filas += `<tr><td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td><td class="fw-bold py-2 text-dark small">${val.toString().toUpperCase()}</td></tr>`; }
+                let val = obtenerDatoFinal(reg, c, json);
+                if (val && val !== "") filas += `<tr><td class="ps-3 text-muted py-2" width="45%">${c.replace(/_/g, ' ').toUpperCase()}</td><td class="fw-bold py-2 text-dark small">${val.toString().toUpperCase()}</td></tr>`;
             });
-            if (tieneDatos) { $resumen.append(`<div class="col-md-6 mb-3"><div class="card h-100 border-0 shadow-sm"><div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small">${titulo}</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>${filas}</tbody></table></div></div></div>`); }
+            if (filas) $resumen.append(`<div class="col-md-6 mb-3"><div class="card h-100 border-0 shadow-sm"><div class="card-header py-2 bg-white border-bottom text-guinda fw-bold small">${titulo}</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>${filas}</tbody></table></div></div></div>`);
         }
     }
 
+    // ==========================================
+    // 5. GESTIÓN DE ARCHIVOS Y EVIDENCIAS
+    // ==========================================
     $(document).on('change', '.file-input', function() {
-        const input = this;
-        const suffix = input.id.replace('file_', '');
+        const suffix = this.id.replace('file_', '');
         const container = $(`#preview_${suffix}`);
-        if (input.files && input.files[0]) {
+        if (this.files && this.files[0]) {
             $(`#delete_${suffix}`).val('0'); 
-            container.find('.file-name-text').text(input.files[0].name);
+            container.find('.file-name-text').text(this.files[0].name);
             container.removeClass('d-none');
-            $(input).closest('.doc-row').css('background-color', '#f0fff4');
+            $(this).closest('.doc-row').css('background-color', '#f0fff4');
             $(`input[name="check_${suffix}"]`).prop('checked', true);
         }
     });
 
     window.eliminarArchivo = function(suffix) {
-        Swal.fire({ title: '¿Quitar archivo?', text: "Se marcará para eliminación física al guardar.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Sí, quitar' }).then((result) => {
+        Swal.fire({ title: '¿Quitar archivo?', text: "Se marcará para eliminación física.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Sí, quitar' }).then((result) => {
             if (result.isConfirmed) {
-                $(`#delete_${suffix}`).val('1'); 
-                $(`#file_${suffix}`).val(''); 
+                $(`#delete_${suffix}`).val('1'); $(`#file_${suffix}`).val(''); 
                 $(`#preview_${suffix}`).addClass('d-none');
                 $(`input[name="check_${suffix}"]`).prop('checked', false); 
                 $(`#preview_${suffix}`).closest('.doc-row').css('background-color', '#fff5f5');
-                $(`label[for="file_${suffix}"]`).html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR');
             }
         });
     };
+
+    $(document).on('change', '#input_evidencias', function(e) {
+        const files = e.target.files;
+        const galeria = $("#galeria_evidencias");
+        galeria.find('.empty-msg').hide();
+        for (let i = 0; i < files.length; i++) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                galeria.append(`<div class="col-4 col-md-3 mb-2 foto-item"><div class="foto-evidencia-wrapper" style="position:relative; aspect-ratio:1/1; overflow:hidden; border-radius:10px; border:2px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,0.1);"><button type="button" class="btn btn-danger btn-sm p-0" onclick="$(this).closest('.foto-item').remove()" style="position:absolute; top:5px; right:5px; width:22px; height:22px; border-radius:50%; z-index:10;"><i class="fas fa-times"></i></button><img src="${event.target.result}" class="w-100 h-100" style="object-fit:cover;"></div></div>`);
+            };
+            reader.readAsDataURL(files[i]);
+        }
+    });
 
     window.controlarDependencias = function() {
         const disc = $("#in_tiene_discap").val() === "SI";
@@ -1262,166 +1141,41 @@ if (lonPrev === '---' || lonPrev === null) lonPrev = '';
 });
 
 // ==========================================
-// 7. ACCIONES DE GUARDADO FINAL
+// 6. ACCIÓN DE GUARDADO FINAL
 // ==========================================
 function confirmarGuardado() {
-    // 1. Validación de Campo Crítico: Línea de Ayuda (Producción)
     const lineaAyuda = $("#in_tipo_produccion").val();
-    if (!lineaAyuda || lineaAyuda === "") {
-        $("#in_tipo_produccion").addClass("is-invalid border-danger").focus();
-        Swal.fire({
-            icon: 'error',
-            title: 'Campo Obligatorio',
-            text: 'Por favor, seleccione una Línea de Ayuda válida en la Pestaña 2 antes de guardar.',
-            confirmButtonColor: '#773357'
-        });
+    if (!lineaAyuda) {
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Seleccione una Línea de Ayuda.' });
         return;
     }
 
-    // 2. Estandarización: Convertir textos y áreas de texto a Mayúsculas
-    $("#formCaptura input[type='text'], #formCaptura textarea").each(function() { 
-        $(this).val($(this).val().toUpperCase()); 
+    $("#formCaptura input[type='text'], #formCaptura textarea").each(function() { $(this).val($(this).val().toUpperCase()); });
+    
+    const disabledFields = $("#formCaptura").find(':disabled').prop('disabled', false);
+    const formData = new FormData(document.getElementById('formCaptura'));
+    
+    ['check_solicitud', 'check_identidad', 'check_domicilio', 'check_curp_doc', 'check_rfc_doc', 'check_manifiesto', 'check_propiedad', 'check_finiquito', 'check_siniiga_doc'].forEach(c => {
+        formData.set(c, $(`input[name="${c}"]`).is(':checked') ? 1 : 0);
     });
-
-    // 3. Preparación de Datos: Habilitar campos deshabilitados para que FormData los incluya
-    const inputsDisabled = $("#formCaptura").find(':disabled');
-    inputsDisabled.prop('disabled', false);
     
-    const formElement = document.getElementById('formCaptura');
-    const formData = new FormData(formElement);
-    
-    // 4. Manejo Manual de Checkboxes (Cotejo de Documentos)
-    // Aseguramos que envíen 1 o 0 para que la base de datos los procese correctamente
-    const listadoChecks = [
-        'check_solicitud', 'check_identidad', 'check_domicilio', 
-        'check_curp_doc', 'check_rfc_doc', 'check_manifiesto', 
-        'check_propiedad', 'check_finiquito', 'check_siniiga_doc'
-    ];
-    
-    listadoChecks.forEach(c => {
-        const el = document.getElementsByName(c)[0];
-        // En lugar de enviar "on" o nada, enviamos 1 o 0
-        formData.set(c, (el && el.checked) ? 1 : 0);
-    });
+    disabledFields.prop('disabled', true);
 
-    // 5. Verificación (GPS y Fotos)
-    // Nota: 'latitud_verif', 'longitud_verif' y 'fotos_evidencia[]' 
-    // se agregan automáticamente al FormData por estar dentro del formulario.
-
-    // Restauramos el estado original de los inputs deshabilitados en la UI
-    inputsDisabled.prop('disabled', true);
-    
-    // 6. Confirmación y Envío vía Fetch
-    Swal.fire({ 
-        title: '¿Guardar cambios?', 
-        text: "Se actualizará el expediente oficial, los documentos cotejados y las evidencias de verificación.", 
-        icon: 'warning', 
-        showCancelButton: true, 
-        confirmButtonColor: '#773357', 
-        confirmButtonText: 'Sí, guardar',
-        cancelButtonText: 'Cancelar',
-        reverseButtons: true 
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Mostrar estado de carga (indispensable para subida de archivos)
-            Swal.fire({ 
-                title: 'Sincronizando Expediente...', 
-                text: 'Subiendo información y archivos de evidencia, por favor espere.',
-                allowOutsideClick: false,
-                didOpen: () => { Swal.showLoading() } 
-            });
-
-            fetch('<?php echo URLROOT; ?>/Captura/actualizar', { 
-                method: 'POST', 
-                body: formData 
-            })
-            .then(res => {
-                if (!res.ok) throw new Error('Error en la respuesta del servidor');
-                return res.json();
-            })
-            .then(data => {
-                if(data.status === 'success') { 
-                    Swal.fire({
-                        icon: 'success',
-                        title: '¡Éxito!',
-                        text: data.msg,
-                        confirmButtonColor: '#773357'
-                    }).then(() => location.reload()); 
-                } else { 
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Falla al guardar',
-                        text: data.msg || 'El servidor rechazó la solicitud.',
-                        confirmButtonColor: '#773357'
-                    });
-                }
-            })
-            .catch(err => { 
-                console.error(err); 
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Falla de Comunicación',
-                    text: 'No se pudo conectar con el servidor. Verifique su conexión de datos o internet.',
-                    confirmButtonColor: '#773357'
-                }); 
-            });
+    Swal.fire({ title: '¿Guardar?', text: "Se actualizará el expediente.", icon: 'question', showCancelButton: true, confirmButtonColor: '#773357' }).then((r) => {
+        if (r.isConfirmed) {
+            Swal.fire({ title: 'Sincronizando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            fetch('<?php echo URLROOT; ?>/Captura/actualizar', { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.status === 'success') Swal.fire('Éxito', data.msg, 'success').then(() => location.reload());
+                    else Swal.fire('Error', data.msg, 'error');
+                })
+                .catch(() => Swal.fire('Error', 'Falla de red', 'error'));
         }
     });
 }
 
 function confirmarSalida() {
-    Swal.fire({ title: '¿Cerrar sesión?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'SÍ, SALIR', reverseButtons: true }).then((result) => {
-        if (result.isConfirmed) window.location.href = '<?php echo URLROOT; ?>/Auth/logout';
-    });
+    Swal.fire({ title: '¿Salir?', icon: 'warning', showCancelButton: true, confirmButtonText: 'SÍ' }).then((r) => { if (r.isConfirmed) window.location.href = '<?php echo URLROOT; ?>/Auth/logout'; });
 }
-// Variable global para almacenar los archivos seleccionados (opcional si usas FormData directo)
-let archivosEvidencia = [];
-
-$(document).on('change', '#input_evidencias', function(e) {
-    const files = e.target.files;
-    const galeria = $("#galeria_evidencias");
-    
-    // Ocultar mensaje de "No hay fotos"
-    galeria.find('.empty-msg').hide();
-
-    // Recorrer los archivos seleccionados
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        
-        // Validar que sea imagen
-        if (!file.type.match('image.*')) continue;
-
-        const reader = new FileReader();
-        
-        reader.onload = function(event) {
-            const html = `
-                <div class="col-4 col-md-3 position-relative mb-2 foto-item">
-                    <div class="foto-evidencia-wrapper" style="position: relative; aspect-ratio: 1/1; overflow: hidden; border-radius: 10px; border: 2px solid #fff; shadow: 0 2px 5px rgba(0,0,0,0.1);">
-                        <button type="button" class="btn btn-danger btn-sm p-0 d-flex align-items-center justify-content-center" 
-                                onclick="eliminarMiniatura(this)"
-                                style="position: absolute; top: 5px; right: 5px; width: 22px; height: 22px; border-radius: 50%; z-index: 10; border: 1px solid white;">
-                            <i class="fas fa-times" style="font-size: 10px;"></i>
-                        </button>
-                        <img src="${event.target.result}" class="img-fluid w-100 h-100" style="object-fit: cover;">
-                    </div>
-                </div>`;
-            galeria.append(html);
-        };
-        
-        reader.readAsDataURL(file);
-    }
-});
-
-// Función para eliminar la miniatura visualmente
-function eliminarMiniatura(btn) {
-    $(btn).closest('.foto-item').remove();
-    
-    // Si ya no quedan fotos, mostrar el mensaje vacío de nuevo
-    if ($("#galeria_evidencias").find('.foto-item').length === 0) {
-        $("#galeria_evidencias").find('.empty-msg').show();
-        // Limpiar el input file para que permita subir el mismo archivo si se desea
-        $("#input_evidencias").val('');
-    }
-}
-window.confirmarSalida = confirmarSalida;
 </script>
