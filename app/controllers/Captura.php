@@ -37,6 +37,8 @@ class Captura extends Controller {
         $folioCarpeta = str_replace(['/', ' ', '\\'], '-', $registro->folio);
         $rutaDocs = PUBROOT . '/uploads/expedientes/' . $folioCarpeta;
         $rutaEvidencias = PUBROOT . '/uploads/verificaciones/' . $folioCarpeta;
+        $lat_verif = filter_var($_POST['latitud_verif'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+$lon_verif = filter_var($_POST['longitud_verif'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 
         // 2. MAPEO DE DOCUMENTOS (Checks y Archivos de la Pestaña 3)
         $mapeoDoc = [
@@ -127,8 +129,8 @@ class Captura extends Controller {
             'observaciones_capturista' => mb_strtoupper($_POST['observaciones_capturista'] ?? '', 'UTF-8'),
             
             // VERIFICACIÓN (Pestaña 4)
-            'latitud_verif'     => !empty($_POST['latitud_verif']) ? $_POST['latitud_verif'] : null,
-            'longitud_verif'    => !empty($_POST['longitud_verif']) ? $_POST['longitud_verif'] : null,
+            'latitud_verif'  => (is_numeric($lat_verif)) ? $lat_verif : null,
+            'longitud_verif' => (is_numeric($lon_verif)) ? $lon_verif : null,
 
             // Checklist de Documentos (inyectamos el resultado del bucle anterior)
             'check_solicitud'   => $dbChecks['check_solicitud'],

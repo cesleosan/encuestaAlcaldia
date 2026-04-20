@@ -1074,10 +1074,13 @@ function actualizarKPIs(data) {
 
     // --- NUEVO: Carga de datos de la Pestaña 4 (Verificación) ---
     // Si ya existen coordenadas guardadas en la BD o JSON, las cargamos
-    const latPrev = getDatoFinal(reg, "latitud_verif", json);
-    const lonPrev = getDatoFinal(reg, "longitud_verif", json);
-    if(latPrev) $("#in_lat_verif").val(latPrev);
-    if(lonPrev) $("#in_lon_verif").val(lonPrev);
+// --- NUEVO: Carga de datos de la Pestaña 4 (Verificación) ---
+let latPrev = getDatoFinal(reg, "latitud_verif", json);
+let lonPrev = getDatoFinal(reg, "longitud_verif", json);
+
+// Si el valor es el default '---', lo dejamos vacío para que el input esté limpio
+if (latPrev === '---' || latPrev === null) latPrev = '';
+if (lonPrev === '---' || lonPrev === null) lonPrev = '';
 
     // 10. Finalización de UI
     renderTabResumen(reg, json); // Pestaña 1
