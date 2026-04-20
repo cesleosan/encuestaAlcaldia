@@ -324,6 +324,21 @@ class EncuestaModelo {
     }
 }
 
+public function guardarEvidenciaFoto($encuestaId, $ruta) {
+        try {
+            $this->db->query("INSERT INTO encuesta_evidencias (encuesta_id, ruta_archivo) 
+                              VALUES (:eid, :ruta)");
+            
+            $this->db->bind(':eid', $encuestaId);
+            $this->db->bind(':ruta', $ruta);
+            
+            return $this->db->execute();
+        } catch (Exception $e) {
+            // Opcional: log del error
+            return false;
+        }
+    }
+
     /**
      * Actualizar solo Fase (Usado en flujos rápidos)
      */
