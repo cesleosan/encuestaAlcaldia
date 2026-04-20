@@ -961,7 +961,72 @@ function actualizarKPIs(data) {
         $("#tableInfo").html(`Mostrando <b>${items.length}</b> de <b>${filteredData.length}</b> registros`);
         renderPaginationUI();
     }
+function obtenerDatoFinal(reg, campoBuscado, json) {
+    // 1. Mapeo de columnas físicas reales de la tabla 'encuestas'
+    const mapaFisico = {
+        "tecnico_nombre": reg.encuestador,
+        "folio": reg.folio,
+        "curp": reg.curp,
+        "rfc": reg.rfc,
+        "nombre": reg.nombre,
+        "apellido_paterno": reg.apellido_paterno,
+        "apellido_materno": reg.apellido_materno,
+        "nombre_productor": `${reg.nombre || ''} ${reg.apellido_paterno || ''} ${reg.apellido_materno || ''}`.trim(),
+        "pueblo_colonia": reg.colonia_nombre,
+        "superficie_prod": reg.superficie_total,
+        "latitud_verif": reg.latitud_verif,
+        "longitud_verif": reg.longitud_verif,
+        "fase_proceso": reg.fase_proceso
+    };
 
+    // Si el campo existe en la tabla física y tiene contenido, lo devolvemos
+    if (mapaFisico[campoBuscado] !== undefined && mapaFisico[campoBuscado] !== null && mapaFisico[campoBuscado] !== "") {
+        return mapaFisico[campoBuscado];
+    }
+
+    // 2. Si no es físico, buscamos en el JSON
+    if (!json) return limpiarResultado('', campoBuscado);
+    
+    // Caso especial Sección 6 (Geolocalización/Dirección en el JSON original)
+    if (json["6"] && json["6"][campoBuscado]) {
+        return limpiarResultado(json["6"][campoBuscado], campoBuscado);
+    }
+
+    // Barrido por secciones del JSON (1, 2, 3... hasta 50)
+    for (let sec in json) {
+        let contenido = json[sec];
+        if (Array.isArray(contenido)) {
+            // Buscamos el objeto que tenga el atributo name coincidente
+            const found = contenido.find(i => i.name === campoBuscado || i.name === campoBuscado + '[]');
+            if (found) return limpiarResultado(found.value, campoBuscado);
+        } else if (typeof contenido === 'object' && contenido !== null) {
+            if (contenido[campoBuscado]) return limpiarResultado(contenido[campoBuscado], campoBuscado);
+        } else if (typeof contenido === 'string' && sec === campoBuscado) {
+            return limpiarResultado(contenido, campoBuscado);
+        }
+    }
+
+    return limpiarResultado('', campoBuscado);
+}
+
+/**
+ * Función auxiliar para evitar que los campos numéricos lleven basura
+ */
+function limpiarResultado(valor, campo) {
+    const camposNumericos = [
+        'latitud_verif', 'longitud_verif', 'latitud', 'longitud', 
+        'superficie_prod', 'volumen_prod', 'superficie_total', 
+        'num_total_predios', 'num_animales', 'cabezas'
+    ];
+
+    if (camposNumericos.includes(campo)) {
+        // Si es numérico y no hay valor o es el guion, devolver vacío para la BD
+        return (valor === '---' || !valor) ? "" : valor;
+    }
+
+    // Para campos de texto, si no hay nada, ponemos los guiones visuales
+    return (valor === undefined || valor === null || valor === "") ? "---" : valor;
+}
     // ==========================================
     // 4. LÓGICA DEL MODAL
     // ==========================================
