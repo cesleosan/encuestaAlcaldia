@@ -317,11 +317,10 @@ class EncuestaModelo {
         $this->db->bind(':json', $data['json']);
 
         return $this->db->execute();
-    } catch (Exception $e) {
-        // Captura el error en el log o en una variable de clase si la tienes
-        if(isset($this->ultimoError)) { $this->ultimoError = $e->getMessage(); }
-        return false;
-    }
+} catch (Exception $e) {
+    // Esto imprimirá el error real en la respuesta JSON para que lo veas en la consola
+    die(json_encode(['status' => 'error', 'msg' => 'Error SQL: ' . $e->getMessage()]));
+}
 }
 
 public function guardarEvidenciaFoto($encuestaId, $ruta) {
