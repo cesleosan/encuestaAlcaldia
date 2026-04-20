@@ -132,6 +132,44 @@
 }
 /* Agrega el color para la nueva fase */
 .fase-SOLICITUD_INGRESADA { background-color: #17a2b8; color: white; } /* Azul turquesa */
+/* Diseño de miniaturas de evidencia */
+.foto-evidencia-wrapper {
+    position: relative;
+    aspect-ratio: 1/1;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    background-color: #f8f9fa;
+}
+.foto-evidencia-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.btn-delete-foto {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    cursor: pointer;
+    z-index: 10;
+}
+.btn-outline-guinda {
+    border: 1px solid var(--guinda);
+    color: var(--guinda);
+    font-weight: 600;
+}
+.btn-outline-guinda:hover {
+    background: var(--guinda);
+    color: white;
+}
 </style>
 <div class="container-fluid py-4">
     <div class="row mb-4">
@@ -218,6 +256,7 @@
                 <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-datos"><i class="fas fa-search me-1"></i> 1. DATOS CAPTURADOS</a></li>
                 <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-extra"><i class="fas fa-edit me-1"></i> 2. CAPTURA EXTRA</a></li>
                 <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-docs"><i class="fas fa-file-check me-1"></i> 3. DOCUMENTACIÓN</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-verificacion"><i class="fas fa-file-check me-1"></i> 3. VERIFICACIÓN</a></li>
             </ul>
 
             <div class="modal-body bg-light" style="max-height: 70vh; overflow-y: auto;">
@@ -471,233 +510,289 @@
                 </div>
             </div>
 
-<div class="tab-pane fade" id="tab-docs">
-    <div class="alert alert-info border-0 shadow-sm small mb-3">
-        <i class="fas fa-file-invoice me-2"></i> <b>Expediente Digital:</b> Los documentos con fondo azul ya existen en el servidor. Puede verlos o reemplazarlos.
-    </div>
+            <div class="tab-pane fade" id="tab-docs">
+                <div class="alert alert-info border-0 shadow-sm small mb-3">
+                    <i class="fas fa-file-invoice me-2"></i> <b>Expediente Digital:</b> Los documentos con fondo azul ya existen en el servidor. Puede verlos o reemplazarlos.
+                </div>
 
-    <div class="card shadow-sm border-0">
-        <div class="list-group list-group-flush" id="checkListDocs">
-            
-            <div class="list-group-item py-3 doc-row">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <input type="checkbox" name="check_solicitud" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
-                        <span>
-                            <i class="fas fa-file-signature text-guinda me-2"></i> <b>Formato de solicitud (Firmado)</b><br>
-                            <small class="text-muted">Ante la J.U.D. de Desarrollo Rural</small>
-                        </span>
-                    </div>
-                    <div class="file-upload-wrapper text-end">
-                        <input type="hidden" name="delete_solicitud" id="delete_solicitud" value="0">
-                        <div class="file-preview-container d-none mb-1" id="preview_solicitud">
-                            <div class="file-preview-badge">
-                                <i class="fas fa-paperclip text-primary me-1"></i>
-                                <span class="file-name-text small fw-bold"></span>
-                                <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('solicitud')"></i>
+                <div class="card shadow-sm border-0">
+                    <div class="list-group list-group-flush" id="checkListDocs">
+                        
+                        <div class="list-group-item py-3 doc-row">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <input type="checkbox" name="check_solicitud" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
+                                    <span>
+                                        <i class="fas fa-file-signature text-guinda me-2"></i> <b>Formato de solicitud (Firmado)</b><br>
+                                        <small class="text-muted">Ante la J.U.D. de Desarrollo Rural</small>
+                                    </span>
+                                </div>
+                                <div class="file-upload-wrapper text-end">
+                                    <input type="hidden" name="delete_solicitud" id="delete_solicitud" value="0">
+                                    <div class="file-preview-container d-none mb-1" id="preview_solicitud">
+                                        <div class="file-preview-badge">
+                                            <i class="fas fa-paperclip text-primary me-1"></i>
+                                            <span class="file-name-text small fw-bold"></span>
+                                            <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('solicitud')"></i>
+                                        </div>
+                                    </div>
+                                    <label for="file_solicitud" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
+                                    <input type="file" name="file_solicitud" id="file_solicitud" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
+                                </div>
                             </div>
                         </div>
-                        <label for="file_solicitud" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
-                        <input type="file" name="file_solicitud" id="file_solicitud" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
+
+                        <div class="list-group-item py-3 doc-row">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <input type="checkbox" name="check_identidad" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
+                                    <span>
+                                        <i class="fas fa-id-card text-guinda me-2"></i> <b>Acreditación de identidad vigente</b><br>
+                                        <small class="text-muted">INE, Pasaporte, Cédula o Cartilla Militar</small>
+                                    </span>
+                                </div>
+                                <div class="file-upload-wrapper text-end">
+                                    <input type="hidden" name="delete_identidad" id="delete_identidad" value="0">
+                                    <div class="file-preview-container d-none mb-1" id="preview_identidad">
+                                        <div class="file-preview-badge">
+                                            <i class="fas fa-paperclip text-primary me-1"></i>
+                                            <span class="file-name-text small fw-bold"></span>
+                                            <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('identidad')"></i>
+                                        </div>
+                                    </div>
+                                    <label for="file_identidad" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
+                                    <input type="file" name="file_identidad" id="file_identidad" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="list-group-item py-3 doc-row">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <input type="checkbox" name="check_domicilio" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
+                                    <span>
+                                        <i class="fas fa-home text-guinda me-2"></i> <b>Comprobante de Domicilio</b><br>
+                                        <small class="text-muted">No mayor a 3 meses de antigüedad</small>
+                                    </span>
+                                </div>
+                                <div class="file-upload-wrapper text-end">
+                                    <input type="hidden" name="delete_domicilio" id="delete_domicilio" value="0">
+                                    <div class="file-preview-container d-none mb-1" id="preview_domicilio">
+                                        <div class="file-preview-badge">
+                                            <i class="fas fa-paperclip text-primary me-1"></i>
+                                            <span class="file-name-text small fw-bold"></span>
+                                            <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('domicilio')"></i>
+                                        </div>
+                                    </div>
+                                    <label for="file_domicilio" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
+                                    <input type="file" name="file_domicilio" id="file_domicilio" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="list-group-item py-3 doc-row">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <input type="checkbox" name="check_curp_doc" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
+                                    <span>
+                                        <i class="fas fa-fingerprint text-guinda me-2"></i> <b>Copia de la CURP</b><br>
+                                        <small class="text-muted">Actualizada</small>
+                                    </span>
+                                </div>
+                                <div class="file-upload-wrapper text-end">
+                                    <input type="hidden" name="delete_curp_doc" id="delete_curp_doc" value="0">
+                                    <div class="file-preview-container d-none mb-1" id="preview_curp_doc">
+                                        <div class="file-preview-badge">
+                                            <i class="fas fa-paperclip text-primary me-1"></i>
+                                            <span class="file-name-text small fw-bold"></span>
+                                            <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('curp_doc')"></i>
+                                        </div>
+                                    </div>
+                                    <label for="file_curp_doc" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
+                                    <input type="file" name="file_curp_doc" id="file_curp_doc" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="list-group-item py-3 doc-row">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <input type="checkbox" name="check_rfc_doc" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
+                                    <span>
+                                        <i class="fas fa-university text-guinda me-2"></i> <b>R.F.C. (Si aplica)</b><br>
+                                        <small class="text-muted">Registro Federal de Contribuyentes</small>
+                                    </span>
+                                </div>
+                                <div class="file-upload-wrapper text-end">
+                                    <input type="hidden" name="delete_rfc_doc" id="delete_rfc_doc" value="0">
+                                    <div class="file-preview-container d-none mb-1" id="preview_rfc_doc">
+                                        <div class="file-preview-badge">
+                                            <i class="fas fa-paperclip text-primary me-1"></i>
+                                            <span class="file-name-text small fw-bold"></span>
+                                            <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('rfc_doc')"></i>
+                                        </div>
+                                    </div>
+                                    <label for="file_rfc_doc" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
+                                    <input type="file" name="file_rfc_doc" id="file_rfc_doc" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="list-group-item py-3 doc-row">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <input type="checkbox" name="check_manifiesto" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
+                                    <span>
+                                        <i class="fas fa-gavel text-guinda me-2"></i> <b>Manifiesto Bajo Protesta</b><br>
+                                        <small class="text-muted">No desempeñar cargo en la Alcaldía</small>
+                                    </span>
+                                </div>
+                                <div class="file-upload-wrapper text-end">
+                                    <input type="hidden" name="delete_manifiesto" id="delete_manifiesto" value="0">
+                                    <div class="file-preview-container d-none mb-1" id="preview_manifiesto">
+                                        <div class="file-preview-badge">
+                                            <i class="fas fa-paperclip text-primary me-1"></i>
+                                            <span class="file-name-text small fw-bold"></span>
+                                            <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('manifiesto')"></i>
+                                        </div>
+                                    </div>
+                                    <label for="file_manifiesto" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
+                                    <input type="file" name="file_manifiesto" id="file_manifiesto" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="list-group-item py-3 doc-row">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <input type="checkbox" name="check_propiedad" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
+                                    <span>
+                                        <i class="fas fa-map-marked-alt text-guinda me-2"></i> <b>Acreditación de propiedad</b><br>
+                                        <small class="text-muted">Documento técnico-legal del predio</small>
+                                    </span>
+                                </div>
+                                <div class="file-upload-wrapper text-end">
+                                    <input type="hidden" name="delete_propiedad" id="delete_propiedad" value="0">
+                                    <div class="file-preview-container d-none mb-1" id="preview_propiedad">
+                                        <div class="file-preview-badge">
+                                            <i class="fas fa-paperclip text-primary me-1"></i>
+                                            <span class="file-name-text small fw-bold"></span>
+                                            <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('propiedad')"></i>
+                                        </div>
+                                    </div>
+                                    <label for="file_propiedad" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
+                                    <input type="file" name="file_propiedad" id="file_propiedad" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="list-group-item py-3 doc-row">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <input type="checkbox" name="check_finiquito" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
+                                    <span>
+                                        <i class="fas fa-file-contract text-guinda me-2"></i> <b>Carta Finiquito</b><br>
+                                        <small class="text-muted">Ex-beneficiarios de programas anteriores</small>
+                                    </span>
+                                </div>
+                                <div class="file-upload-wrapper text-end">
+                                    <input type="hidden" name="delete_finiquito" id="delete_finiquito" value="0">
+                                    <div class="file-preview-container d-none mb-1" id="preview_finiquito">
+                                        <div class="file-preview-badge">
+                                            <i class="fas fa-paperclip text-primary me-1"></i>
+                                            <span class="file-name-text small fw-bold"></span>
+                                            <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('finiquito')"></i>
+                                        </div>
+                                    </div>
+                                    <label for="file_finiquito" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
+                                    <input type="file" name="file_finiquito" id="file_finiquito" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="list-group-item py-3 doc-row">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <input type="checkbox" name="check_siniiga_doc" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
+                                    <span>
+                                        <i class="fas fa-cow text-guinda me-2"></i> <b>Registro SINIIGA</b><br>
+                                        <small class="text-muted">Únicamente para Unidades Pecuarias</small>
+                                    </span>
+                                </div>
+                                <div class="file-upload-wrapper text-end">
+                                    <input type="hidden" name="delete_siniiga_doc" id="delete_siniiga_doc" value="0">
+                                    <div class="file-preview-container d-none mb-1" id="preview_siniiga_doc">
+                                        <div class="file-preview-badge">
+                                            <i class="fas fa-paperclip text-primary me-1"></i>
+                                            <span class="file-name-text small fw-bold"></span>
+                                            <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('siniiga_doc')"></i>
+                                        </div>
+                                    </div>
+                                    <label for="file_siniiga_doc" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
+                                    <input type="file" name="file_siniiga_doc" id="file_siniiga_doc" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
-
-            <div class="list-group-item py-3 doc-row">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <input type="checkbox" name="check_identidad" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
-                        <span>
-                            <i class="fas fa-id-card text-guinda me-2"></i> <b>Acreditación de identidad vigente</b><br>
-                            <small class="text-muted">INE, Pasaporte, Cédula o Cartilla Militar</small>
-                        </span>
+                <div class="tab-pane fade" id="tab-verificacion">
+                    <div class="alert alert-success border-0 shadow-sm small mb-3">
+                        <i class="fas fa-check-double me-2"></i> <b>Validación de Campo:</b> Registre las coordenadas reales y capture las fotografías de evidencia en sitio.
                     </div>
-                    <div class="file-upload-wrapper text-end">
-                        <input type="hidden" name="delete_identidad" id="delete_identidad" value="0">
-                        <div class="file-preview-container d-none mb-1" id="preview_identidad">
-                            <div class="file-preview-badge">
-                                <i class="fas fa-paperclip text-primary me-1"></i>
-                                <span class="file-name-text small fw-bold"></span>
-                                <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('identidad')"></i>
+
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header bg-white">
+                                    <h6 class="mb-0 fw-bold text-guinda"><i class="fas fa-map-marker-alt me-2"></i>Coordenadas de Verificación</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="small fw-bold text-muted">Nueva Latitud</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-0"><i class="fas fa-arrows-alt-v text-secondary"></i></span>
+                                            <input type="text" class="form-control border-0 bg-light fw-bold" name="latitud_verif" id="in_lat_verif" placeholder="19.XXXXXX">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="small fw-bold text-muted">Nueva Longitud</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-0"><i class="fas fa-arrows-alt-h text-secondary"></i></span>
+                                            <input type="text" class="form-control border-0 bg-light fw-bold" name="longitud_verif" id="in_lon_verif" placeholder="-99.XXXXXX">
+                                        </div>
+                                    </div>
+                                    <button type="button" onclick="obtenerGPSVerif()" class="btn btn-outline-guinda w-100 btn-sm">
+                                        <i class="fas fa-crosshairs me-2"></i>OBTENER UBICACIÓN ACTUAL
+                                    </button>
+                                    <hr class="text-muted opacity-25">
+                                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Estas coordenadas sustituirán a las de campo en el dictamen final.</small>
+                                </div>
                             </div>
                         </div>
-                        <label for="file_identidad" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
-                        <input type="file" name="file_identidad" id="file_identidad" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
-                    </div>
-                </div>
-            </div>
 
-            <div class="list-group-item py-3 doc-row">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <input type="checkbox" name="check_domicilio" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
-                        <span>
-                            <i class="fas fa-home text-guinda me-2"></i> <b>Comprobante de Domicilio</b><br>
-                            <small class="text-muted">No mayor a 3 meses de antigüedad</small>
-                        </span>
-                    </div>
-                    <div class="file-upload-wrapper text-end">
-                        <input type="hidden" name="delete_domicilio" id="delete_domicilio" value="0">
-                        <div class="file-preview-container d-none mb-1" id="preview_domicilio">
-                            <div class="file-preview-badge">
-                                <i class="fas fa-paperclip text-primary me-1"></i>
-                                <span class="file-name-text small fw-bold"></span>
-                                <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('domicilio')"></i>
+                        <div class="col-md-7">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 fw-bold text-guinda"><i class="fas fa-camera me-2"></i>Evidencias Fotográficas</h6>
+                                    <label for="input_evidencias" class="btn btn-guinda btn-sm px-3 rounded-pill">
+                                        <i class="fas fa-plus me-1"></i> AÑADIR FOTOS
+                                    </label>
+                                    <input type="file" id="input_evidencias" name="fotos_evidencia[]" class="d-none" accept="image/*" multiple capture="environment">
+                                </div>
+                                <div class="card-body">
+                                    <div id="galeria_evidencias" class="row g-2 overflow-auto" style="max-height: 350px;">
+                                        <div class="col-12 text-center py-5 text-muted empty-msg">
+                                            <i class="fas fa-images fa-3x mb-2 opacity-25"></i>
+                                            <p class="small mb-0">No hay fotos capturadas.<br>Use el botón "Añadir Fotos" para empezar.</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <label for="file_domicilio" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
-                        <input type="file" name="file_domicilio" id="file_domicilio" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
                     </div>
                 </div>
-            </div>
-
-            <div class="list-group-item py-3 doc-row">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <input type="checkbox" name="check_curp_doc" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
-                        <span>
-                            <i class="fas fa-fingerprint text-guinda me-2"></i> <b>Copia de la CURP</b><br>
-                            <small class="text-muted">Actualizada</small>
-                        </span>
-                    </div>
-                    <div class="file-upload-wrapper text-end">
-                        <input type="hidden" name="delete_curp_doc" id="delete_curp_doc" value="0">
-                        <div class="file-preview-container d-none mb-1" id="preview_curp_doc">
-                            <div class="file-preview-badge">
-                                <i class="fas fa-paperclip text-primary me-1"></i>
-                                <span class="file-name-text small fw-bold"></span>
-                                <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('curp_doc')"></i>
-                            </div>
-                        </div>
-                        <label for="file_curp_doc" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
-                        <input type="file" name="file_curp_doc" id="file_curp_doc" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
-                    </div>
-                </div>
-            </div>
-
-            <div class="list-group-item py-3 doc-row">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <input type="checkbox" name="check_rfc_doc" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
-                        <span>
-                            <i class="fas fa-university text-guinda me-2"></i> <b>R.F.C. (Si aplica)</b><br>
-                            <small class="text-muted">Registro Federal de Contribuyentes</small>
-                        </span>
-                    </div>
-                    <div class="file-upload-wrapper text-end">
-                        <input type="hidden" name="delete_rfc_doc" id="delete_rfc_doc" value="0">
-                        <div class="file-preview-container d-none mb-1" id="preview_rfc_doc">
-                            <div class="file-preview-badge">
-                                <i class="fas fa-paperclip text-primary me-1"></i>
-                                <span class="file-name-text small fw-bold"></span>
-                                <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('rfc_doc')"></i>
-                            </div>
-                        </div>
-                        <label for="file_rfc_doc" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
-                        <input type="file" name="file_rfc_doc" id="file_rfc_doc" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
-                    </div>
-                </div>
-            </div>
-
-            <div class="list-group-item py-3 doc-row">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <input type="checkbox" name="check_manifiesto" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
-                        <span>
-                            <i class="fas fa-gavel text-guinda me-2"></i> <b>Manifiesto Bajo Protesta</b><br>
-                            <small class="text-muted">No desempeñar cargo en la Alcaldía</small>
-                        </span>
-                    </div>
-                    <div class="file-upload-wrapper text-end">
-                        <input type="hidden" name="delete_manifiesto" id="delete_manifiesto" value="0">
-                        <div class="file-preview-container d-none mb-1" id="preview_manifiesto">
-                            <div class="file-preview-badge">
-                                <i class="fas fa-paperclip text-primary me-1"></i>
-                                <span class="file-name-text small fw-bold"></span>
-                                <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('manifiesto')"></i>
-                            </div>
-                        </div>
-                        <label for="file_manifiesto" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
-                        <input type="file" name="file_manifiesto" id="file_manifiesto" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
-                    </div>
-                </div>
-            </div>
-
-            <div class="list-group-item py-3 doc-row">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <input type="checkbox" name="check_propiedad" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
-                        <span>
-                            <i class="fas fa-map-marked-alt text-guinda me-2"></i> <b>Acreditación de propiedad</b><br>
-                            <small class="text-muted">Documento técnico-legal del predio</small>
-                        </span>
-                    </div>
-                    <div class="file-upload-wrapper text-end">
-                        <input type="hidden" name="delete_propiedad" id="delete_propiedad" value="0">
-                        <div class="file-preview-container d-none mb-1" id="preview_propiedad">
-                            <div class="file-preview-badge">
-                                <i class="fas fa-paperclip text-primary me-1"></i>
-                                <span class="file-name-text small fw-bold"></span>
-                                <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('propiedad')"></i>
-                            </div>
-                        </div>
-                        <label for="file_propiedad" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
-                        <input type="file" name="file_propiedad" id="file_propiedad" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
-                    </div>
-                </div>
-            </div>
-
-            <div class="list-group-item py-3 doc-row">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <input type="checkbox" name="check_finiquito" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
-                        <span>
-                            <i class="fas fa-file-contract text-guinda me-2"></i> <b>Carta Finiquito</b><br>
-                            <small class="text-muted">Ex-beneficiarios de programas anteriores</small>
-                        </span>
-                    </div>
-                    <div class="file-upload-wrapper text-end">
-                        <input type="hidden" name="delete_finiquito" id="delete_finiquito" value="0">
-                        <div class="file-preview-container d-none mb-1" id="preview_finiquito">
-                            <div class="file-preview-badge">
-                                <i class="fas fa-paperclip text-primary me-1"></i>
-                                <span class="file-name-text small fw-bold"></span>
-                                <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('finiquito')"></i>
-                            </div>
-                        </div>
-                        <label for="file_finiquito" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
-                        <input type="file" name="file_finiquito" id="file_finiquito" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
-                    </div>
-                </div>
-            </div>
-
-            <div class="list-group-item py-3 doc-row">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <input type="checkbox" name="check_siniiga_doc" value="1" class="form-check-input h5 mb-0 me-3 doc-check">
-                        <span>
-                            <i class="fas fa-cow text-guinda me-2"></i> <b>Registro SINIIGA</b><br>
-                            <small class="text-muted">Únicamente para Unidades Pecuarias</small>
-                        </span>
-                    </div>
-                    <div class="file-upload-wrapper text-end">
-                        <input type="hidden" name="delete_siniiga_doc" id="delete_siniiga_doc" value="0">
-                        <div class="file-preview-container d-none mb-1" id="preview_siniiga_doc">
-                            <div class="file-preview-badge">
-                                <i class="fas fa-paperclip text-primary me-1"></i>
-                                <span class="file-name-text small fw-bold"></span>
-                                <i class="fas fa-times-circle remove-file ms-2" onclick="eliminarArchivo('siniiga_doc')"></i>
-                            </div>
-                        </div>
-                        <label for="file_siniiga_doc" class="btn-upload"><i class="fas fa-camera me-1"></i> SUBIR/TOMAR</label>
-                        <input type="file" name="file_siniiga_doc" id="file_siniiga_doc" class="d-none file-input" accept="image/*,application/pdf,.zip,.rar" capture="environment">
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</div>
 
                     </div>
                 </form>
