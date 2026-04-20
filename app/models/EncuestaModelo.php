@@ -203,122 +203,126 @@ class EncuestaModelo {
      * para que coincidan con lo que manda el Controlador Captura.php
      */
     public function actualizarExpediente($data) {
-        try {
-            $sql = "UPDATE encuestas SET 
-                        -- Identidad
-                        nombre = :nombre, 
-                        apellido_paterno = :paterno, 
-                        apellido_materno = :materno, 
-                        curp = :curp, 
-                        rfc = :rfc,
-                        tipo_id = :tipo_id,
-                        numero_id = :numero_id,
-                        -- Perfil y Vulnerabilidad
-                        tiene_discapacidad = :tiene_discap,
-                        cual_discapacidad = :cual_discap,
-                        grupo_etnico = :grupo_etnico,
-                        grupo_etnico_cual = :grupo_etnico_cual,
-                        escolaridad = :escolaridad, 
-                        ocupacion = :ocupacion,
-                        estado_civil = :estado_civil,
-                        -- Ubicación y Contacto
-                        calle = :calle,
-                        colonia_nombre = :colonia,
-                        codigo_postal = :cp,
-                        tel_particular = :tel_part,
-                        tel_casa = :tel_casa,
-                        tel_familiar = :tel_fam,
-                        -- Datos Técnicos
-                        linea_ayuda = :linea_ayuda,
-                        registro_siniiga = :siniiga,
-                        num_total_predios = :num_predios,
-                        superficie_total = :superficie, 
-                        tipo_documento_propiedad = :tipo_doc,
-                        pueblo_colonia_up = :colonia_up,
-                        parajes = :parajes,
-                        tenencia_tierra = :tenencia,
-                        especie_cultivo_principal = :especie,
-                        numero_cabezas_colmenas = :cabezas,
-                        -- Checklist Documentos (TINYINT 0/1)
-                        check_solicitud = :check_sol,
-                        check_identidad = :check_id,
-                        check_domicilio = :check_dom,
-                        check_curp_doc = :check_curp,
-                        check_rfc_doc = :check_rfc,
-                        check_manifiesto = :check_man,
-                        check_propiedad = :check_prop,
-                        check_finiquito = :check_fin,
-                        check_siniiga_doc = :check_sin,
-                        -- Control
-                        fase_proceso = :fase, 
-                        observaciones_capturista = :obs,
-                        respuestas_json = :json 
-                    WHERE id = :id";
+    try {
+        $sql = "UPDATE encuestas SET 
+                    -- Identidad
+                    nombre = :nombre, 
+                    apellido_paterno = :paterno, 
+                    apellido_materno = :materno, 
+                    curp = :curp, 
+                    rfc = :rfc,
+                    tipo_id = :tipo_id,
+                    numero_id = :numero_id,
+                    -- Perfil y Vulnerabilidad
+                    tiene_discapacidad = :tiene_discap,
+                    cual_discapacidad = :cual_discap,
+                    grupo_etnico = :grupo_etnico,
+                    grupo_etnico_cual = :grupo_etnico_cual,
+                    escolaridad = :escolaridad, 
+                    ocupacion = :ocupacion,
+                    estado_civil = :estado_civil,
+                    -- Ubicación y Contacto
+                    calle = :calle,
+                    colonia_nombre = :colonia,
+                    codigo_postal = :cp,
+                    tel_particular = :tel_part,
+                    tel_casa = :tel_casa,
+                    tel_familiar = :tel_fam,
+                    -- Datos Técnicos
+                    linea_ayuda = :linea_ayuda,
+                    registro_siniiga = :siniiga,
+                    num_total_predios = :num_predios,
+                    superficie_total = :superficie, 
+                    tipo_documento_propiedad = :tipo_doc,
+                    pueblo_colonia_up = :colonia_up,
+                    parajes = :parajes,
+                    tenencia_tierra = :tenencia,
+                    especie_cultivo_principal = :especie,
+                    numero_cabezas_colmenas = :cabezas,
+                    -- Checklist Documentos (TINYINT 0/1)
+                    check_solicitud = :check_sol,
+                    check_identidad = :check_id,
+                    check_domicilio = :check_dom,
+                    check_curp_doc = :check_curp,
+                    check_rfc_doc = :check_rfc,
+                    check_manifiesto = :check_man,
+                    check_propiedad = :check_prop,
+                    check_finiquito = :check_fin,
+                    check_siniiga_doc = :check_sin,
+                    -- Control y VERIFICACIÓN (Nuevos Campos)
+                    fase_proceso = :fase, 
+                    observaciones_capturista = :obs,
+                    latitud_verif = :lat_v,
+                    longitud_verif = :lon_v,
+                    respuestas_json = :json 
+                WHERE id = :id";
 
-            $this->db->query($sql);
-            
-            // ✅ CORRECCIÓN DE LLAVES: Ahora coinciden con Captura.php
-            $this->db->bind(':id', $data['id']);
-            $this->db->bind(':nombre', $data['nombre']); // Antes buscaba 'nombre_productor'
-            $this->db->bind(':paterno', $data['apellido_paterno']); // Antes buscaba 'paterno'
-            $this->db->bind(':materno', $data['apellido_materno']); // Antes buscaba 'materno'
-            
-            $this->db->bind(':curp', $data['curp']);
-            $this->db->bind(':rfc', $data['rfc'] ?? null);
-            $this->db->bind(':tipo_id', $data['tipo_id'] ?? null);
-            $this->db->bind(':numero_id', $data['numero_id'] ?? null);
+        $this->db->query($sql);
+        
+        // Bindeos Identidad
+        $this->db->bind(':id', $data['id']);
+        $this->db->bind(':nombre', $data['nombre']); 
+        $this->db->bind(':paterno', $data['apellido_paterno']); 
+        $this->db->bind(':materno', $data['apellido_materno']); 
+        $this->db->bind(':curp', $data['curp']);
+        $this->db->bind(':rfc', $data['rfc'] ?? null);
+        $this->db->bind(':tipo_id', $data['tipo_id'] ?? null);
+        $this->db->bind(':numero_id', $data['numero_id'] ?? null);
 
-            // Bindeos Perfil
-            $this->db->bind(':tiene_discap', $data['tiene_discapacidad'] ?? 'NO');
-            $this->db->bind(':cual_discap', $data['cual_discapacidad'] ?? 'NA');
-            $this->db->bind(':grupo_etnico', $data['grupo_etnico'] ?? 'NO');
-            $this->db->bind(':grupo_etnico_cual', $data['grupo_etnico_cual'] ?? 'NA');
-            $this->db->bind(':escolaridad', $data['escolaridad'] ?? null); 
-            $this->db->bind(':ocupacion', $data['ocupacion'] ?? null);
-            $this->db->bind(':estado_civil', $data['estado_civil'] ?? null);
+        // Bindeos Perfil y Vulnerabilidad
+        $this->db->bind(':tiene_discap', $data['tiene_discapacidad'] ?? 'NO');
+        $this->db->bind(':cual_discap', $data['cual_discapacidad'] ?? 'NA');
+        $this->db->bind(':grupo_etnico', $data['grupo_etnico'] ?? 'NO');
+        $this->db->bind(':grupo_etnico_cual', $data['grupo_etnico_cual'] ?? 'NA');
+        $this->db->bind(':escolaridad', $data['escolaridad'] ?? null); 
+        $this->db->bind(':ocupacion', $data['ocupacion'] ?? null);
+        $this->db->bind(':estado_civil', $data['estado_civil'] ?? null);
 
-            // Bindeos Ubicación
-            $this->db->bind(':calle', $data['calle'] ?? null);
-            $this->db->bind(':colonia', $data['colonia_nombre'] ?? null);
-            $this->db->bind(':cp', $data['codigo_postal'] ?? null);
-            $this->db->bind(':tel_part', $data['tel_particular'] ?? null);
-            $this->db->bind(':tel_casa', $data['tel_casa'] ?? null);
-            $this->db->bind(':tel_fam', $data['tel_familiar'] ?? null);
+        // Bindeos Ubicación y Contacto
+        $this->db->bind(':calle', $data['calle'] ?? null);
+        $this->db->bind(':colonia', $data['colonia_nombre'] ?? null);
+        $this->db->bind(':cp', $data['codigo_postal'] ?? null);
+        $this->db->bind(':tel_part', $data['tel_particular'] ?? null);
+        $this->db->bind(':tel_casa', $data['tel_casa'] ?? null);
+        $this->db->bind(':tel_fam', $data['tel_familiar'] ?? null);
 
-            // Bindeos Técnicos
-            $this->db->bind(':linea_ayuda', $data['linea_ayuda'] ?? null);
-            $this->db->bind(':siniiga', $data['registro_siniiga'] ?? 'NO');
-            $this->db->bind(':num_predios', $data['num_total_predios'] ?? 1);
-            $this->db->bind(':superficie', $data['superficie_total'] ?? 0);
-            $this->db->bind(':tipo_doc', $data['tipo_documento_propiedad'] ?? null);
-            $this->db->bind(':colonia_up', $data['pueblo_colonia_up'] ?? null);
-            $this->db->bind(':parajes', $data['parajes'] ?? null);
-            $this->db->bind(':tenencia', $data['tenencia_tierra'] ?? 'NA');
-            $this->db->bind(':especie', $data['especie_cultivo_principal'] ?? null);
-            $this->db->bind(':cabezas', $data['numero_cabezas_colmenas'] ?? 0);
+        // Bindeos Técnicos de Producción
+        $this->db->bind(':linea_ayuda', $data['linea_ayuda'] ?? null);
+        $this->db->bind(':siniiga', $data['registro_siniiga'] ?? 'NO');
+        $this->db->bind(':num_predios', $data['num_total_predios'] ?? 1);
+        $this->db->bind(':superficie', $data['superficie_total'] ?? 0);
+        $this->db->bind(':tipo_doc', $data['tipo_documento_propiedad'] ?? null);
+        $this->db->bind(':colonia_up', $data['pueblo_colonia_up'] ?? null);
+        $this->db->bind(':parajes', $data['parajes'] ?? null);
+        $this->db->bind(':tenencia', $data['tenencia_tierra'] ?? 'NA');
+        $this->db->bind(':especie', $data['especie_cultivo_principal'] ?? null);
+        $this->db->bind(':cabezas', $data['numero_cabezas_colmenas'] ?? 0);
 
-            // Bindeos Checklist
-            $this->db->bind(':check_sol', $data['check_solicitud']);
-            $this->db->bind(':check_id', $data['check_identidad']);
-            $this->db->bind(':check_dom', $data['check_domicilio']);
-            $this->db->bind(':check_curp', $data['check_curp_doc']);
-            $this->db->bind(':check_rfc', $data['check_rfc_doc']);
-            $this->db->bind(':check_man', $data['check_manifiesto']);
-            $this->db->bind(':check_prop', $data['check_propiedad']);
-            $this->db->bind(':check_fin', $data['check_finiquito']);
-            $this->db->bind(':check_sin', $data['check_siniiga_doc']);
+        // Bindeos Checklist Documental
+        $this->db->bind(':check_sol', $data['check_solicitud']);
+        $this->db->bind(':check_id', $data['check_identidad']);
+        $this->db->bind(':check_dom', $data['check_domicilio']);
+        $this->db->bind(':check_curp', $data['check_curp_doc']);
+        $this->db->bind(':check_rfc', $data['check_rfc_doc']);
+        $this->db->bind(':check_man', $data['check_manifiesto']);
+        $this->db->bind(':check_prop', $data['check_propiedad']);
+        $this->db->bind(':check_fin', $data['check_finiquito']);
+        $this->db->bind(':check_sin', $data['check_siniiga_doc']);
 
-            // Control
-            $this->db->bind(':fase', $data['fase_proceso']);
-            $this->db->bind(':obs', $data['observaciones_capturista'] ?? '');
-            $this->db->bind(':json', $data['json']);
+        // Control, Observaciones y VERIFICACIÓN (GPS NUEVO)
+        $this->db->bind(':fase', $data['fase_proceso']);
+        $this->db->bind(':obs', $data['observaciones_capturista'] ?? '');
+        $this->db->bind(':lat_v', $data['latitud_verif'] ?? null);
+        $this->db->bind(':lon_v', $data['longitud_verif'] ?? null);
+        $this->db->bind(':json', $data['json']);
 
-            return $this->db->execute();
-        } catch (Exception $e) {
-            $this->ultimoError = $e->getMessage();
-            return false;
-        }
+        return $this->db->execute();
+    } catch (Exception $e) {
+        // Captura el error en el log o en una variable de clase si la tienes
+        if(isset($this->ultimoError)) { $this->ultimoError = $e->getMessage(); }
+        return false;
     }
+}
 
     /**
      * Actualizar solo Fase (Usado en flujos rápidos)

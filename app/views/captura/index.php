@@ -763,11 +763,6 @@
                                             <input type="text" class="form-control border-0 bg-light fw-bold" name="longitud_verif" id="in_lon_verif" placeholder="-99.XXXXXX">
                                         </div>
                                     </div>
-                                    <button type="button" onclick="obtenerGPSVerif()" class="btn btn-outline-guinda w-100 btn-sm">
-                                        <i class="fas fa-crosshairs me-2"></i>OBTENER UBICACIÓN ACTUAL
-                                    </button>
-                                    <hr class="text-muted opacity-25">
-                                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Estas coordenadas sustituirán a las de campo en el dictamen final.</small>
                                 </div>
                             </div>
                         </div>
@@ -971,89 +966,130 @@ function actualizarKPIs(data) {
     // 4. LÓGICA DEL MODAL
     // ==========================================
     window.abrirEdicion = function(id) {
-        const reg = rawData.find(i => i.id == id);
-        if (!reg) return;
-        const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
+    // 1. Localización de datos y parsing
+    const reg = rawData.find(i => i.id == id);
+    if (!reg) return;
+    const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-        $("#formCaptura")[0].reset();
-        $('input[name^="delete_"]').val('0'); 
-        $(".file-preview-container").addClass('d-none');
-        $(".doc-row").css('background-color', '');
-        $(".btn-upload").html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR');
+    // 2. Limpieza profunda del formulario antes de cargar
+    $("#formCaptura")[0].reset();
+    $('input[name^="delete_"]').val('0'); 
+    $(".file-preview-container").addClass('d-none');
+    $(".doc-row").css('background-color', '');
+    $(".btn-upload").html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR');
+    
+    // --- NUEVO: Limpieza específica de la Pestaña de Verificación ---
+    $("#in_lat_verif").val(''); 
+    $("#in_lon_verif").val('');
+    $("#input_evidencias").val('');
+    $("#galeria_evidencias").html(`
+        <div class="col-12 text-center py-5 text-muted empty-msg">
+            <i class="fas fa-images fa-3x mb-2 opacity-25"></i>
+            <p class="small mb-0">No hay fotos capturadas.<br>Use el botón "Añadir Fotos" para empezar.</p>
+        </div>
+    `);
+
+    // 3. Carga de metadatos básicos
+    $("#reg_id").val(reg.id);
+    $("#spanFolio").text(reg.folio || 'S/F');
+    
+    // 4. Lógica del botón PDF (Solo si no es fase EMPADRONADO)
+    const pdfLiberado = reg.fase_proceso && reg.fase_proceso !== 'EMPADRONADO';
+    if (pdfLiberado) {
+        $("#btnDescargarPDF").removeClass("d-none").attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
+    } else {
+        $("#btnDescargarPDF").addClass("d-none");
+    }
+
+    // 5. Carga de Identidad (Segmentación de nombre)
+    const fullNombre = getDatoFinal(reg, "nombre_productor", json);
+    const seg = segmentarNombreCompleto(fullNombre);
+    $("#in_nombre_productor").val(reg.nombre || seg.nombres); 
+    $("#in_paterno").val(reg.apellido_paterno || seg.paterno); 
+    $("#in_materno").val(reg.apellido_materno || seg.materno);
+    $("#in_curp_edit").val(reg.curp);
+    $("#in_rfc").val(reg.rfc);
+
+    // 6. Automatización de llenado de inputs desde el JSON
+    $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
+        const el = $(this);
+        const name = el.attr('name');
+        // Saltamos campos que ya manejamos manualmente o archivos/checks
+        if (!name || ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp', 'tipo_produccion', 'latitud_verif', 'longitud_verif'].includes(name) || el.attr('type') === 'file' || name.startsWith('check_')) return;
         
-        $("#reg_id").val(reg.id);
-        $("#spanFolio").text(reg.folio || 'S/F');
-        
-        const pdfLiberado = reg.fase_proceso && reg.fase_proceso !== 'EMPADRONADO';
-        if (pdfLiberado) {
-            $("#btnDescargarPDF").removeClass("d-none").attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
-        } else {
-            $("#btnDescargarPDF").addClass("d-none");
+        const valor = getDatoFinal(reg, name, json);
+        if (valor !== undefined && valor !== "") { 
+            el.val(valor); 
         }
+    });
 
-        const fullNombre = getDatoFinal(reg, "nombre_productor", json);
-        const seg = segmentarNombreCompleto(fullNombre);
-        $("#in_nombre_productor").val(reg.nombre || seg.nombres); 
-        $("#in_paterno").val(reg.apellido_paterno || seg.paterno); 
-        $("#in_materno").val(reg.apellido_materno || seg.materno);
-        $("#in_curp_edit").val(reg.curp);
-        $("#in_rfc").val(reg.rfc);
-
-        $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
-            const el = $(this);
-            const name = el.attr('name');
-            if (!name || ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp', 'tipo_produccion'].includes(name) || el.attr('type') === 'file' || name.startsWith('check_')) return;
-            const valor = getDatoFinal(reg, name, json);
-            if (valor !== undefined && valor !== "") { el.val(valor); }
-        });
-
-        const valorProduccionOriginal = getDatoFinal(reg, "tipo_produccion", json);
-        $("#origen_produccion_text").text(valorProduccionOriginal || 'No definido'); 
-        const selectProd = $("#in_tipo_produccion");
-        selectProd.removeClass("is-invalid border-danger");
-        if (valorProduccionOriginal) {
-            if (valorProduccionOriginal.includes(',')) {
-                selectProd.val(""); 
-                selectProd.addClass("is-invalid border-danger");
-                Toast.fire({ icon: 'warning', title: 'Múltiples actividades detectadas. Elija la Línea de Ayuda principal.' });
-            } else {
-                const limpio = valorProduccionOriginal.trim().toUpperCase();
-                selectProd.val(limpio);
-                if (selectProd.val() === null || selectProd.val() === "") { selectProd.addClass("is-invalid border-danger"); }
+    // 7. Lógica especial para Línea de Ayuda (Producción)
+    const valorProduccionOriginal = getDatoFinal(reg, "tipo_produccion", json);
+    $("#origen_produccion_text").text(valorProduccionOriginal || 'No definido'); 
+    const selectProd = $("#in_tipo_produccion");
+    selectProd.removeClass("is-invalid border-danger");
+    
+    if (valorProduccionOriginal) {
+        if (valorProduccionOriginal.includes(',')) {
+            selectProd.val(""); 
+            selectProd.addClass("is-invalid border-danger");
+            Toast.fire({ icon: 'warning', title: 'Múltiples actividades detectadas. Elija la Línea de Ayuda principal.' });
+        } else {
+            const limpio = valorProduccionOriginal.trim().toUpperCase();
+            selectProd.val(limpio);
+            if (selectProd.val() === null || selectProd.val() === "") { 
+                selectProd.addClass("is-invalid border-danger"); 
             }
         }
+    }
 
-        const checksCotejo = ['solicitud', 'identidad', 'domicilio', 'curp_doc', 'rfc_doc', 'manifiesto', 'propiedad', 'finiquito', 'siniiga_doc'];
-        checksCotejo.forEach(c => {
-            const columnaDB = 'check_' + c;
-            const valorDB = reg[columnaDB];
-            $(`input[name="${columnaDB}"]`).prop('checked', parseInt(valorDB) === 1);
-        });
+    // 8. Carga de Checks de Cotejo (Desde columnas físicas de la BD)
+    const checksCotejo = ['solicitud', 'identidad', 'domicilio', 'curp_doc', 'rfc_doc', 'manifiesto', 'propiedad', 'finiquito', 'siniiga_doc'];
+    checksCotejo.forEach(c => {
+        const columnaDB = 'check_' + c;
+        const valorDB = reg[columnaDB];
+        $(`input[name="${columnaDB}"]`).prop('checked', parseInt(valorDB) === 1);
+    });
 
-        fetch(`<?php echo URLROOT; ?>/Captura/verificarArchivos/${id}`)
-            .then(res => res.json())
-            .then(archivos => {
-                archivos.forEach(file => {
-                    const partes = file.tipo.split('_');
-                    let tipoDoc = partes[partes.length - 1].toLowerCase();
-                    if (tipoDoc === 'doc') { tipoDoc = partes[partes.length - 2].toLowerCase() + '_doc'; }
-                    const container = $(`#preview_${tipoDoc}`);
-                    if (container.length) {
-                        container.removeClass('d-none');
-                        container.find('.file-name-text').html(`<a href="${file.url}" target="_blank" class="text-primary fw-bold text-decoration-none"><i class="fas fa-eye me-1"></i> VER ARCHIVO ACTUAL</a>`);
-                        $(`label[for="file_${tipoDoc}"]`).html('<i class="fas fa-sync me-1"></i> REEMPLAZAR');
-                        container.closest('.doc-row').css('background-color', '#f0faff');
-                    }
-                });
-            })
-            .catch(err => console.error("Error en archivos:", err));
+    // 9. Carga de Archivos existentes en el servidor (AJAX)
+    fetch(`<?php echo URLROOT; ?>/Captura/verificarArchivos/${id}`)
+        .then(res => res.json())
+        .then(archivos => {
+            archivos.forEach(file => {
+                const partes = file.tipo.split('_');
+                let tipoDoc = partes[partes.length - 1].toLowerCase();
+                if (tipoDoc === 'doc') { 
+                    tipoDoc = partes[partes.length - 2].toLowerCase() + '_doc'; 
+                }
+                const container = $(`#preview_${tipoDoc}`);
+                if (container.length) {
+                    container.removeClass('d-none');
+                    container.find('.file-name-text').html(`<a href="${file.url}" target="_blank" class="text-primary fw-bold text-decoration-none"><i class="fas fa-eye me-1"></i> VER ARCHIVO ACTUAL</a>`);
+                    $(`label[for="file_${tipoDoc}"]`).html('<i class="fas fa-sync me-1"></i> REEMPLAZAR');
+                    container.closest('.doc-row').css('background-color', '#f0faff');
+                }
+            });
+        })
+        .catch(err => console.error("Error en carga de archivos:", err));
 
-        renderTabResumen(reg, json);
-        window.controlarDependencias(); 
-        bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
-        $("#modalEdicion").modal('show');
-    };
+    // --- NUEVO: Carga de datos de la Pestaña 4 (Verificación) ---
+    // Si ya existen coordenadas guardadas en la BD o JSON, las cargamos
+    const latPrev = getDatoFinal(reg, "latitud_verif", json);
+    const lonPrev = getDatoFinal(reg, "longitud_verif", json);
+    if(latPrev) $("#in_lat_verif").val(latPrev);
+    if(lonPrev) $("#in_lon_verif").val(lonPrev);
 
+    // 10. Finalización de UI
+    renderTabResumen(reg, json); // Pestaña 1
+    window.controlarDependencias(); // Lógica de visibilidad de campos
+    
+    // Asegurar que inicie en la Pestaña 1
+    const firstTabEl = document.querySelector('#tabExpediente li:first-child a');
+    bootstrap.Tab.getOrCreateInstance(firstTabEl).show();
+    
+    // Mostrar el modal
+    $("#modalEdicion").modal('show');
+};
     // ==========================================
     // 5. BÚSQUEDA Y PAGINACIÓN (CORREGIDA)
     // ==========================================
@@ -1161,43 +1197,106 @@ function actualizarKPIs(data) {
 // 7. ACCIONES DE GUARDADO FINAL
 // ==========================================
 function confirmarGuardado() {
+    // 1. Validación de Campo Crítico: Línea de Ayuda (Producción)
     const lineaAyuda = $("#in_tipo_produccion").val();
     if (!lineaAyuda || lineaAyuda === "") {
         $("#in_tipo_produccion").addClass("is-invalid border-danger").focus();
         Swal.fire({
             icon: 'error',
             title: 'Campo Obligatorio',
-            text: 'Por favor, seleccione una Línea de Ayuda válida antes de guardar.',
+            text: 'Por favor, seleccione una Línea de Ayuda válida en la Pestaña 2 antes de guardar.',
             confirmButtonColor: '#773357'
         });
         return;
     }
 
-    $("#formCaptura input[type='text'], #formCaptura textarea").each(function() { $(this).val($(this).val().toUpperCase()); });
+    // 2. Estandarización: Convertir textos y áreas de texto a Mayúsculas
+    $("#formCaptura input[type='text'], #formCaptura textarea").each(function() { 
+        $(this).val($(this).val().toUpperCase()); 
+    });
+
+    // 3. Preparación de Datos: Habilitar campos deshabilitados para que FormData los incluya
     const inputsDisabled = $("#formCaptura").find(':disabled');
     inputsDisabled.prop('disabled', false);
     
     const formElement = document.getElementById('formCaptura');
     const formData = new FormData(formElement);
     
-    const listadoChecks = ['check_solicitud', 'check_identidad', 'check_domicilio', 'check_curp_doc', 'check_rfc_doc', 'check_manifiesto', 'check_propiedad', 'check_finiquito', 'check_siniiga_doc'];
+    // 4. Manejo Manual de Checkboxes (Cotejo de Documentos)
+    // Aseguramos que envíen 1 o 0 para que la base de datos los procese correctamente
+    const listadoChecks = [
+        'check_solicitud', 'check_identidad', 'check_domicilio', 
+        'check_curp_doc', 'check_rfc_doc', 'check_manifiesto', 
+        'check_propiedad', 'check_finiquito', 'check_siniiga_doc'
+    ];
+    
     listadoChecks.forEach(c => {
         const el = document.getElementsByName(c)[0];
+        // En lugar de enviar "on" o nada, enviamos 1 o 0
         formData.set(c, (el && el.checked) ? 1 : 0);
     });
-    
+
+    // 5. Verificación (GPS y Fotos)
+    // Nota: 'latitud_verif', 'longitud_verif' y 'fotos_evidencia[]' 
+    // se agregan automáticamente al FormData por estar dentro del formulario.
+
+    // Restauramos el estado original de los inputs deshabilitados en la UI
     inputsDisabled.prop('disabled', true);
     
-    Swal.fire({ title: '¿Guardar cambios?', text: "Se actualizará el expediente oficial y los checks manuales.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#773357', confirmButtonText: 'Sí, guardar' }).then((result) => {
+    // 6. Confirmación y Envío vía Fetch
+    Swal.fire({ 
+        title: '¿Guardar cambios?', 
+        text: "Se actualizará el expediente oficial, los documentos cotejados y las evidencias de verificación.", 
+        icon: 'warning', 
+        showCancelButton: true, 
+        confirmButtonColor: '#773357', 
+        confirmButtonText: 'Sí, guardar',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true 
+    }).then((result) => {
         if (result.isConfirmed) {
-            Swal.fire({ title: 'Procesando...', didOpen: () => { Swal.showLoading() } });
-            fetch('<?php echo URLROOT; ?>/Captura/actualizar', { method: 'POST', body: formData })
-            .then(res => res.json())
-            .then(data => {
-                if(data.status === 'success') { Swal.fire('¡Éxito!', data.msg, 'success').then(() => location.reload()); }
-                else { Swal.fire('Error', data.msg || 'Falla en servidor', 'error'); }
+            // Mostrar estado de carga (indispensable para subida de archivos)
+            Swal.fire({ 
+                title: 'Sincronizando Expediente...', 
+                text: 'Subiendo información y archivos de evidencia, por favor espere.',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading() } 
+            });
+
+            fetch('<?php echo URLROOT; ?>/Captura/actualizar', { 
+                method: 'POST', 
+                body: formData 
             })
-            .catch(err => { console.error(err); Swal.fire('Error', 'Falla de comunicación con el servidor', 'error'); });
+            .then(res => {
+                if (!res.ok) throw new Error('Error en la respuesta del servidor');
+                return res.json();
+            })
+            .then(data => {
+                if(data.status === 'success') { 
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Éxito!',
+                        text: data.msg,
+                        confirmButtonColor: '#773357'
+                    }).then(() => location.reload()); 
+                } else { 
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Falla al guardar',
+                        text: data.msg || 'El servidor rechazó la solicitud.',
+                        confirmButtonColor: '#773357'
+                    });
+                }
+            })
+            .catch(err => { 
+                console.error(err); 
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Falla de Comunicación',
+                    text: 'No se pudo conectar con el servidor. Verifique su conexión de datos o internet.',
+                    confirmButtonColor: '#773357'
+                }); 
+            });
         }
     });
 }
@@ -1207,6 +1306,54 @@ function confirmarSalida() {
         if (result.isConfirmed) window.location.href = '<?php echo URLROOT; ?>/Auth/logout';
     });
 }
+// Variable global para almacenar los archivos seleccionados (opcional si usas FormData directo)
+let archivosEvidencia = [];
 
+$(document).on('change', '#input_evidencias', function(e) {
+    const files = e.target.files;
+    const galeria = $("#galeria_evidencias");
+    
+    // Ocultar mensaje de "No hay fotos"
+    galeria.find('.empty-msg').hide();
+
+    // Recorrer los archivos seleccionados
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Validar que sea imagen
+        if (!file.type.match('image.*')) continue;
+
+        const reader = new FileReader();
+        
+        reader.onload = function(event) {
+            const html = `
+                <div class="col-4 col-md-3 position-relative mb-2 foto-item">
+                    <div class="foto-evidencia-wrapper" style="position: relative; aspect-ratio: 1/1; overflow: hidden; border-radius: 10px; border: 2px solid #fff; shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        <button type="button" class="btn btn-danger btn-sm p-0 d-flex align-items-center justify-content-center" 
+                                onclick="eliminarMiniatura(this)"
+                                style="position: absolute; top: 5px; right: 5px; width: 22px; height: 22px; border-radius: 50%; z-index: 10; border: 1px solid white;">
+                            <i class="fas fa-times" style="font-size: 10px;"></i>
+                        </button>
+                        <img src="${event.target.result}" class="img-fluid w-100 h-100" style="object-fit: cover;">
+                    </div>
+                </div>`;
+            galeria.append(html);
+        };
+        
+        reader.readAsDataURL(file);
+    }
+});
+
+// Función para eliminar la miniatura visualmente
+function eliminarMiniatura(btn) {
+    $(btn).closest('.foto-item').remove();
+    
+    // Si ya no quedan fotos, mostrar el mensaje vacío de nuevo
+    if ($("#galeria_evidencias").find('.foto-item').length === 0) {
+        $("#galeria_evidencias").find('.empty-msg').show();
+        // Limpiar el input file para que permita subir el mismo archivo si se desea
+        $("#input_evidencias").val('');
+    }
+}
 window.confirmarSalida = confirmarSalida;
 </script>
