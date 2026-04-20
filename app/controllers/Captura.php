@@ -202,4 +202,42 @@ public function verificarArchivos($id) {
     }
     echo json_encode($archivos);
 }
+public function getFotosEvidencia($id) {
+    // 1. Limpiar cualquier salida previa (errores, espacios, etc)
+    if (ob_get_length()) ob_clean();
+    
+    // 2. Forzar encabezado JSON
+    header('Content-Type: application/json; charset=utf-8');
+
+    try {
+        // Validar que el ID sea numérico
+        if (!is_numeric($id)) {
+            throw new Exception("ID inválido");
+        }
+
+        $fotos = $this->encuestaModel->getEvidencias($id);
+        $data = [];
+        
+        if ($fotos) {
+            foreach ($fotos as $f) {
+                // Construir la URL completa
+                $data[] = [
+                    'id' => $f->id,
+                    'url' => URLROOT . '/' . $f->ruta_archivo
+                ];
+            }
+        }
+        
+        // 3. Imprimir solo el JSON y nada más
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        
+    } catch (Exception $e) {
+        // Si algo falla, mandamos el error en formato JSON, no HTML
+        http_response_code(500);
+        echo json_encode(['error' => $e->getMessage()]);
+    }
+    
+    // 4. Detener la ejecución de PHP aquí mismo
+    exit;
+}
 }
