@@ -176,6 +176,18 @@ $lon_verif = filter_var($_POST['longitud_verif'], FILTER_SANITIZE_NUMBER_FLOAT, 
         }
     }
 }
+// En app/controllers/Captura.php
+public function getFotosEvidencia($id) {
+    $fotos = $this->encuestaModel->getEvidencias($id);
+    $data = [];
+    foreach ($fotos as $f) {
+        $data[] = [
+            'id' => $f->id,
+            'url' => URLROOT . '/' . $f->ruta_archivo
+        ];
+    }
+    echo json_encode($data);
+}
     public function verificarArchivos($id) {
         $registro = $this->encuestaModel->getExpedienteCompleto($id);
         if (!$registro) { echo json_encode([]); return; }

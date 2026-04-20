@@ -322,6 +322,11 @@ class EncuestaModelo {
     die(json_encode(['status' => 'error', 'msg' => 'Error SQL: ' . $e->getMessage()]));
 }
 }
+public function getEvidencias($encuestaId) {
+    $this->db->query("SELECT * FROM encuesta_evidencias WHERE encuesta_id = :id");
+    $this->db->bind(':id', $encuestaId);
+    return $this->db->resultSet();
+}
 
 public function guardarEvidenciaFoto($encuestaId, $ruta) {
         try {

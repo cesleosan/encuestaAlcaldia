@@ -1007,92 +1007,130 @@ $(document).ready(function() {
     // ==========================================
     // 4. LÓGICA DEL MODAL (ABRIR Y CARGAR)
     // ==========================================
-    window.abrirEdicion = function(id) {
-        const reg = rawData.find(i => i.id == id);
-        if (!reg) return;
-        const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
+window.abrirEdicion = function(id) {
+    // 1. Obtener datos del registro y parsear JSON
+    const reg = rawData.find(i => i.id == id);
+    if (!reg) return;
+    const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
-        $("#formCaptura")[0].reset();
-        $('input[name^="delete_"]').val('0'); 
-        $(".file-preview-container").addClass('d-none');
-        $(".doc-row").css('background-color', '');
-        $(".btn-upload").html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR');
-        
-        // Limpiar Verificación
-        $("#in_lat_verif, #in_lon_verif, #input_evidencias").val('');
-        $("#galeria_evidencias").html(`<div class="col-12 text-center py-5 text-muted empty-msg"><i class="fas fa-images fa-3x mb-2 opacity-25"></i><p class="small mb-0">No hay fotos capturadas.<br>Use el botón "Añadir Fotos" para empezar.</p></div>`);
+    // 2. Limpieza total y Reseteo de Formulario
+    $("#formCaptura")[0].reset();
+    $('input[name^="delete_"]').val('0'); 
+    $(".file-preview-container").addClass('d-none');
+    $(".doc-row").css('background-color', '');
+    $(".btn-upload").html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR');
+    
+    // Limpieza de Pestaña 4 (Verificación)
+    $("#in_lat_verif, #in_lon_verif, #input_evidencias").val('');
+    const galeriaEvidencias = $("#galeria_evidencias").empty();
 
-        $("#reg_id").val(reg.id);
-        $("#spanFolio").text(reg.folio || 'S/F');
-        
-        // Lógica botón PDF
-        const pdfLiberado = reg.fase_proceso && reg.fase_proceso !== 'EMPADRONADO';
-        if (pdfLiberado) {
-            $("#btnDescargarPDF").removeClass("d-none").attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
+    // 3. Metadatos básicos
+    $("#reg_id").val(reg.id);
+    $("#spanFolio").text(reg.folio || 'S/F');
+    
+    // 4. Lógica de impresión PDF
+    const pdfLiberado = reg.fase_proceso && reg.fase_proceso !== 'EMPADRONADO';
+    if (pdfLiberado) {
+        $("#btnDescargarPDF").removeClass("d-none").attr("onclick", `window.open('<?php echo URLROOT; ?>/Expediente/imprimirSolicitud/${id}', '_blank')`);
+    } else {
+        $("#btnDescargarPDF").addClass("d-none");
+    }
+
+    // 5. Carga de Identidad y Segmentación
+    const fullNombre = obtenerDatoFinal(reg, "nombre_productor", json);
+    const seg = segmentarNombreCompleto(fullNombre);
+    $("#in_nombre_productor").val(reg.nombre || seg.nombres); 
+    $("#in_paterno").val(reg.apellido_paterno || seg.paterno); 
+    $("#in_materno").val(reg.apellido_materno || seg.materno);
+    $("#in_curp_edit").val(reg.curp);
+    $("#in_rfc").val(reg.rfc);
+
+    // 6. Llenado automático de inputs desde el JSON
+    $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
+        const el = $(this);
+        const name = el.attr('name');
+        if (!name || ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp', 'tipo_produccion', 'latitud_verif', 'longitud_verif'].includes(name) || el.attr('type') === 'file' || name.startsWith('check_')) return;
+        const valor = obtenerDatoFinal(reg, name, json);
+        if (valor !== undefined && valor !== "" && valor !== "---") { el.val(valor); }
+    });
+
+    // 7. Línea de Ayuda (Producción)
+    const valProd = obtenerDatoFinal(reg, "tipo_produccion", json);
+    $("#origen_produccion_text").text(valProd || 'No definido'); 
+    const selectProd = $("#in_tipo_produccion");
+    if (valProd && valProd !== "---") {
+        selectProd.removeClass("is-invalid border-danger");
+        if (valProd.includes(',')) {
+            selectProd.val("").addClass("is-invalid border-danger");
+            Toast.fire({ icon: 'warning', title: 'Elija la Línea de Ayuda principal.' });
         } else {
-            $("#btnDescargarPDF").addClass("d-none");
+            selectProd.val(valProd.trim().toUpperCase());
         }
+    }
 
-        // Carga Identidad
-        const fullNombre = obtenerDatoFinal(reg, "nombre_productor", json);
-        const seg = segmentarNombreCompleto(fullNombre);
-        $("#in_nombre_productor").val(reg.nombre || seg.nombres); 
-        $("#in_paterno").val(reg.apellido_paterno || seg.paterno); 
-        $("#in_materno").val(reg.apellido_materno || seg.materno);
-        $("#in_curp_edit").val(reg.curp);
-        $("#in_rfc").val(reg.rfc);
+    // 8. Coordenadas de Verificación
+    $("#in_lat_verif").val(obtenerDatoFinal(reg, "latitud_verif", json));
+    $("#in_lon_verif").val(obtenerDatoFinal(reg, "longitud_verif", json));
 
-        // Llenado automático de inputs/selects
-        $("#formCaptura input, #formCaptura select, #formCaptura textarea").each(function() {
-            const el = $(this);
-            const name = el.attr('name');
-            if (!name || ['id', 'nombre_productor', 'paterno', 'materno', 'rfc', 'curp', 'tipo_produccion', 'latitud_verif', 'longitud_verif'].includes(name) || el.attr('type') === 'file' || name.startsWith('check_')) return;
-            const valor = obtenerDatoFinal(reg, name, json);
-            if (valor !== undefined && valor !== "" && valor !== "---") { el.val(valor); }
-        });
+    // 9. Sincronizar Checkboxes de Documentos (Base de Datos Física)
+    const checksDocs = ['solicitud', 'identidad', 'domicilio', 'curp_doc', 'rfc_doc', 'manifiesto', 'propiedad', 'finiquito', 'siniiga_doc'];
+    checksDocs.forEach(c => {
+        $(`input[name="check_${c}"]`).prop('checked', parseInt(reg['check_' + c]) === 1);
+    });
 
-        // Línea de Ayuda
-        const valProd = obtenerDatoFinal(reg, "tipo_produccion", json);
-        $("#origen_produccion_text").text(valProd || 'No definido'); 
-        if (valProd && valProd !== "---") {
-            const selectProd = $("#in_tipo_produccion");
-            if (valProd.includes(',')) {
-                selectProd.val("").addClass("is-invalid border-danger");
-                Toast.fire({ icon: 'warning', title: 'Múltiples actividades. Elija la principal.' });
-            } else {
-                selectProd.val(valProd.trim().toUpperCase()).removeClass("is-invalid border-danger");
-            }
-        }
-
-        // GPS Verificación
-        $("#in_lat_verif").val(obtenerDatoFinal(reg, "latitud_verif", json));
-        $("#in_lon_verif").val(obtenerDatoFinal(reg, "longitud_verif", json));
-
-        // Checks Documentos
-        ['solicitud', 'identidad', 'domicilio', 'curp_doc', 'rfc_doc', 'manifiesto', 'propiedad', 'finiquito', 'siniiga_doc'].forEach(c => {
-            $(`input[name="check_${c}"]`).prop('checked', parseInt(reg['check_' + c]) === 1);
-        });
-
-        // Archivos existentes
-        fetch(`<?php echo URLROOT; ?>/Captura/verificarArchivos/${id}`)
-            .then(res => res.json())
-            .then(archivos => {
-                archivos.forEach(file => {
-                    let tipoDoc = file.tipo.toLowerCase().replace('check_', '').replace('file_', '');
-                    const container = $(`#preview_${tipoDoc}`);
-                    if (container.length) {
-                        container.removeClass('d-none').find('.file-name-text').html(`<a href="${file.url}" target="_blank" class="text-primary fw-bold text-decoration-none"><i class="fas fa-eye me-1"></i> VER ACTUAL</a>`);
-                        $(`label[for="file_${tipoDoc}"]`).html('<i class="fas fa-sync me-1"></i> REEMPLAZAR');
-                        container.closest('.doc-row').css('background-color', '#f0faff');
-                    }
-                });
+    // 10. CARGA AJAX: DOCUMENTACIÓN (Lo que se perdía)
+    fetch(`<?php echo URLROOT; ?>/Captura/verificarArchivos/${id}`)
+        .then(res => res.json())
+        .then(archivos => {
+            archivos.forEach(file => {
+                // Normalizamos el tipo de archivo que viene del servidor (ej: "CURP" -> "curp_doc")
+                let tipoServidor = file.tipo.toUpperCase();
+                let mapaLocal = {
+                    'SOLICITUD': 'solicitud', 'IDENTIDAD': 'identidad', 'DOMICILIO': 'domicilio',
+                    'CURP': 'curp_doc', 'RFC': 'rfc_doc', 'MANIFIESTO': 'manifiesto',
+                    'PROPIEDAD': 'propiedad', 'FINIQUITO': 'finiquito', 'SINIIGA': 'siniiga_doc'
+                };
+                
+                let idLocal = mapaLocal[tipoServidor];
+                const container = $(`#preview_${idLocal}`);
+                
+                if (container.length) {
+                    container.removeClass('d-none');
+                    container.find('.file-name-text').html(`<a href="${file.url}" target="_blank" class="text-primary fw-bold text-decoration-none small"><i class="fas fa-eye me-1"></i>VER ARCHIVO</a>`);
+                    $(`label[for="file_${idLocal}"]`).html('<i class="fas fa-sync me-1"></i> REEMPLAZAR');
+                    container.closest('.doc-row').css('background-color', '#f0faff');
+                }
             });
+        });
 
-        renderTabResumen(reg, json);
-        window.controlarDependencias(); 
-        bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
-        $("#modalEdicion").modal('show');
-    };
+    // 11. CARGA AJAX: FOTOS DE EVIDENCIA (Verificación)
+    fetch(`<?php echo URLROOT; ?>/Captura/getFotosEvidencia/${id}`)
+        .then(res => res.json())
+        .then(fotos => {
+            if (fotos && fotos.length > 0) {
+                fotos.forEach(foto => {
+                    galeriaEvidencias.append(`
+                        <div class="col-4 col-md-3 mb-2">
+                            <div class="foto-evidencia-wrapper" style="position:relative; aspect-ratio:1/1; overflow:hidden; border-radius:10px; border:2px solid var(--guinda);">
+                                <a href="${foto.url}" target="_blank">
+                                    <img src="${foto.url}" class="w-100 h-100" style="object-fit:cover;">
+                                </a>
+                                <div class="bg-guinda text-white text-center position-absolute bottom-0 w-100" style="font-size:9px; opacity:0.9; padding:2px 0;">GUARDADA</div>
+                            </div>
+                        </div>
+                    `);
+                });
+            } else {
+                galeriaEvidencias.html(`<div class="col-12 text-center py-5 text-muted empty-msg"><i class="fas fa-images fa-3x mb-2 opacity-25"></i><p class="small mb-0">No hay fotos capturadas.</p></div>`);
+            }
+        });
+
+    // 12. UI Final
+    renderTabResumen(reg, json);
+    window.controlarDependencias(); 
+    bootstrap.Tab.getOrCreateInstance(document.querySelector('#tabExpediente li:first-child a')).show();
+    $("#modalEdicion").modal('show');
+};
 
     function renderTabResumen(reg, json) {
         const $resumen = $("#resumenCaptura").empty();
