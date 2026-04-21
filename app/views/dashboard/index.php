@@ -286,7 +286,7 @@ $(document).ready(function() {
         "ocupacion", "tel_particular", "tel_recados", "email", "cp", 
         "pueblo_colonia", "situacion_unidad", "grado_estudios", "tipo_agua", 
         "financiamiento", "tema_capacitacion", "tipo_apoyo", "tipo_produccion", 
-        "superficie_prod", "volumen_prod", "unidad_medida"
+        "superficie_prod", "volumen_prod", "unidad_medida", "fase_proceso"
     ];
 
     // 1. Inicialización de Mapa
@@ -401,28 +401,60 @@ $(document).ready(function() {
 
     // --- FUNCIÓN: RENDER TABLA DETALLADA (ABAJO) ---
     function renderDetailedTable(data) {
-        const $headerRow = $("#headersCSV");
-        const $tbody = $("#bodyCSV");
+    const $headerRow = $("#headersCSV");
+    const $tbody = $("#bodyCSV");
 
-        $headerRow.empty().append('<th style="min-width:60px;">ID</th><th style="min-width:150px;">FOLIO</th>');
-        camposCSV.forEach(c => $headerRow.append(`<th>${c.replace(/_/g, ' ').toUpperCase()}</th>`));
+    // 1. Renderizar Encabezados
+    $headerRow.empty().append('<th style="min-width:60px;">ID</th><th style="min-width:150px;">FOLIO</th>');
+    camposCSV.forEach(c => $headerRow.append(`<th>${c.replace(/_/g, ' ').toUpperCase()}</th>`));
 
-        $tbody.empty();
-        data.forEach(reg => {
-            try {
-                const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
-                let rowHtml = `<tr><td class="fw-bold text-muted bg-white">${reg.id}</td><td class="fw-bold text-guinda bg-white">${reg.folio}</td>`;
+    // 2. Renderizar Cuerpo de la Tabla
+    $tbody.empty();
+    data.forEach(reg => {
+        try {
+            const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
+            let rowHtml = `<tr>
+                <td class="fw-bold text-muted bg-white">${reg.id}</td>
+                <td class="fw-bold text-guinda bg-white">${reg.folio}</td>`;
+            
+            camposCSV.forEach(campo => {
+                let valor = '';
+
+                // --- LÓGICA DE PRIORIDAD: COLUMNA FÍSICA VS JSON ---
                 
-                camposCSV.forEach(campo => {
-                    let valor = extraerValorGlobal(json, campo);
-                    rowHtml += `<td>${valor || '---'}</td>`;
-                });
-                
-                rowHtml += `</tr>`;
-                $tbody.append(rowHtml);
-            } catch (e) { console.warn("Error JSON en ID:", reg.id); }
-        });
-    }
+                if (campo === "tecnico_nombre") {
+                    // Mapeo manual porque en la BD se llama 'encuestador'
+                    valor = reg.encuestador;
+                } 
+                else if (campo === "nombre_productor") {
+                    // Construcción manual de nombre completo desde columnas físicas
+                    valor = `${reg.nombre || ''} ${reg.apellido_paterno || ''} ${reg.apellido_materno || ''}`.trim();
+                }
+                else if (reg[campo] !== undefined && reg[campo] !== null && reg[campo] !== "") {
+                    // Si el campo existe como columna real (fase_proceso, curp, sexo, cp, etc.)
+                    valor = reg[campo];
+                } 
+                else {
+                    // Si no es una columna física, lo extraemos del JSON
+                    valor = extraerValorGlobal(json, campo);
+                }
+
+                // Limpieza estética: Si es un ENUM (como fase_proceso), quitamos los guiones bajos
+                if (valor && typeof valor === 'string') {
+                    valor = valor.replace(/_/g, ' ');
+                }
+
+                rowHtml += `<td>${valor || '---'}</td>`;
+            });
+            
+            rowHtml += `</tr>`;
+            $tbody.append(rowHtml);
+
+        } catch (e) { 
+            console.warn("Error procesando registro ID:", reg.id, e); 
+        }
+    });
+}
 
     // Buscador Global
     $("#tablaSearch").on("keyup", function() {

@@ -299,7 +299,7 @@
                 <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-datos"><i class="fas fa-search me-1"></i> 1. DATOS CAPTURADOS</a></li>
                 <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-extra"><i class="fas fa-edit me-1"></i> 2. CAPTURA EXTRA</a></li>
                 <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-docs"><i class="fas fa-file-check me-1"></i> 3. DOCUMENTACIÓN</a></li>
-                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-verificacion"><i class="fas fa-file-check me-1"></i> 3. VERIFICACIÓN</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-verificacion"><i class="fas fa-file-check me-1"></i> 4. VERIFICACIÓN</a></li>
             </ul>
 
             <div class="modal-body bg-light" style="max-height: 70vh; overflow-y: auto;">
