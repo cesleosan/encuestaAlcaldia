@@ -822,12 +822,30 @@ $puedeAprobarCaptura = in_array($rolSesionCaptura, ['root', 'admin'], true);
 
                         <div class="col-md-7">
                             <div class="card border-0 shadow-sm h-100">
-                                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0 fw-bold text-guinda"><i class="fas fa-camera me-2"></i>Evidencias Fotográficas</h6>
-                                    <label for="input_evidencias" class="btn btn-guinda btn-sm px-3 rounded-pill">
-                                        <i class="fas fa-plus me-1"></i> AÑADIR FOTOS
-                                    </label>
-                                    <input type="file" id="input_evidencias" name="fotos_evidencia[]" class="d-none" accept="image/*" multiple capture="environment">
+                                <div class="card-header bg-white">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                        <div>
+                                            <h6 class="mb-0 fw-bold text-guinda"><i class="fas fa-camera me-2"></i>Evidencias Fotográficas</h6>
+                                            <small class="text-muted" style="font-size:0.68rem;">Puede tomar varias fotos una por una o seleccionar varias desde galería.</small>
+                                        </div>
+                                        <div class="d-flex gap-2 flex-wrap justify-content-end">
+                                            <label for="input_evidencias_camara" class="btn btn-guinda btn-sm px-3 rounded-pill mb-0">
+                                                <i class="fas fa-camera me-1"></i> TOMAR FOTO
+                                            </label>
+                                            <label for="input_evidencias_galeria" class="btn btn-outline-guinda btn-sm px-3 rounded-pill mb-0">
+                                                <i class="fas fa-images me-1"></i> SUBIR VARIAS
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Input final que viaja al backend. El JS junta aquí cámara + galería -->
+                                    <input type="file" id="input_evidencias" name="fotos_evidencia[]" class="d-none" accept="image/*" multiple>
+
+                                    <!-- Cámara móvil: normalmente devuelve una foto por toma -->
+                                    <input type="file" id="input_evidencias_camara" class="d-none evidencia-source-input" accept="image/*" capture="environment">
+
+                                    <!-- Galería/archivos: permite seleccionar varias en una sola acción -->
+                                    <input type="file" id="input_evidencias_galeria" class="d-none evidencia-source-input" accept="image/*" multiple>
                                 </div>
                                 <div class="card-body">
                                     <div id="galeria_evidencias" class="row g-2 overflow-auto" style="max-height: 350px;">
@@ -1076,7 +1094,8 @@ window.abrirEdicion = function(id) {
     $(".btn-upload").html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR');
     
     // Limpieza Verificación
-    $("#in_lat_verif, #in_lon_verif, #input_evidencias").val('');
+    $("#in_lat_verif, #in_lon_verif").val('');
+    resetEvidenciasTemporales(false);
     const galeriaEvidencias = $("#galeria_evidencias").empty();
 
     // 2. Metadatos
@@ -1284,17 +1303,92 @@ window.borrarEvidencia = function(fotoId) {
         });
     };
 
-    $(document).on('change', '#input_evidencias', function(e) {
-        const files = e.target.files;
-        const galeria = $("#galeria_evidencias");
-        galeria.find('.empty-msg').hide();
-        for (let i = 0; i < files.length; i++) {
+    // ==========================================
+    // Evidencias múltiples desde celular
+    // Nota UX: en móviles, capture="environment" suele permitir tomar solo UNA foto por evento.
+    // Por eso usamos dos botones: cámara toma una por una, galería permite múltiples.
+    // El JS acumula todas las fotos en #input_evidencias para que el backend actual reciba fotos_evidencia[].
+    // ==========================================
+    let archivosEvidenciaSeleccionados = [];
+
+    function sincronizarInputEvidencias() {
+        const inputFinal = document.getElementById('input_evidencias');
+        if (!inputFinal) return;
+
+        try {
+            const dt = new DataTransfer();
+            archivosEvidenciaSeleccionados.forEach(file => dt.items.add(file));
+            inputFinal.files = dt.files;
+        } catch (err) {
+            console.warn('El navegador no permite sincronizar FileList con DataTransfer:', err);
+        }
+    }
+
+    window.resetEvidenciasTemporales = function(limpiarGaleria = true) {
+        archivosEvidenciaSeleccionados = [];
+        $('#input_evidencias, #input_evidencias_camara, #input_evidencias_galeria').val('');
+        sincronizarInputEvidencias();
+        if (limpiarGaleria) {
+            $('#galeria_evidencias .foto-item-nueva').remove();
+            asegurarMensajeGaleriaVacia();
+        }
+    };
+
+    function agregarEvidenciasTemporales(files) {
+        if (!files || files.length === 0) return;
+
+        Array.from(files).forEach(file => {
+            if (!file.type || !file.type.startsWith('image/')) return;
+            archivosEvidenciaSeleccionados.push(file);
+        });
+
+        sincronizarInputEvidencias();
+        renderEvidenciasTemporales();
+        $('.evidencia-source-input').val(''); // permite tomar/subir otra vez el mismo archivo si hace falta
+    }
+
+    window.quitarEvidenciaTemporal = function(index) {
+        archivosEvidenciaSeleccionados.splice(index, 1);
+        sincronizarInputEvidencias();
+        renderEvidenciasTemporales();
+    };
+
+    function renderEvidenciasTemporales() {
+        const galeria = $('#galeria_evidencias');
+        galeria.find('.empty-msg').remove();
+        galeria.find('.foto-item-nueva').remove();
+
+        archivosEvidenciaSeleccionados.forEach((file, index) => {
             const reader = new FileReader();
             reader.onload = (event) => {
-                galeria.append(`<div class="col-4 col-md-3 mb-2 foto-item"><div class="foto-evidencia-wrapper" style="position:relative; aspect-ratio:1/1; overflow:hidden; border-radius:10px; border:2px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,0.1);"><button type="button" class="btn btn-danger btn-sm p-0" onclick="$(this).closest('.foto-item').remove()" style="position:absolute; top:5px; right:5px; width:22px; height:22px; border-radius:50%; z-index:10;"><i class="fas fa-times"></i></button><img src="${event.target.result}" class="w-100 h-100" style="object-fit:cover;"></div></div>`);
+                galeria.append(`
+                    <div class="col-4 col-md-3 mb-2 foto-item-nueva">
+                        <div class="foto-evidencia-wrapper">
+                            <button type="button" class="btn-eliminar-foto" onclick="quitarEvidenciaTemporal(${index})" title="Quitar foto antes de guardar">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <img src="${event.target.result}" class="w-100 h-100" style="object-fit:cover;">
+                            <div class="bg-success text-white text-center position-absolute bottom-0 w-100" style="font-size:9px; padding:2px 0; opacity:0.9;">NUEVA</div>
+                        </div>
+                    </div>
+                `);
             };
-            reader.readAsDataURL(files[i]);
+            reader.readAsDataURL(file);
+        });
+
+        asegurarMensajeGaleriaVacia();
+    }
+
+    function asegurarMensajeGaleriaVacia() {
+        const galeria = $('#galeria_evidencias');
+        const totalFotos = galeria.find('.foto-item-db, .foto-item-nueva').length;
+        if (totalFotos === 0 && galeria.find('.empty-msg').length === 0) {
+            galeria.html(`<div class="col-12 text-center py-5 text-muted empty-msg"><i class="fas fa-images fa-3x mb-2 opacity-25"></i><p class="small mb-0">No hay fotos capturadas.<br>Use "Tomar foto" o "Subir varias" para empezar.</p></div>`);
         }
+    }
+
+    $(document).on('change', '#input_evidencias_camara, #input_evidencias_galeria', function(e) {
+        agregarEvidenciasTemporales(e.target.files);
     });
 
     window.controlarDependencias = function() {
