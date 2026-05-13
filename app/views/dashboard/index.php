@@ -391,32 +391,32 @@
                         <div class="col-md-2 col-6">
                             <div class="verification-kpi">
                                 <div class="d-flex align-items-center gap-2">
+                                    <div class="icon-wrap"><i class="fas fa-file-signature"></i></div>
+                                    <div>
+                                        <div class="small text-muted fw-bold">SOLICITUDES</div>
+                                        <div class="h4 fw-bold mb-0" id="kpi-verif-solicitudes">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="verification-kpi">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="icon-wrap"><i class="fas fa-file-circle-check"></i></div>
+                                    <div>
+                                        <div class="small text-muted fw-bold">VALIDACIÓN</div>
+                                        <div class="h4 fw-bold mb-0" id="kpi-verif-validacion">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="verification-kpi">
+                                <div class="d-flex align-items-center gap-2">
                                     <div class="icon-wrap"><i class="fas fa-search-location"></i></div>
                                     <div>
                                         <div class="small text-muted fw-bold">EN REVISIÓN</div>
                                         <div class="h4 fw-bold mb-0" id="kpi-verif-revision">0</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <div class="verification-kpi">
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="icon-wrap"><i class="fas fa-camera"></i></div>
-                                    <div>
-                                        <div class="small text-muted fw-bold">CON FOTOS</div>
-                                        <div class="h4 fw-bold mb-0" id="kpi-verif-fotos">0</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <div class="verification-kpi">
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="icon-wrap"><i class="fas fa-images"></i></div>
-                                    <div>
-                                        <div class="small text-muted fw-bold">SIN FOTOS</div>
-                                        <div class="h4 fw-bold mb-0" id="kpi-verif-sin-fotos">0</div>
                                     </div>
                                 </div>
                             </div>
@@ -435,10 +435,10 @@
                         <div class="col-md-2 col-6">
                             <div class="verification-kpi">
                                 <div class="d-flex align-items-center gap-2">
-                                    <div class="icon-wrap"><i class="fas fa-seedling"></i></div>
+                                    <div class="icon-wrap"><i class="fas fa-camera"></i></div>
                                     <div>
-                                        <div class="small text-muted fw-bold">PRODUCCIÓN</div>
-                                        <div class="h4 fw-bold mb-0" id="kpi-verif-prod">0</div>
+                                        <div class="small text-muted fw-bold">CON FOTOS</div>
+                                        <div class="h4 fw-bold mb-0" id="kpi-verif-fotos">0</div>
                                     </div>
                                 </div>
                             </div>
@@ -480,7 +480,6 @@
                         <div class="col-md-4">
                             <select id="filtroFaseVerif" class="form-select form-select-sm">
                                 <option value="">Todas las fases</option>
-                                <option value="EMPADRONADO">Empadronado</option>
                                 <option value="SOLICITUD_INGRESADA">Solicitud ingresada</option>
                                 <option value="VALIDACION_DOCS">Validación docs</option>
                                 <option value="EN_REVISION">En revisión técnica</option>
@@ -513,7 +512,7 @@
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 p-3 border-top">
                     <div>
                         <div class="small text-muted" id="infoVerificacionCampo">Mostrando 0 registros</div>
-                        <small class="text-muted"><i class="fas fa-info-circle me-1"></i>Tabla paginada a <b>10 registros</b>. El conteo de fotos queda exacto al incluir <b>total_fotos</b> desde backend.</small>
+                        <small class="text-muted" id="estadoConteoFotos"><i class="fas fa-info-circle me-1"></i>Tabla paginada a <b>10 registros</b>. Las fotos se consultan automáticamente desde evidencias.</small>
                     </div>
                     <nav>
                         <ul class="pagination pagination-sm mb-0" id="paginationVerificacionControls"></ul>
@@ -681,6 +680,24 @@
                             </div>
                         </div>
 
+                        <div class="card border-0 shadow-sm mb-3" id="cardGestionFase">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <h6 class="m-0 fw-bold text-guinda"><i class="fas fa-route me-2"></i>Gestión de fase</h6>
+                                <small class="text-muted" id="modalPermisoFase">Solo administrador/root aprueba o rechaza</small>
+                            </div>
+                            <div class="card-body">
+                                <label class="small fw-bold text-muted text-uppercase mb-1">Mover expediente a</label>
+                                <select id="modalNuevaFase" class="form-select form-select-sm fw-bold">
+                                    <option value="SOLICITUD_INGRESADA">2. SOLICITUD INGRESADA</option>
+                                    <option value="VALIDACION_DOCS">3. VALIDACIÓN DE DOCS</option>
+                                    <option value="EN_REVISION">4. EN REVISIÓN TÉCNICA</option>
+                                    <option value="APROBADO" class="fase-admin-only">5. APROBADO</option>
+                                    <option value="RECHAZADO" class="fase-admin-only">6. RECHAZADO</option>
+                                </select>
+                                <div class="small text-muted mt-2" id="modalAyudaFase">Selecciona una fase y guarda el cambio. Solo administrador/root puede modificar el flujo desde aquí.</div>
+                            </div>
+                        </div>
+
                         <div class="card border-0 shadow-sm">
                             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                                 <h6 class="m-0 fw-bold text-guinda"><i class="fas fa-camera me-2"></i>Evidencias fotográficas</h6>
@@ -696,8 +713,9 @@
                 </div>
             </div>
             <div class="modal-footer bg-white d-flex justify-content-between">
-                <small class="text-muted"><i class="fas fa-shield-alt me-1"></i>Vista de dashboard: no modifica producción hasta conectar endpoint de cambio de fase.</small>
-                <div class="d-flex gap-2">
+                <small class="text-muted" id="modalAvisoPermisos"><i class="fas fa-shield-alt me-1"></i>Las acciones de aprobación/rechazo se reservan para administrador.</small>
+                <div class="d-flex gap-2" id="modalAccionesAdmin">
+                    <button type="button" class="btn btn-outline-guinda" id="btnGuardarFaseVerificacion"><i class="fas fa-save me-1"></i> Guardar fase</button>
                     <button type="button" class="btn btn-outline-danger" id="btnRechazarVerificacion"><i class="fas fa-times-circle me-1"></i> Rechazar</button>
                     <button type="button" class="btn btn-guinda" id="btnValidarVerificacion"><i class="fas fa-check-circle me-1"></i> Validar</button>
                 </div>
@@ -729,6 +747,12 @@ $(document).ready(function() {
     const pageSizeVerificacion = 10;
     let currentPage = 1;
     let currentPageVerificacion = 1;
+    let conteoFotosHidratado = false;
+    let conteoFotosEnProceso = false;
+
+    const rolUsuarioDashboard = '<?php echo $_SESSION['rol'] ?? ''; ?>';
+    const puedeAprobarDashboard = ['root', 'admin'].includes(rolUsuarioDashboard);
+    const puedeGestionarFlujoDashboard = puedeAprobarDashboard;
 
     // Configuración exacta de las 23 columnas (CSV)
     const camposCSV = [
@@ -792,6 +816,7 @@ $(document).ready(function() {
             
             renderMasterTable(1); // Tabla de arriba
             renderVerificacionCampo(1); // Módulo nuevo de verificación
+            hidratarConteoFotosVerificacion(); // Corrige conteos/filtros con fotos reales sin tocar BD
             renderDetailedTable(fullMaestroData); // Tabla de abajo (JSON)
 
         }).catch(err => console.error("Error general de carga:", err));
@@ -949,7 +974,7 @@ $(document).ready(function() {
                     reg.colonia_nombre,
                     reg.fase_proceso,
                     comentarios,
-                    produccion.join(' ')
+                    produccion.map(i => i.label).join(' ')
                 ].join(' '))
             };
         });
@@ -1037,18 +1062,18 @@ $(document).ready(function() {
 
     function renderKPIsVerificacion() {
         const base = verificacionData;
+        const solicitudes = base.filter(e => e.fase_proceso === 'SOLICITUD_INGRESADA').length;
+        const validacion = base.filter(e => e.fase_proceso === 'VALIDACION_DOCS').length;
         const enRevision = base.filter(e => e.fase_proceso === 'EN_REVISION').length;
         const conFotos = base.filter(e => e.total_fotos_calculado !== null && e.total_fotos_calculado > 0).length;
-        const sinFotos = base.filter(e => e.total_fotos_calculado !== null && e.total_fotos_calculado === 0).length;
         const conCoord = base.filter(e => e.tiene_coord_verificada).length;
-        const conProd = base.filter(e => e.produccion_detectada.length > 0).length;
-        const pendientes = base.filter(e => !e.tiene_coord_verificada || e.total_fotos_calculado === 0 || e.total_fotos_calculado === null).length;
+        const pendientes = base.filter(e => !['APROBADO', 'RECHAZADO'].includes(e.fase_proceso || '')).length;
 
+        $('#kpi-verif-solicitudes').text(solicitudes);
+        $('#kpi-verif-validacion').text(validacion);
         $('#kpi-verif-revision').text(enRevision);
         $('#kpi-verif-fotos').text(conFotos);
-        $('#kpi-verif-sin-fotos').text(sinFotos);
         $('#kpi-verif-coord').text(conCoord);
-        $('#kpi-verif-prod').text(conProd);
         $('#kpi-verif-pendientes').text(pendientes);
     }
 
@@ -1063,7 +1088,7 @@ $(document).ready(function() {
 
             switch (filtroVerificacionActivo) {
                 case 'con_fotos': pasaChip = e.total_fotos_calculado !== null && e.total_fotos_calculado > 0; break;
-                case 'sin_fotos': pasaChip = e.total_fotos_calculado === 0; break;
+                case 'sin_fotos': pasaChip = e.total_fotos_calculado !== null && e.total_fotos_calculado === 0; break;
                 case 'con_coord': pasaChip = e.tiene_coord_verificada; break;
                 case 'sin_coord': pasaChip = !e.tiene_coord_verificada; break;
                 case 'maiz': pasaChip = e.produccion_detectada.some(i => i.key === 'maiz'); break;
@@ -1100,7 +1125,7 @@ $(document).ready(function() {
         const items = verificacionFiltrada.slice(start, start + pageSizeVerificacion);
         items.forEach(e => {
             const fotosBadge = e.total_fotos_calculado === null
-                ? '<span class="badge-soft badge-soft-secondary"><i class="fas fa-question-circle"></i>Sin conteo</span>'
+                ? '<span class="badge-soft badge-soft-info"><i class="fas fa-spinner fa-spin"></i>Consultando</span>'
                 : (e.total_fotos_calculado > 0
                     ? `<span class="badge-soft badge-soft-success"><i class="fas fa-camera"></i>${e.total_fotos_calculado} fotos</span>`
                     : '<span class="badge-soft badge-soft-danger"><i class="fas fa-camera"></i>Sin fotos</span>');
@@ -1177,6 +1202,7 @@ $(document).ready(function() {
         $('#modalLonVerif').text(reg.longitud_verif || '---');
         $('#modalProduccionBadges').html(badgesProduccion(reg.produccion_detectada));
         $('#modalComentarios').text(reg.comentarios_verificacion || 'Sin comentarios capturados');
+        configurarAccionesFase(reg);
 
         cargarFotosModal(reg.id);
         $('#modalVerificacionCampo').modal('show');
@@ -1194,6 +1220,7 @@ $(document).ready(function() {
 
                 if (!Array.isArray(fotos) || fotos.length === 0) {
                     $('#modalFotosStatus').text('Sin fotos');
+                    actualizarConteoFotosLocal(id, 0);
                     cont.html(`
                         <div class="col-12 text-center text-muted py-4">
                             <i class="fas fa-images fa-3x opacity-25 mb-2"></i>
@@ -1205,6 +1232,7 @@ $(document).ready(function() {
 
                 $('#modalFotosStatus').text(`${fotos.length} foto(s)`);
                 $('#modalVerifTotalFotos').text(fotos.length);
+                actualizarConteoFotosLocal(id, fotos.length);
                 fotos.forEach(f => {
                     cont.append(`
                         <div class="col-6 col-md-4 col-lg-3">
@@ -1219,6 +1247,82 @@ $(document).ready(function() {
                 $('#modalFotosStatus').text('Error');
                 $('#modalFotosEvidencias').html('<div class="col-12 text-center text-danger py-4">No se pudieron cargar las evidencias.</div>');
             });
+    }
+
+    function actualizarConteoFotosLocal(id, total) {
+        const n = parseInt(total, 10);
+        if (isNaN(n)) return;
+        const reg = verificacionData.find(e => String(e.id) === String(id));
+        if (reg) {
+            reg.total_fotos_calculado = n;
+            reg.tiene_fotos_calculado = n > 0;
+            reg.fotos_sin_conteo_backend = false;
+        }
+    }
+
+    async function hidratarConteoFotosVerificacion() {
+        if (conteoFotosEnProceso || conteoFotosHidratado) return;
+
+        const pendientes = verificacionData.filter(e => e.total_fotos_calculado === null && e.id);
+        if (!pendientes.length) {
+            conteoFotosHidratado = true;
+            $('#estadoConteoFotos').html('<i class="fas fa-check-circle me-1"></i>Tabla paginada a <b>10 registros</b>. Conteo de fotos listo desde backend.');
+            return;
+        }
+
+        conteoFotosEnProceso = true;
+        $('#estadoConteoFotos').html(`<i class="fas fa-spinner fa-spin me-1"></i>Consultando fotos reales: 0/${pendientes.length}`);
+
+        let procesados = 0;
+        const cola = [...pendientes];
+        const concurrencia = Math.min(6, cola.length);
+
+        const worker = async () => {
+            while (cola.length) {
+                const reg = cola.shift();
+                try {
+                    const res = await fetch(`<?php echo URLROOT; ?>/Captura/getFotosEvidencia/${reg.id}`);
+                    const fotos = await res.json();
+                    actualizarConteoFotosLocal(reg.id, Array.isArray(fotos) ? fotos.length : 0);
+                } catch (e) {
+                    // Si falla la consulta puntual, lo dejamos como pendiente para no falsear el dato.
+                } finally {
+                    procesados++;
+                    if (procesados % 5 === 0 || procesados === pendientes.length) {
+                        $('#estadoConteoFotos').html(`<i class="fas fa-spinner fa-spin me-1"></i>Consultando fotos reales: ${procesados}/${pendientes.length}`);
+                        aplicarFiltrosVerificacion();
+                    }
+                }
+            }
+        };
+
+        await Promise.all(Array.from({ length: concurrencia }, worker));
+        conteoFotosHidratado = true;
+        conteoFotosEnProceso = false;
+        $('#estadoConteoFotos').html('<i class="fas fa-check-circle me-1 text-success"></i>Tabla paginada a <b>10 registros</b>. Conteo de fotos actualizado desde evidencias.');
+        aplicarFiltrosVerificacion();
+    }
+
+    function configurarAccionesFase(reg) {
+        $('#modalNuevaFase').val(reg.fase_proceso || 'SOLICITUD_INGRESADA');
+
+        if (!puedeAprobarDashboard) {
+            $('#modalAccionesAdmin').addClass('d-none');
+            $('#modalNuevaFase option[value="APROBADO"], #modalNuevaFase option[value="RECHAZADO"]').prop('disabled', true).addClass('d-none');
+            $('#modalAvisoPermisos').html('<i class="fas fa-lock me-1"></i>Solo administrador/root puede aprobar o rechazar expedientes.');
+        } else {
+            $('#modalAccionesAdmin').removeClass('d-none');
+            $('#modalNuevaFase option').prop('disabled', false).removeClass('d-none');
+            $('#modalAvisoPermisos').html('<i class="fas fa-shield-alt me-1"></i>Administrador/root: puedes aprobar, rechazar o mover fase.');
+        }
+
+        if (!puedeGestionarFlujoDashboard) {
+            $('#modalNuevaFase').prop('disabled', true);
+            $('#modalAyudaFase').text('Tu usuario puede revisar, pero solo administrador/root puede mover fases desde este módulo.');
+        } else {
+            $('#modalNuevaFase').prop('disabled', false);
+            $('#modalAyudaFase').text('Selecciona una fase y guarda el cambio. Solo administrador/root puede modificar el flujo desde aquí.');
+        }
     }
 
     function renderMapaVerificacion() {
@@ -1277,14 +1381,124 @@ $(document).ready(function() {
         abrirModalVerificacion($(this).data('id'));
     });
 
-    $('#btnValidarVerificacion, #btnRechazarVerificacion').on('click', function() {
-        const accion = this.id === 'btnValidarVerificacion' ? 'validar' : 'rechazar';
-        Swal.fire({
-            icon: 'info',
-            title: `Acción preparada para ${accion}`,
-            text: 'El frontend ya está listo. Para modificar producción de forma segura falta conectar un endpoint backend específico de cambio de fase.',
-            confirmButtonColor: '#773357'
+    function nombreFaseLegible(fase) {
+        return (fase || '').replace(/_/g, ' ');
+    }
+
+    function actualizarRegistroFaseLocal(id, nuevaFase, estatus) {
+        const actualizar = arr => {
+            const item = arr.find(e => String(e.id) === String(id));
+            if (item) {
+                item.fase_proceso = nuevaFase;
+                if (estatus) item.estatus = estatus;
+            }
+        };
+        actualizar(verificacionData);
+        actualizar(verificacionFiltrada);
+        actualizar(fullMaestroData);
+        actualizar(filteredData);
+
+        if (registroVerificacionActual && String(registroVerificacionActual.id) === String(id)) {
+            registroVerificacionActual.fase_proceso = nuevaFase;
+            if (estatus) registroVerificacionActual.estatus = estatus;
+        }
+    }
+
+    async function guardarCambioFaseVerificacion(nuevaFase, motivo = '') {
+        if (!registroVerificacionActual) return;
+
+        if (!puedeAprobarDashboard) {
+            Swal.fire('Permiso requerido', 'Solo administrador/root puede mover fases desde este módulo.', 'warning');
+            return;
+        }
+
+        const fasesValidas = ['SOLICITUD_INGRESADA', 'VALIDACION_DOCS', 'EN_REVISION', 'APROBADO', 'RECHAZADO'];
+        if (!fasesValidas.includes(nuevaFase)) {
+            Swal.fire('Fase inválida', 'Selecciona una fase válida para continuar.', 'warning');
+            return;
+        }
+
+        const actual = registroVerificacionActual.fase_proceso || 'SIN_FASE';
+        const pregunta = nuevaFase === 'APROBADO'
+            ? '¿Validar y aprobar este expediente?'
+            : (nuevaFase === 'RECHAZADO'
+                ? '¿Rechazar este expediente?'
+                : `¿Mover expediente de ${nombreFaseLegible(actual)} a ${nombreFaseLegible(nuevaFase)}?`);
+
+        const confirmacion = await Swal.fire({
+            icon: nuevaFase === 'RECHAZADO' ? 'warning' : 'question',
+            title: pregunta,
+            text: `Folio: ${registroVerificacionActual.folio || '---'}`,
+            showCancelButton: true,
+            confirmButtonColor: '#773357',
+            cancelButtonText: 'Cancelar',
+            confirmButtonText: 'Sí, guardar',
+            reverseButtons: true
         });
+
+        if (!confirmacion.isConfirmed) return;
+
+        Swal.fire({
+            title: 'Guardando cambio...',
+            text: 'Actualizando fase del expediente.',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        try {
+            const res = await fetch('<?php echo URLROOT; ?>/Encuesta/cambiarFaseVerificacion', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: registroVerificacionActual.id,
+                    fase: nuevaFase,
+                    motivo: motivo
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok || data.status !== 'success') {
+                throw new Error(data.msg || 'No se pudo guardar el cambio de fase.');
+            }
+
+            actualizarRegistroFaseLocal(registroVerificacionActual.id, data.fase || nuevaFase, data.estatus || null);
+            $('#modalVerifFase').html(badgeFase(data.fase || nuevaFase));
+            $('#modalNuevaFase').val(data.fase || nuevaFase);
+            aplicarFiltrosVerificacion();
+            renderMasterTable(currentPage);
+            renderDetailedTable(fullMaestroData);
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Fase actualizada',
+                text: data.msg || 'El expediente fue actualizado correctamente.',
+                confirmButtonColor: '#773357'
+            });
+        } catch (e) {
+            Swal.fire('Error', e.message || 'No se pudo actualizar la fase.', 'error');
+        }
+    }
+
+    $('#btnValidarVerificacion, #btnRechazarVerificacion').on('click', function() {
+        if (!puedeAprobarDashboard) {
+            Swal.fire('Permiso requerido', 'Solo administrador/root puede aprobar o rechazar expedientes.', 'warning');
+            return;
+        }
+        const nuevaFase = this.id === 'btnValidarVerificacion' ? 'APROBADO' : 'RECHAZADO';
+        $('#modalNuevaFase').val(nuevaFase);
+        guardarCambioFaseVerificacion(nuevaFase);
+    });
+
+    $('#btnGuardarFaseVerificacion').on('click', function() {
+        guardarCambioFaseVerificacion($('#modalNuevaFase').val());
+    });
+
+    $('#modalNuevaFase').on('change', function() {
+        const fase = $(this).val();
+        if (['APROBADO', 'RECHAZADO'].includes(fase) && !puedeAprobarDashboard) {
+            Swal.fire('Acción restringida', 'Solo administrador/root puede aprobar o rechazar.', 'warning');
+            $(this).val(registroVerificacionActual?.fase_proceso || 'SOLICITUD_INGRESADA');
+        }
     });
 
     $('#btnExportarVerificacion').on('click', function() {

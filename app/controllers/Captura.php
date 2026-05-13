@@ -40,6 +40,21 @@ class Captura extends Controller {
         $lat_verif = filter_var($_POST['latitud_verif'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 $lon_verif = filter_var($_POST['longitud_verif'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 
+        // Seguridad de flujo: Capturista/supervisor no pueden enviar APROBADO/RECHAZADO aunque manipulen el HTML.
+        $rolSesion = $_SESSION['rol'] ?? '';
+        $puedeFaseFinal = in_array($rolSesion, ['root', 'admin'], true);
+        $faseSolicitada = $_POST['fase_proceso'] ?? $registro->fase_proceso;
+        $fasesBasicas = ['EMPADRONADO', 'SOLICITUD_INGRESADA', 'VALIDACION_DOCS', 'EN_REVISION'];
+        $fasesFinales = ['APROBADO', 'RECHAZADO'];
+
+        if (!$puedeFaseFinal && in_array($faseSolicitada, $fasesFinales, true)) {
+            // Preserva la fase actual del registro para evitar regresiones o aprobaciones no autorizadas.
+            $faseSolicitada = $registro->fase_proceso;
+        }
+        if (!$puedeFaseFinal && !in_array($faseSolicitada, $fasesBasicas, true) && !in_array($faseSolicitada, $fasesFinales, true)) {
+            $faseSolicitada = $registro->fase_proceso;
+        }
+
         // 2. MAPEO DE DOCUMENTOS (Checks y Archivos de la Pestaña 3)
         $mapeoDoc = [
             'solicitud'   => ['file' => 'SOLICITUD',   'col' => 'check_solicitud'],
@@ -125,7 +140,7 @@ $lon_verif = filter_var($_POST['longitud_verif'], FILTER_SANITIZE_NUMBER_FLOAT, 
             'numero_cabezas_colmenas'   => $_POST['num_animales'] ?? 0,
             
             // Fases y Observaciones
-            'fase_proceso'      => $_POST['fase_proceso'] ?? $registro->fase_proceso,
+            'fase_proceso'      => $faseSolicitada,
             'observaciones_capturista' => mb_strtoupper($_POST['observaciones_capturista'] ?? '', 'UTF-8'),
             
             // VERIFICACIÓN (Pestaña 4)

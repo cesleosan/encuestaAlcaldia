@@ -1,3 +1,7 @@
+<?php
+$rolSesionCaptura = $_SESSION['rol'] ?? '';
+$puedeAprobarCaptura = in_array($rolSesionCaptura, ['root', 'admin'], true);
+?>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800&display=swap" rel="stylesheet">
@@ -539,14 +543,20 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="small fw-bold text-danger d-block text-start text-uppercase">Fase del proceso</label>
-                                <select class="form-select fw-bold border-danger" name="fase_proceso" id="in_fase">
+                                <select class="form-select fw-bold border-danger" name="<?php echo $puedeAprobarCaptura ? 'fase_proceso' : 'fase_proceso_visual'; ?>" id="in_fase">
                                     <option value="EMPADRONADO">1. EMPADRONADO</option>
                                     <option value="SOLICITUD_INGRESADA">2. SOLICITUD INGRESADA</option>
                                     <option value="VALIDACION_DOCS">3. VALIDACIÓN DE DOCS</option>
                                     <option value="EN_REVISION">4. EN REVISIÓN TÉCNICA</option>
-                                    <option value="APROBADO">5. APROBADO</option>
-                                    <option value="RECHAZADO">6. RECHAZADO</option>
+                                    <?php if ($puedeAprobarCaptura): ?>
+                                        <option value="APROBADO">5. APROBADO</option>
+                                        <option value="RECHAZADO">6. RECHAZADO</option>
+                                    <?php endif; ?>
                                 </select>
+                                <?php if (!$puedeAprobarCaptura): ?>
+                                    <input type="hidden" name="fase_proceso" id="in_fase_hidden" value="">
+                                    <small class="text-muted d-block mt-1" style="font-size:0.68rem;">Capturista: aprobación y rechazo solo los realiza administrador.</small>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -869,6 +879,9 @@ $(document).ready(function() {
     const pageSize = 10;
     let currentPage = 1;
 
+    const puedeAprobarCaptura = <?php echo $puedeAprobarCaptura ? 'true' : 'false'; ?>;
+    const fasesFinalesCaptura = ['APROBADO', 'RECHAZADO'];
+
     const Toast = Swal.mixin({
         toast: true,
         position: 'top-end',
@@ -1095,7 +1108,22 @@ window.abrirEdicion = function(id) {
         if (valor !== undefined && valor !== "" && valor !== "---") { el.val(valor); }
     });
 
-    // 5. Línea de Ayuda y GPS
+    // 5. Fase según permisos del rol
+    if (!puedeAprobarCaptura) {
+        const faseActual = reg.fase_proceso || 'EMPADRONADO';
+        $('#in_fase_hidden').val(faseActual);
+
+        if (fasesFinalesCaptura.includes(faseActual)) {
+            // Preservamos la fase final y evitamos que capturista la cambie accidentalmente.
+            $('#in_fase').val('EN_REVISION').prop('disabled', true).addClass('bg-light');
+        } else {
+            $('#in_fase').prop('disabled', false).removeClass('bg-light');
+            $('#in_fase').val(faseActual);
+            $('#in_fase_hidden').val($('#in_fase').val() || faseActual);
+        }
+    }
+
+    // 6. Línea de Ayuda y GPS
     const valProd = obtenerDatoFinal(reg, "tipo_produccion", json);
     if (valProd && valProd !== "---") {
         $("#in_tipo_produccion").val(valProd.trim().toUpperCase()).removeClass("is-invalid");
@@ -1292,6 +1320,13 @@ function confirmarGuardado() {
         $(this).val($(this).val().toUpperCase()); 
     });
     
+    if (!puedeAprobarCaptura) {
+        const faseHidden = $('#in_fase_hidden').val();
+        if (!fasesFinalesCaptura.includes(faseHidden)) {
+            $('#in_fase_hidden').val($('#in_fase').val() || faseHidden || 'EMPADRONADO');
+        }
+    }
+
     const disabledFields = $("#formCaptura").find(':disabled').prop('disabled', false);
     const formData = new FormData(document.getElementById('formCaptura'));
     

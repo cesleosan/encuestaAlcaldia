@@ -165,9 +165,17 @@ class EncuestaModelo {
      * Listado Maestro (Soporta todas las columnas nuevas)
      */
     public function getListadoMaestro() {
-        $this->db->query("SELECT e.*, u.nombre_completo as encuestador 
+        $this->db->query("SELECT 
+                            e.*, 
+                            u.nombre_completo as encuestador,
+                            IFNULL(ev.total_fotos, 0) as total_fotos
                         FROM encuestas e
-                        LEFT JOIN usuarios u ON e.usuario_id = u.id 
+                        LEFT JOIN usuarios u ON e.usuario_id = u.id
+                        LEFT JOIN (
+                            SELECT encuesta_id, COUNT(*) as total_fotos
+                            FROM encuesta_evidencias
+                            GROUP BY encuesta_id
+                        ) ev ON ev.encuesta_id = e.id
                         ORDER BY e.fecha_inicio DESC");
         return $this->db->resultSet();
     }
@@ -367,4 +375,24 @@ public function guardarEvidenciaFoto($encuestaId, $ruta) {
         $this->db->bind(':json', $data['json']);
         return $this->db->execute();
     }
+    /**
+     * Actualizar fase desde Dashboard de Verificación.
+     * No modifica estructura de BD. Actualiza fase_proceso y estatus operativo.
+     */
+    public function actualizarFaseProceso($id, $fase, $estatus = null) {
+        try {
+            $sql = "UPDATE encuestas 
+                    SET fase_proceso = :fase, estatus = :estatus
+                    WHERE id = :id";
+            $this->db->query($sql);
+            $this->db->bind(':id', $id);
+            $this->db->bind(':fase', $fase);
+            $this->db->bind(':estatus', $estatus ?? $fase);
+            return $this->db->execute();
+        } catch (Exception $e) {
+            $this->ultimoError = $e->getMessage();
+            return false;
+        }
+    }
+
 }

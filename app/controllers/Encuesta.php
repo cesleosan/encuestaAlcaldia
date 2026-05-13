@@ -190,4 +190,95 @@ public function getEstadisticas() {
     echo json_encode($datos);
     exit;
 }
+
+public function cambiarFaseVerificacion() {
+    if (session_status() === PHP_SESSION_NONE) session_start();
+
+    if (ob_get_length()) ob_clean();
+    header('Content-Type: application/json; charset=utf-8');
+
+    try {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['status' => 'error', 'msg' => 'Método no permitido']);
+            exit;
+        }
+
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['status' => 'error', 'msg' => 'Sesión expirada']);
+            exit;
+        }
+
+        $rol = $_SESSION['rol'] ?? '';
+        $puedeAdministrar = in_array($rol, ['root', 'admin'], true);
+
+        if (!$puedeAdministrar) {
+            http_response_code(403);
+            echo json_encode(['status' => 'error', 'msg' => 'Solo administrador/root puede mover fases desde este módulo']);
+            exit;
+        }
+
+        $payload = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($payload)) {
+            $payload = $_POST;
+        }
+
+        $id = isset($payload['id']) ? (int)$payload['id'] : 0;
+        $fase = strtoupper(trim($payload['fase'] ?? ''));
+
+        $fasesValidas = [
+            'SOLICITUD_INGRESADA',
+            'VALIDACION_DOCS',
+            'EN_REVISION',
+            'APROBADO',
+            'RECHAZADO'
+        ];
+
+        if ($id <= 0 || !in_array($fase, $fasesValidas, true)) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'msg' => 'Datos inválidos para cambio de fase']);
+            exit;
+        }
+
+        $registro = $this->encuestaModel->getEncuestaById($id);
+        if (!$registro) {
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'msg' => 'Expediente no encontrado']);
+            exit;
+        }
+
+        $estatusPorFase = [
+            'SOLICITUD_INGRESADA' => 'Solicitud ingresada',
+            'VALIDACION_DOCS'     => 'Validación docs',
+            'EN_REVISION'         => 'En revisión',
+            'APROBADO'            => 'Aprobado',
+            'RECHAZADO'           => 'Rechazado'
+        ];
+        $estatus = $estatusPorFase[$fase] ?? $fase;
+
+        if ($this->encuestaModel->actualizarFaseProceso($id, $fase, $estatus)) {
+            echo json_encode([
+                'status' => 'success',
+                'msg' => 'Fase actualizada correctamente',
+                'id' => $id,
+                'fase' => $fase,
+                'estatus' => $estatus
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'msg' => 'No se pudo actualizar la fase: ' . ($this->encuestaModel->getError() ?? 'error desconocido')
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'msg' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
 }
