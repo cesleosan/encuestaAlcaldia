@@ -157,6 +157,65 @@
     .evidencia-thumb img { width: 100%; height: 100%; object-fit: cover; }
     #mapa-verificacion { height: 260px; border-radius: 14px; border: 4px solid #fff; z-index: 1; }
 
+
+    /* --- Navegación por secciones: Dashboard / Verificación --- */
+    .module-nav-card {
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        padding: 10px;
+        margin-bottom: 1.5rem;
+    }
+    .module-nav {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .module-tab {
+        border: 1px solid #ead7e0;
+        background: #fff;
+        color: #6c757d;
+        border-radius: 14px;
+        padding: 12px 16px;
+        font-size: .82rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: .2s ease;
+    }
+    .module-tab:hover, .module-tab.active {
+        background: var(--guinda);
+        border-color: var(--guinda);
+        color: #fff;
+        box-shadow: 0 7px 16px rgba(119, 51, 87, 0.25);
+        transform: translateY(-1px);
+    }
+    .module-tab .counter-pill {
+        background: rgba(255,255,255,.22);
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: .7rem;
+    }
+    .module-view { animation: fadeInModule .22s ease; }
+    .module-view.d-none { display: none !important; }
+    @keyframes fadeInModule {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .verification-toolbar {
+        background: #fff;
+        border: 1px solid #f1e4ea;
+        border-radius: 16px;
+        padding: 12px;
+    }
+    .verification-title-block {
+        border-left: 5px solid var(--guinda);
+        padding-left: 14px;
+    }
+
 </style>
 
 <div class="container-fluid py-4">
@@ -174,6 +233,20 @@
             </button>
         </div>
     </div>
+
+    <div class="module-nav-card">
+        <div class="module-nav">
+            <button class="module-tab active" data-target="dashboardGeneral">
+                <i class="fas fa-chart-pie"></i> Dashboard general
+            </button>
+            <button class="module-tab" data-target="verificacionAprobacion">
+                <i class="fas fa-clipboard-check"></i> Verificar / aprobar
+                <span class="counter-pill" id="navCountVerificacion">0</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="dashboardGeneral" class="module-view">
 
     <div class="row mb-2">
         <div class="col-md-3">
@@ -293,14 +366,20 @@
     </div>
 
 
+    </div>
+
+    <div id="verificacionAprobacion" class="module-view d-none">
+
     <!-- MÓDULO NUEVO: Verificación de Campo -->
     <div class="row mt-2" id="seccionVerificacionCampo">
         <div class="col-lg-12">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
                     <div>
-                        <h6 class="m-0 fw-bold text-guinda"><i class="fas fa-clipboard-check me-2"></i>Verificación de Campo</h6>
-                        <small class="text-muted">Seguimiento de coordenadas verificadas, evidencias fotográficas, comentarios y producción detectada.</small>
+                        <div class="verification-title-block">
+                            <h6 class="m-0 fw-bold text-guinda"><i class="fas fa-clipboard-check me-2"></i>Verificar / aprobar expedientes</h6>
+                            <small class="text-muted">Vista operativa independiente para revisar coordenadas, evidencias, comentarios y producción detectada.</small>
+                        </div>
                     </div>
                     <button id="btnExportarVerificacion" class="btn btn-success btn-sm shadow-sm">
                         <i class="fas fa-file-excel me-1"></i> Descargar Excel Verificación
@@ -431,13 +510,22 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="d-flex justify-content-between align-items-center p-3 border-top">
-                    <div class="small text-muted" id="infoVerificacionCampo">Mostrando 0 registros</div>
-                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i>Los conteos de fotos se activan al incluir <b>total_fotos</b> desde backend.</small>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 p-3 border-top">
+                    <div>
+                        <div class="small text-muted" id="infoVerificacionCampo">Mostrando 0 registros</div>
+                        <small class="text-muted"><i class="fas fa-info-circle me-1"></i>Tabla paginada a <b>10 registros</b>. El conteo de fotos queda exacto al incluir <b>total_fotos</b> desde backend.</small>
+                    </div>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0" id="paginationVerificacionControls"></ul>
+                    </nav>
                 </div>
             </div>
         </div>
     </div>
+
+    </div>
+
+    <div id="dashboardListados" class="module-view dashboard-extra">
 
     <div class="row">
         <div class="col-lg-12">
@@ -498,6 +586,7 @@
             </div>
         </div>
     </div>
+</div>
 </div>
 
 <!-- MODAL NUEVO: Detalle de Verificación de Campo -->
@@ -637,8 +726,9 @@ $(document).ready(function() {
     let registroVerificacionActual = null;
     let mapaVerificacion = null;
     const pageSize = 5;
-    const maxRowsVerificacion = 80;
+    const pageSizeVerificacion = 10;
     let currentPage = 1;
+    let currentPageVerificacion = 1;
 
     // Configuración exacta de las 23 columnas (CSV)
     const camposCSV = [
@@ -698,9 +788,10 @@ $(document).ready(function() {
             filteredData = [...fullMaestroData];
             verificacionData = prepararDatosVerificacion(fullMaestroData);
             verificacionFiltrada = [...verificacionData];
+            $('#navCountVerificacion').text(verificacionData.length);
             
             renderMasterTable(1); // Tabla de arriba
-            renderVerificacionCampo(); // Módulo nuevo de verificación
+            renderVerificacionCampo(1); // Módulo nuevo de verificación
             renderDetailedTable(fullMaestroData); // Tabla de abajo (JSON)
 
         }).catch(err => console.error("Error general de carga:", err));
@@ -987,10 +1078,11 @@ $(document).ready(function() {
             return pasaTexto && pasaFase && pasaChip;
         });
 
-        renderVerificacionCampo();
+        currentPageVerificacion = 1;
+        renderVerificacionCampo(1);
     }
 
-    function renderVerificacionCampo() {
+    function renderVerificacionCampo(page = currentPageVerificacion) {
         renderKPIsVerificacion();
         const tbody = $('#bodyVerificacionCampo');
         tbody.empty();
@@ -998,10 +1090,14 @@ $(document).ready(function() {
         if (!verificacionFiltrada.length) {
             tbody.append('<tr><td colspan="8" class="text-center text-muted py-4"><i class="fas fa-filter me-1"></i>No hay registros con los filtros seleccionados.</td></tr>');
             $('#infoVerificacionCampo').text('Mostrando 0 registros');
+            $('#paginationVerificacionControls').empty();
             return;
         }
 
-        const items = verificacionFiltrada.slice(0, maxRowsVerificacion);
+        const totalPages = Math.max(1, Math.ceil(verificacionFiltrada.length / pageSizeVerificacion));
+        currentPageVerificacion = Math.min(Math.max(1, page), totalPages);
+        const start = (currentPageVerificacion - 1) * pageSizeVerificacion;
+        const items = verificacionFiltrada.slice(start, start + pageSizeVerificacion);
         items.forEach(e => {
             const fotosBadge = e.total_fotos_calculado === null
                 ? '<span class="badge-soft badge-soft-secondary"><i class="fas fa-question-circle"></i>Sin conteo</span>'
@@ -1034,8 +1130,35 @@ $(document).ready(function() {
             `);
         });
 
-        const extra = verificacionFiltrada.length > maxRowsVerificacion ? ` · Se muestran los primeros ${maxRowsVerificacion}` : '';
-        $('#infoVerificacionCampo').html(`Mostrando <b>${items.length}</b> de <b>${verificacionFiltrada.length}</b> registros${extra}`);
+        const desde = start + 1;
+        const hasta = start + items.length;
+        $('#infoVerificacionCampo').html(`Mostrando <b>${desde}-${hasta}</b> de <b>${verificacionFiltrada.length}</b> registros`);
+        renderPaginationVerificacionUI(totalPages);
+    }
+
+
+    function renderPaginationVerificacionUI(totalPages) {
+        const container = $('#paginationVerificacionControls');
+        container.empty();
+        if (totalPages <= 1) return;
+
+        let startPage = Math.max(1, currentPageVerificacion - 2);
+        let endPage = Math.min(totalPages, startPage + 4);
+        if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+
+        container.append(`<li class="page-item ${currentPageVerificacion === 1 ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPageVerificacion - 1}"><i class="fas fa-chevron-left"></i></a></li>`);
+
+        for (let i = startPage; i <= endPage; i++) {
+            container.append(`<li class="page-item ${i === currentPageVerificacion ? 'active' : ''}"><a class="page-link shadow-sm" href="#" data-page="${i}">${i}</a></li>`);
+        }
+
+        container.append(`<li class="page-item ${currentPageVerificacion === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPageVerificacion + 1}"><i class="fas fa-chevron-right"></i></a></li>`);
+
+        container.find('a').on('click', function(e) {
+            e.preventDefault();
+            const p = parseInt($(this).attr('data-page'), 10);
+            if (p >= 1 && p <= totalPages) renderVerificacionCampo(p);
+        });
     }
 
     function abrirModalVerificacion(id) {
@@ -1185,6 +1308,24 @@ $(document).ready(function() {
         });
         const csv = "\uFEFF" + headers.join(',') + "\n" + rows.map(r => r.map(v => `"${(v ?? '').toString().replace(/"/g, '""').replace(/,/g, ';').trim()}"`).join(',')).join("\n");
         descargarCSV(csv, 'Verificacion_Campo');
+    });
+
+
+    // Navegación UX entre Dashboard y Verificación/Aprobación
+    $('.module-tab').on('click', function() {
+        const target = $(this).data('target');
+        $('.module-tab').removeClass('active');
+        $(this).addClass('active');
+
+        if (target === 'dashboardGeneral') {
+            $('#dashboardGeneral, #dashboardListados').removeClass('d-none');
+            $('#verificacionAprobacion').addClass('d-none');
+            setTimeout(() => { try { map.invalidateSize(); } catch(e) {} }, 120);
+        } else {
+            $('#dashboardGeneral, #dashboardListados').addClass('d-none');
+            $('#verificacionAprobacion').removeClass('d-none');
+            renderVerificacionCampo(currentPageVerificacion);
+        }
     });
 
 
