@@ -888,6 +888,15 @@ $puedeAprobarCaptura = in_array($rolSesionCaptura, ['root', 'admin'], true);
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+// ==========================================
+// CONFIG GLOBAL SEGURA
+// Debe vivir fuera de document.ready porque confirmarGuardado()
+// se ejecuta desde onclick inline y necesita estas variables.
+// ==========================================
+window.puedeAprobarCaptura = <?php echo $puedeAprobarCaptura ? 'true' : 'false'; ?>;
+window.fasesFinalesCaptura = ['APROBADO', 'RECHAZADO'];
+window.archivosEvidenciaSeleccionados = window.archivosEvidenciaSeleccionados || [];
+
 $(document).ready(function() {
     // ==========================================
     // 0. GLOBALES Y CONFIGURACIÓN
@@ -897,8 +906,8 @@ $(document).ready(function() {
     const pageSize = 10;
     let currentPage = 1;
 
-    const puedeAprobarCaptura = <?php echo $puedeAprobarCaptura ? 'true' : 'false'; ?>;
-    const fasesFinalesCaptura = ['APROBADO', 'RECHAZADO'];
+    const puedeAprobarCaptura = window.puedeAprobarCaptura;
+    const fasesFinalesCaptura = window.fasesFinalesCaptura;
 
     const Toast = Swal.mixin({
         toast: true,
@@ -1128,7 +1137,7 @@ window.abrirEdicion = function(id) {
     });
 
     // 5. Fase según permisos del rol
-    if (!puedeAprobarCaptura) {
+    if (!window.puedeAprobarCaptura) {
         const faseActual = reg.fase_proceso || 'EMPADRONADO';
         $('#in_fase_hidden').val(faseActual);
 
@@ -1309,7 +1318,7 @@ window.borrarEvidencia = function(fotoId) {
     // Por eso usamos dos botones: cámara toma una por una, galería permite múltiples.
     // El JS acumula todas las fotos en #input_evidencias para que el backend actual reciba fotos_evidencia[].
     // ==========================================
-    let archivosEvidenciaSeleccionados = [];
+    window.archivosEvidenciaSeleccionados = window.archivosEvidenciaSeleccionados || [];
 
     function sincronizarInputEvidencias() {
         const inputFinal = document.getElementById('input_evidencias');
@@ -1317,7 +1326,7 @@ window.borrarEvidencia = function(fotoId) {
 
         try {
             const dt = new DataTransfer();
-            archivosEvidenciaSeleccionados.forEach(file => dt.items.add(file));
+            window.archivosEvidenciaSeleccionados.forEach(file => dt.items.add(file));
             inputFinal.files = dt.files;
         } catch (err) {
             console.warn('El navegador no permite sincronizar FileList con DataTransfer:', err);
@@ -1325,7 +1334,7 @@ window.borrarEvidencia = function(fotoId) {
     }
 
     window.resetEvidenciasTemporales = function(limpiarGaleria = true) {
-        archivosEvidenciaSeleccionados = [];
+        window.archivosEvidenciaSeleccionados = [];
         $('#input_evidencias, #input_evidencias_camara, #input_evidencias_galeria').val('');
         sincronizarInputEvidencias();
         if (limpiarGaleria) {
@@ -1339,7 +1348,7 @@ window.borrarEvidencia = function(fotoId) {
 
         Array.from(files).forEach(file => {
             if (!file.type || !file.type.startsWith('image/')) return;
-            archivosEvidenciaSeleccionados.push(file);
+            window.archivosEvidenciaSeleccionados.push(file);
         });
 
         sincronizarInputEvidencias();
@@ -1348,7 +1357,7 @@ window.borrarEvidencia = function(fotoId) {
     }
 
     window.quitarEvidenciaTemporal = function(index) {
-        archivosEvidenciaSeleccionados.splice(index, 1);
+        window.archivosEvidenciaSeleccionados.splice(index, 1);
         sincronizarInputEvidencias();
         renderEvidenciasTemporales();
     };
@@ -1358,7 +1367,7 @@ window.borrarEvidencia = function(fotoId) {
         galeria.find('.empty-msg').remove();
         galeria.find('.foto-item-nueva').remove();
 
-        archivosEvidenciaSeleccionados.forEach((file, index) => {
+        window.archivosEvidenciaSeleccionados.forEach((file, index) => {
             const reader = new FileReader();
             reader.onload = (event) => {
                 galeria.append(`
@@ -1414,15 +1423,26 @@ function confirmarGuardado() {
         $(this).val($(this).val().toUpperCase()); 
     });
     
-    if (!puedeAprobarCaptura) {
+    if (!window.puedeAprobarCaptura) {
         const faseHidden = $('#in_fase_hidden').val();
-        if (!fasesFinalesCaptura.includes(faseHidden)) {
+        if (!window.fasesFinalesCaptura.includes(faseHidden)) {
             $('#in_fase_hidden').val($('#in_fase').val() || faseHidden || 'EMPADRONADO');
         }
     }
 
     const disabledFields = $("#formCaptura").find(':disabled').prop('disabled', false);
     const formData = new FormData(document.getElementById('formCaptura'));
+
+    // FOTOS DE EVIDENCIA: blindaje móvil
+    // Algunos navegadores móviles no permiten asignar input.files vía DataTransfer.
+    // Por eso limpiamos lo que venga del input final y agregamos manualmente
+    // las fotos acumuladas desde "Tomar foto" y "Subir varias".
+    formData.delete('fotos_evidencia[]');
+    if (Array.isArray(window.archivosEvidenciaSeleccionados) && window.archivosEvidenciaSeleccionados.length > 0) {
+        window.archivosEvidenciaSeleccionados.forEach((file, idx) => {
+            formData.append('fotos_evidencia[]', file, file.name || `evidencia_${idx + 1}.jpg`);
+        });
+    }
     
     // BLINDAJE PARA CAMPOS NUMÉRICOS (Evita error 1366 de MariaDB)
     const numericFields = ['superficie_prod', 'num_total_predios', 'num_animales', 'volumen_prod', 'latitud_verif', 'longitud_verif'];
