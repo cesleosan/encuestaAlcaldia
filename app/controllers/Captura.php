@@ -25,6 +25,8 @@ class Captura extends Controller {
 
     public function actualizar() {
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+        if (ob_get_length()) ob_clean();
+        header('Content-Type: application/json; charset=utf-8');
         $id = $_POST['id'];
         
         // 1. Obtener registro actual para conocer el Folio y JSON previo
@@ -87,17 +89,30 @@ $lon_verif = filter_var($_POST['longitud_verif'], FILTER_SANITIZE_NUMBER_FLOAT, 
                 $dbChecks[$columna] = 0; 
             } 
             
-            // Prioridad 3: Subida de archivo nuevo
+            // Prioridad 3: Subida de archivo nuevo / REEMPLAZO SEGURO
             if (isset($_FILES['file_' . $key]) && $_FILES['file_' . $key]['error'] === UPLOAD_ERR_OK) {
                 if (!is_dir($rutaDocs)) { @mkdir($rutaDocs, 0775, true); }
-                
+
                 $ext = strtolower(pathinfo($_FILES['file_' . $key]['name'], PATHINFO_EXTENSION));
                 $nombreFinal = $folioCarpeta . "_" . $prefijo . "." . $ext;
                 $destino = $rutaDocs . "/" . $nombreFinal;
 
+                // Guardamos la lista de archivos anteriores del mismo tipo ANTES de mover el nuevo.
+                // Esto corrige el caso: viejo JPG, nuevo PDF/PNG => quedaban ambos y el frontend veía el viejo.
+                $patronViejo = $rutaDocs . '/' . $folioCarpeta . '_' . $prefijo . '.*';
+                $archivosViejos = glob($patronViejo) ?: [];
+
                 if (move_uploaded_file($_FILES['file_' . $key]['tmp_name'], $destino)) {
                     chmod($destino, 0664);
-                    $dbChecks[$columna] = 1; 
+
+                    // Si existían archivos anteriores del mismo requisito con otra extensión, se eliminan.
+                    foreach ($archivosViejos as $viejo) {
+                        if (realpath($viejo) !== realpath($destino)) {
+                            @unlink($viejo);
+                        }
+                    }
+
+                    $dbChecks[$columna] = 1;
                 }
             }
         }
@@ -128,7 +143,7 @@ $lon_verif = filter_var($_POST['longitud_verif'], FILTER_SANITIZE_NUMBER_FLOAT, 
             'tel_casa'          => $_POST['tel_casa'] ?? '',
             'tel_familiar'      => $_POST['tel_recados'] ?? '',
             
-            'linea_ayuda'       => $_POST['tipo_produccion'] ?? 'AGRICOLA',
+            'linea_ayuda'       => $this->normalizarLineaAyuda($_POST['tipo_produccion'] ?? ($registro->linea_ayuda ?? 'AGRICOLA')),
             'registro_siniiga'  => $_POST['siniiga_status'] ?? 'NO',
             'num_total_predios' => $_POST['num_total_predios'] ?? 1,
             'superficie_total'  => $_POST['superficie_prod'] ?? 0,
@@ -194,28 +209,53 @@ $lon_verif = filter_var($_POST['longitud_verif'], FILTER_SANITIZE_NUMBER_FLOAT, 
 
 // En Captura.php
 public function verificarArchivos($id) {
-    $registro = $this->encuestaModel->getEncuestaById($id);
-    $folioCarpeta = str_replace(['/', ' ', '\\'], '-', $registro->folio);
-    $ruta = PUBROOT . '/uploads/expedientes/' . $folioCarpeta;
-    
-    $archivos = [];
-    if (is_dir($ruta)) {
-        $files = scandir($ruta);
-        foreach ($files as $f) {
-            if ($f !== '.' && $f !== '..') {
-                // Esta lógica extrae el tipo (SOLICITUD, CURP, etc) del nombre del archivo
-                // asumiendo que tus archivos se llaman FOLIO_TIPO.ext
-                $partes = explode('_', pathinfo($f, PATHINFO_FILENAME));
-                $tipo = end($partes); 
+    if (ob_get_length()) ob_clean();
+    header('Content-Type: application/json; charset=utf-8');
 
-                $archivos[] = [
-                    'tipo' => $tipo,
-                    'url'  => URLROOT . '/uploads/expedientes/' . $folioCarpeta . '/' . $f
-                ];
+    try {
+        if (!is_numeric($id)) {
+            throw new Exception('ID inválido');
+        }
+
+        $registro = $this->encuestaModel->getEncuestaById($id);
+        if (!$registro) {
+            echo json_encode([]);
+            exit;
+        }
+
+        $folioCarpeta = str_replace(['/', ' ', '\\'], '-', $registro->folio);
+        $ruta = PUBROOT . '/uploads/expedientes/' . $folioCarpeta;
+
+        $porTipo = [];
+        if (is_dir($ruta)) {
+            $files = scandir($ruta);
+            foreach ($files as $f) {
+                if ($f === '.' || $f === '..') continue;
+
+                $rutaFisica = $ruta . '/' . $f;
+                if (!is_file($rutaFisica)) continue;
+
+                $partes = explode('_', pathinfo($f, PATHINFO_FILENAME));
+                $tipo = strtoupper(end($partes));
+                $mtime = filemtime($rutaFisica) ?: time();
+
+                // Si por algún motivo hubiera duplicados, mostramos el más reciente.
+                if (!isset($porTipo[$tipo]) || $mtime > $porTipo[$tipo]['mtime']) {
+                    $porTipo[$tipo] = [
+                        'tipo' => $tipo,
+                        'url'  => URLROOT . '/uploads/expedientes/' . $folioCarpeta . '/' . rawurlencode($f) . '?v=' . $mtime,
+                        'mtime' => $mtime
+                    ];
+                }
             }
         }
+
+        echo json_encode(array_values($porTipo), JSON_UNESCAPED_UNICODE);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => $e->getMessage()]);
     }
-    echo json_encode($archivos);
+    exit;
 }
 public function getFotosEvidencia($id) {
     // 1. Limpiar cualquier salida previa (errores, espacios, etc)
@@ -286,4 +326,11 @@ public function eliminarEvidencia($fotoId) {
     }
     exit;
 }
+
+private function normalizarLineaAyuda($valor) {
+    $valor = strtoupper(trim((string)$valor));
+    $permitidas = ['AGRICOLA', 'PECUARIA', 'GRANJA_INTEGRAL', 'HUERTO_URBANO'];
+    return in_array($valor, $permitidas, true) ? $valor : 'AGRICOLA';
+}
+
 }

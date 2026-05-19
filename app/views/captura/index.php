@@ -896,6 +896,7 @@ $puedeAprobarCaptura = in_array($rolSesionCaptura, ['root', 'admin'], true);
 window.puedeAprobarCaptura = <?php echo $puedeAprobarCaptura ? 'true' : 'false'; ?>;
 window.fasesFinalesCaptura = ['APROBADO', 'RECHAZADO'];
 window.archivosEvidenciaSeleccionados = window.archivosEvidenciaSeleccionados || [];
+window.registroActualCaptura = null;
 
 $(document).ready(function() {
     // ==========================================
@@ -1093,6 +1094,7 @@ $(document).ready(function() {
 window.abrirEdicion = function(id) {
     const reg = rawData.find(i => i.id == id);
     if (!reg) return;
+    window.registroActualCaptura = reg;
     const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
 
     // 1. Reset total del formulario y estilos
@@ -1180,7 +1182,9 @@ window.abrirEdicion = function(id) {
                     const container = $(`#preview_${idHTML}`);
                     if (container.length) {
                         container.removeClass('d-none');
-                        container.find('.file-name-text').html(`<a href="${file.url}" target="_blank" class="text-primary fw-bold text-decoration-none small"><i class="fas fa-eye me-1"></i> VER ARCHIVO</a>`);
+                        const urlArchivo = file.url || '';
+                        const urlNoCache = urlArchivo + (urlArchivo.includes('?') ? '&' : '?') + 't=' + Date.now();
+                        container.find('.file-name-text').html(`<a href="${urlNoCache}" target="_blank" class="text-primary fw-bold text-decoration-none small"><i class="fas fa-eye me-1"></i> VER ARCHIVO</a>`);
                         $(`label[for="file_${idHTML}"]`).html('<i class="fas fa-sync me-1"></i> REEMPLAZAR');
                         container.closest('.doc-row').css('background-color', '#f0faff');
                         $(`input[name="check_${idHTML}"]`).prop('checked', true);
@@ -1293,10 +1297,13 @@ window.borrarEvidencia = function(fotoId) {
         const suffix = this.id.replace('file_', '');
         const container = $(`#preview_${suffix}`);
         if (this.files && this.files[0]) {
+            // No marcamos delete=1: el backend reemplaza el archivo anterior del mismo tipo
+            // solo cuando el nuevo archivo se guardó correctamente.
             $(`#delete_${suffix}`).val('0'); 
-            container.find('.file-name-text').text(this.files[0].name);
+            container.find('.file-name-text').html(`<span class="text-success fw-bold"><i class="fas fa-sync me-1"></i>NUEVO: ${this.files[0].name}</span>`);
             container.removeClass('d-none');
             $(this).closest('.doc-row').css('background-color', '#f0fff4');
+            $(`label[for="file_${suffix}"]`).html('<i class="fas fa-sync me-1"></i> CAMBIAR');
             $(`input[name="check_${suffix}"]`).prop('checked', true);
         }
     });
@@ -1319,6 +1326,7 @@ window.borrarEvidencia = function(fotoId) {
     // El JS acumula todas las fotos en #input_evidencias para que el backend actual reciba fotos_evidencia[].
     // ==========================================
     window.archivosEvidenciaSeleccionados = window.archivosEvidenciaSeleccionados || [];
+window.registroActualCaptura = null;
 
     function sincronizarInputEvidencias() {
         const inputFinal = document.getElementById('input_evidencias');
@@ -1412,11 +1420,17 @@ window.borrarEvidencia = function(fotoId) {
 // 6. ACCIÓN DE GUARDADO FINAL (CORREGIDA)
 // ==========================================
 function confirmarGuardado() {
-    const lineaAyuda = $("#in_tipo_produccion").val();
-    if (!lineaAyuda) {
-        Swal.fire({ icon: 'error', title: 'Error', text: 'Seleccione una Línea de Ayuda.' });
-        return;
+    // Línea de ayuda: no debe bloquear reemplazo de documentos/fotos.
+    // Tomamos la selección visible, la línea original del registro o un valor seguro permitido.
+    const lineasPermitidas = ['AGRICOLA', 'PECUARIA', 'GRANJA_INTEGRAL', 'HUERTO_URBANO'];
+    let lineaAyuda = ($('#in_tipo_produccion').val() || $('#in_linea_ayuda').val() || '').toString().trim().toUpperCase();
+    if (!lineaAyuda && window.registroActualCaptura && window.registroActualCaptura.linea_ayuda) {
+        lineaAyuda = window.registroActualCaptura.linea_ayuda.toString().trim().toUpperCase();
     }
+    if (!lineasPermitidas.includes(lineaAyuda)) {
+        lineaAyuda = 'AGRICOLA';
+    }
+    $('#in_tipo_produccion').val(lineaAyuda);
 
     // Mayúsculas
     $("#formCaptura input[type='text'], #formCaptura textarea").each(function() { 
@@ -1432,6 +1446,7 @@ function confirmarGuardado() {
 
     const disabledFields = $("#formCaptura").find(':disabled').prop('disabled', false);
     const formData = new FormData(document.getElementById('formCaptura'));
+    formData.set('tipo_produccion', lineaAyuda);
 
     // FOTOS DE EVIDENCIA: blindaje móvil
     // Algunos navegadores móviles no permiten asignar input.files vía DataTransfer.
