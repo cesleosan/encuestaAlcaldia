@@ -1,1 +1,0 @@
-SELECT * FROM `solicitudes` LIMIT 1000

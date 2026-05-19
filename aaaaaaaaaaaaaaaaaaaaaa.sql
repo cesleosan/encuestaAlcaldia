@@ -1,1 +1,0 @@
-SELECT * FROM `datos_interesado` LIMIT 1000

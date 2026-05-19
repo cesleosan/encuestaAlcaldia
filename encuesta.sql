@@ -1,1 +1,0 @@
-SELECT * FROM `usuarios` LIMIT 1000
