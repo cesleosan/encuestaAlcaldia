@@ -1,0 +1,1 @@
+SELECT * FROM `folios` LIMIT 1000
