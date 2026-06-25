@@ -130,7 +130,7 @@ button {
     min-height: 40px;
     border-radius: var(--tc-radius-sm) !important;
     font-weight: 700;
-    transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+    transition: transform .1s ease, box-shadow .1s ease, background-color .1s ease, color .1s ease;
 }
 
 .btn:hover,
@@ -364,7 +364,6 @@ table tbody td {
     position: sticky;
     top: 8px;
     z-index: 100;
-    backdrop-filter: blur(10px);
     background: rgba(255,255,255,.92) !important;
 }
 .module-nav {
@@ -387,6 +386,7 @@ table tbody td {
     white-space: normal;
     line-height: 1.2;
     text-align: left;
+    will-change: auto;
 }
 .module-tab i,
 .module-tab span {
@@ -420,6 +420,16 @@ table tbody td {
 #dashboardListados .card,
 #verificacionAprobacion .card {
     overflow: hidden;
+}
+
+.module-view {
+    animation: none !important;
+    contain: layout style;
+}
+
+#dashboardListados {
+    content-visibility: auto;
+    contain-intrinsic-size: 900px;
 }
 
 #mapa-dashboard {

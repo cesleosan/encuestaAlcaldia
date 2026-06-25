@@ -120,7 +120,7 @@
             .menu-item { justify-content: center; }
         }
     </style>
-    <link rel="stylesheet" href="/css/tierracorazon-ui.css?v=20260625-1">
+    <link rel="stylesheet" href="/css/tierracorazon-ui.css?v=20260625-2">
 </head>
 <body>
 

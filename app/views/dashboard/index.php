@@ -219,7 +219,7 @@
 </style>
 <meta name="color-scheme" content="light only">
 <meta name="theme-color" content="#f5f7fa">
-<link rel="stylesheet" href="/css/tierracorazon-ui.css?v=20260625-1">
+<link rel="stylesheet" href="/css/tierracorazon-ui.css?v=20260625-2">
 
 <div class="container-fluid py-4">
     <header class="tc-hero mb-4">
@@ -712,6 +712,9 @@ $(document).ready(function() {
     let currentPageVerificacion = 1;
     let conteoFotosHidratado = false;
     let conteoFotosEnProceso = false;
+    let verificacionRenderizada = false;
+    let detalleRenderizado = false;
+    let cambioModuloEnCurso = false;
 
     const rolUsuarioDashboard = '<?php echo $_SESSION['rol'] ?? ''; ?>';
     const puedeAprobarDashboard = ['root', 'admin'].includes(rolUsuarioDashboard);
@@ -778,9 +781,7 @@ $(document).ready(function() {
             $('#navCountVerificacion').text(verificacionData.length);
             
             renderMasterTable(1); // Tabla de arriba
-            renderVerificacionCampo(1); // Módulo nuevo de verificación
-            hidratarConteoFotosVerificacion(); // Corrige conteos/filtros con fotos reales sin tocar BD
-            renderDetailedTable(fullMaestroData); // Tabla de abajo (JSON)
+            prepararCargaDiferidaDetalle();
 
         }).catch(err => console.error("Error general de carga:", err));
 
@@ -851,6 +852,8 @@ $(document).ready(function() {
 
     // --- FUNCIÓN: RENDER TABLA DETALLADA (ABAJO) ---
     function renderDetailedTable(data) {
+    if (detalleRenderizado) return;
+    detalleRenderizado = true;
     const $headerRow = $("#headersCSV");
     const $tbody = $("#bodyCSV");
 
@@ -909,6 +912,25 @@ $(document).ready(function() {
         }
     });
 }
+
+    function prepararCargaDiferidaDetalle() {
+        const seccion = document.getElementById('dashboardListados');
+        if (!seccion || detalleRenderizado) return;
+
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries, obs) => {
+                if (!entries.some(entry => entry.isIntersecting)) return;
+                obs.disconnect();
+                const cargar = () => renderDetailedTable(fullMaestroData);
+                if ('requestIdleCallback' in window) {
+                    requestIdleCallback(cargar, { timeout: 1000 });
+                } else {
+                    setTimeout(cargar, 0);
+                }
+            }, { rootMargin: '250px 0px' });
+            observer.observe(seccion);
+        }
+    }
 
 
     // --- MÓDULO: VERIFICACIÓN DE CAMPO ---
@@ -1266,7 +1288,6 @@ $(document).ready(function() {
                     procesados++;
                     if (procesados % 5 === 0 || procesados === pendientes.length) {
                         $('#estadoConteoFotos').html(`<i class="fas fa-spinner fa-spin me-1"></i>Consultando fotos reales: ${procesados}/${pendientes.length}`);
-                        aplicarFiltrosVerificacion();
                     }
                 }
             }
@@ -1504,17 +1525,41 @@ $(document).ready(function() {
     // Navegación UX entre Dashboard y Verificación/Aprobación
     $('.module-tab').on('click', function() {
         const target = $(this).data('target');
+        if ($(this).hasClass('active') || cambioModuloEnCurso) return;
+        cambioModuloEnCurso = true;
+
         $('.module-tab').removeClass('active');
         $(this).addClass('active');
 
         if (target === 'dashboardGeneral') {
             $('#dashboardGeneral, #dashboardListados').removeClass('d-none');
             $('#verificacionAprobacion').addClass('d-none');
-            setTimeout(() => { try { map.invalidateSize(); } catch(e) {} }, 120);
+            requestAnimationFrame(() => {
+                cambioModuloEnCurso = false;
+                setTimeout(() => {
+                    try { map.invalidateSize({ animate: false }); } catch(e) {}
+                }, 0);
+            });
         } else {
             $('#dashboardGeneral, #dashboardListados').addClass('d-none');
             $('#verificacionAprobacion').removeClass('d-none');
-            renderVerificacionCampo(currentPageVerificacion);
+            requestAnimationFrame(() => {
+                cambioModuloEnCurso = false;
+
+                setTimeout(() => {
+                    if (!verificacionRenderizada) {
+                        renderVerificacionCampo(1);
+                        verificacionRenderizada = true;
+                    }
+
+                    const hidratar = () => hidratarConteoFotosVerificacion();
+                    if ('requestIdleCallback' in window) {
+                        requestIdleCallback(hidratar, { timeout: 1500 });
+                    } else {
+                        setTimeout(hidratar, 50);
+                    }
+                }, 0);
+            });
         }
     });
 
