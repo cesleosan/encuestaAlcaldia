@@ -1,4 +1,5 @@
 :root {
+    color-scheme: only light;
     --tc-primary: #773357;
     --tc-primary-dark: #55203d;
     --tc-primary-soft: #f8edf3;
@@ -20,12 +21,25 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
+html {
+    color-scheme: light !important;
+    background: var(--tc-bg) !important;
+}
+
 body {
-    color: var(--tc-text);
+    color: var(--tc-text) !important;
     background:
         radial-gradient(circle at 100% 0, rgba(119, 51, 87, .06), transparent 28rem),
-        var(--tc-bg);
+        var(--tc-bg) !important;
     -webkit-font-smoothing: antialiased;
+}
+
+body,
+input,
+select,
+textarea,
+button {
+    color-scheme: light !important;
 }
 
 .text-guinda { color: var(--tc-primary) !important; }
@@ -44,13 +58,16 @@ body {
 .main-content {
     background:
         radial-gradient(circle at 100% 0, rgba(119, 51, 87, .055), transparent 30rem),
-        var(--tc-bg);
+        var(--tc-bg) !important;
 }
 
 .tc-page-shell,
 .container-fluid.py-4 {
+    width: 100%;
+    min-width: 0;
     max-width: 1720px;
     margin-inline: auto;
+    overflow-x: clip;
 }
 
 .top-header,
@@ -87,6 +104,14 @@ body {
     border-radius: var(--tc-radius) !important;
     background: rgba(255, 255, 255, .96) !important;
     box-shadow: var(--tc-shadow-soft) !important;
+}
+
+.card-body,
+.card-header,
+.modal-body,
+.modal-footer,
+.table-responsive {
+    min-width: 0;
 }
 
 .card:hover {
@@ -144,9 +169,13 @@ body {
     min-height: 42px;
     border: 1px solid #dce2e9 !important;
     border-radius: var(--tc-radius-sm) !important;
-    color: var(--tc-text);
+    color: var(--tc-text) !important;
+    background-color: #fff !important;
     box-shadow: none !important;
 }
+
+.form-control::placeholder { color: #8b94a2 !important; opacity: 1; }
+.form-select option { color: var(--tc-text); background: #fff; }
 
 .form-control:focus,
 .form-select:focus {
@@ -160,6 +189,9 @@ body {
 
 .table {
     --bs-table-bg: transparent;
+    --bs-table-color: var(--tc-text);
+    color: var(--tc-text) !important;
+    background: #fff !important;
     margin-bottom: 0;
 }
 
@@ -178,6 +210,8 @@ table thead th {
 
 .table tbody td,
 table tbody td {
+    color: var(--tc-text);
+    background-color: #fff;
     padding: 14px 16px !important;
     border-color: #edf0f4 !important;
 }
@@ -287,11 +321,21 @@ table tbody td {
     border-radius: 50%;
     background: linear-gradient(145deg, rgba(119,51,87,.16), rgba(176,139,79,.08));
 }
-.tc-hero-copy, .tc-hero-actions { position: relative; z-index: 1; }
-.tc-hero-copy h1 { margin: 7px 0 4px; color: var(--tc-primary); font-size: clamp(1.55rem,2.4vw,2.25rem); font-weight: 800; letter-spacing: -.04em; }
+.tc-hero-copy, .tc-hero-actions { position: relative; z-index: 1; min-width: 0; }
+.tc-hero-copy { flex: 1 1 520px; max-width: 850px; }
+.tc-hero-copy h1 {
+    max-width: 100%;
+    margin: 7px 0 4px;
+    color: var(--tc-primary);
+    font-size: clamp(1.55rem,2.4vw,2.25rem);
+    font-weight: 800;
+    line-height: 1.12;
+    letter-spacing: -.04em;
+    overflow-wrap: anywhere;
+}
 .tc-hero-copy p { margin: 0; color: var(--tc-muted); }
 .tc-eyebrow { display:inline-flex; align-items:center; gap:7px; color:var(--tc-primary); font-size:.69rem; font-weight:800; letter-spacing:.09em; text-transform:uppercase; }
-.tc-hero-actions { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+.tc-hero-actions { flex:0 1 auto; display:flex; align-items:center; justify-content:flex-end; gap:9px; flex-wrap:wrap; }
 
 .tc-kpi-card {
     min-height: 126px;
@@ -323,16 +367,44 @@ table tbody td {
     backdrop-filter: blur(10px);
     background: rgba(255,255,255,.92) !important;
 }
-.module-nav { gap: 8px !important; }
+.module-nav {
+    width: 100%;
+    min-width: 0;
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+}
 .module-tab {
-    border: 0 !important;
+    width: auto;
+    max-width: 100%;
+    border: 1px solid #e2e6ec !important;
     padding: 11px 16px !important;
-    background: transparent !important;
+    color: #596373 !important;
+    background: #fff !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    white-space: normal;
+    line-height: 1.2;
+    text-align: left;
+}
+.module-tab i,
+.module-tab span {
+    color: inherit !important;
+}
+.module-tab:hover {
+    color: var(--tc-primary) !important;
+    border-color: #d8b8c8 !important;
+    background: var(--tc-primary-soft) !important;
 }
 .module-tab.active {
     color: #fff !important;
     background: var(--tc-primary) !important;
     box-shadow: 0 7px 16px rgba(119,51,87,.2);
+}
+.module-tab:not(.active) .counter-pill {
+    color: var(--tc-primary) !important;
+    background: var(--tc-primary-soft) !important;
 }
 .counter-pill {
     min-width: 23px;
@@ -382,6 +454,44 @@ table tbody td {
     color: var(--tc-muted);
 }
 
+@media (prefers-color-scheme: dark) {
+    html,
+    body,
+    .main-content {
+        color: var(--tc-text) !important;
+        background-color: var(--tc-bg) !important;
+    }
+    .card,
+    .consulta-card,
+    .module-nav-card,
+    .card-header,
+    .card-body,
+    .modal-content,
+    .modal-body,
+    .modal-footer,
+    .table,
+    .table tbody td,
+    table tbody td,
+    .form-control,
+    .form-select,
+    .module-tab:not(.active) {
+        color: var(--tc-text) !important;
+        background-color: #fff !important;
+        border-color: var(--tc-border) !important;
+    }
+    .text-muted,
+    small,
+    .tc-hero-copy p {
+        color: var(--tc-muted) !important;
+    }
+    .tc-kpi-primary { color: var(--tc-primary) !important; }
+    .tc-kpi-success { color: var(--tc-success) !important; }
+    .tc-kpi-info { color: var(--tc-info) !important; }
+    .tc-kpi-warning { color: var(--tc-warning) !important; }
+    .tc-kpi-neutral { color: #64748b !important; }
+    .tc-kpi-icon i { color: #fff !important; }
+}
+
 @media (max-width: 900px) {
     .main-content { padding: 20px !important; }
     .top-header,
@@ -397,6 +507,10 @@ table tbody td {
     .tc-toolbar { align-items: stretch; flex-direction: column; }
     .tc-toolbar .form-control { width: 100% !important; }
     .tc-hero { align-items:flex-start; flex-direction:column; }
+    .tc-hero-copy { flex-basis: auto; width: 100%; }
+    .tc-hero-actions { width: 100%; justify-content: flex-start; }
+    .module-nav { align-items: stretch !important; flex-direction: column; }
+    .module-tab { width: 100%; justify-content: flex-start; }
 }
 
 @media (max-width: 600px) {

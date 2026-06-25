@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light only">
+    <meta name="theme-color" content="#f5f7fa">
     <title>Consulta · Tierra con Corazón</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/tierracorazon-ui.css">
+    <link rel="stylesheet" href="/css/tierracorazon-ui.css?v=20260625-1">
     <style>
         body { min-height: 100vh; font-family: 'Montserrat', sans-serif; }
         .consulta-shell { max-width: 1680px; margin: 0 auto; padding: 30px clamp(16px, 3vw, 42px); }

@@ -217,7 +217,9 @@
     }
 
 </style>
-<link rel="stylesheet" href="/css/tierracorazon-ui.css">
+<meta name="color-scheme" content="light only">
+<meta name="theme-color" content="#f5f7fa">
+<link rel="stylesheet" href="/css/tierracorazon-ui.css?v=20260625-1">
 
 <div class="container-fluid py-4">
     <header class="tc-hero mb-4">
