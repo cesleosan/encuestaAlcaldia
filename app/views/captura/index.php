@@ -217,58 +217,37 @@ $puedeAprobarCaptura = in_array($rolSesionCaptura, ['root', 'admin'], true);
 }
 </style>
 <link rel="stylesheet" href="/css/tierracorazon-ui.css">
-<head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-</head>
 <div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-md-7">
-            <h2 class="fw-bold text-guinda mb-0">Expediente Digital: Tlalpan</h2>
-            <p class="text-muted">Validación de documentos y seguimiento de productores</p>
+    <header class="tc-hero mb-4">
+        <div class="tc-hero-copy">
+            <span class="tc-eyebrow"><i class="fas fa-folder-tree"></i> Gestión documental</span>
+            <h1>Expediente digital</h1>
+            <p>Validación de documentos, captura complementaria y seguimiento de productores.</p>
         </div>
-        <div class="col-md-5 text-end">
-            <button onclick="location.reload()" class="btn btn-guinda shadow-sm"><i class="fas fa-sync-alt me-2"></i>Sincronizar</button>
-            <button onclick="confirmarSalida()" class="btn btn-danger rounded-3 ms-2"><i class="fas fa-power-off"></i></button>
+        <div class="tc-hero-actions">
+            <button onclick="location.reload()" class="btn btn-guinda"><i class="fas fa-sync-alt me-2"></i>Sincronizar</button>
+            <button onclick="confirmarSalida()" class="btn btn-danger"><i class="fas fa-power-off me-1"></i>Salir</button>
         </div>
-    </div>
+    </header>
 
-    <div class="row mb-2">
-        <div class="col-md-2 mb-2">
-            <div class="card p-3 border-start border-4 border-secondary shadow-sm">
-                <h6 class="text-muted small mb-1">TOTAL REGISTROS</h6>
-                <h3 class="fw-bold mb-0" id="kpi-total">0</h3>
-            </div>
-        </div>
-        <div class="col-md-3 mb-2">
-            <div class="card p-3 border-start border-4 border-primary shadow-sm">
-                <h6 class="text-muted small mb-1">SOLICITUDES INGRESADAS</h6>
-                <h3 class="fw-bold mb-0" id="kpi-solicitudes">0</h3>
-            </div>
-        </div>
-        <div class="col-md-2 mb-2">
-            <div class="card p-3 border-start border-4 border-info shadow-sm">
-                <h6 class="text-muted small mb-1">VALIDACIÓN DOCS</h6>
-                <h3 class="fw-bold mb-0" id="kpi-pendientes">0</h3>
-            </div>
-        </div>
-        <div class="col-md-2 mb-2">
-            <div class="card p-3 border-start border-4 border-warning shadow-sm">
-                <h6 class="text-muted small mb-1">EN REVISIÓN</h6>
-                <h3 class="fw-bold mb-0" id="kpi-revision">0</h3>
-            </div>
-        </div>
-        <div class="col-md-3 mb-2">
-            <div class="card p-3 border-start border-4 border-success shadow-sm">
-                <h6 class="text-muted small mb-1">TOTAL APROBADOS</h6>
-                <h3 class="fw-bold mb-0" id="kpi-aprobados">0</h3>
-            </div>
-        </div>
+    <div class="row g-3 mb-4 tc-kpi-row">
+        <div class="col-xl col-md-4 col-6"><div class="card tc-kpi-card tc-kpi-neutral"><div class="tc-kpi-icon"><i class="fas fa-folder-open"></i></div><div><span>Total registros</span><strong id="kpi-total">0</strong><small>Expedientes</small></div></div></div>
+        <div class="col-xl col-md-4 col-6"><div class="card tc-kpi-card tc-kpi-primary"><div class="tc-kpi-icon"><i class="fas fa-file-arrow-up"></i></div><div><span>Solicitudes</span><strong id="kpi-solicitudes">0</strong><small>Ingresadas</small></div></div></div>
+        <div class="col-xl col-md-4 col-6"><div class="card tc-kpi-card tc-kpi-info"><div class="tc-kpi-icon"><i class="fas fa-file-circle-check"></i></div><div><span>Validación</span><strong id="kpi-pendientes">0</strong><small>Documental</small></div></div></div>
+        <div class="col-xl col-md-4 col-6"><div class="card tc-kpi-card tc-kpi-warning"><div class="tc-kpi-icon"><i class="fas fa-magnifying-glass"></i></div><div><span>En revisión</span><strong id="kpi-revision">0</strong><small>Técnica</small></div></div></div>
+        <div class="col-xl col-md-4 col-6"><div class="card tc-kpi-card tc-kpi-success"><div class="tc-kpi-icon"><i class="fas fa-circle-check"></i></div><div><span>Aprobados</span><strong id="kpi-aprobados">0</strong><small>Finalizados</small></div></div></div>
     </div>
 
     <div class="card shadow-sm">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h6 class="m-0 fw-bold text-guinda"><i class="fas fa-list me-2"></i>Bandeja de Entrada de Expedientes</h6>
-            <input type="text" id="tablaSearch" class="form-control form-control-sm w-25 shadow-sm" placeholder="Buscar por folio o nombre...">
+        <div class="card-header tc-toolbar">
+            <div>
+                <h6 class="m-0 fw-bold text-guinda"><i class="fas fa-inbox me-2"></i>Bandeja de expedientes</h6>
+                <small class="text-muted">Selecciona un registro para revisar o complementar información.</small>
+            </div>
+            <div class="position-relative" style="width:min(100%,390px);">
+                <i class="fas fa-search position-absolute top-50 translate-middle-y text-muted" style="left:15px;"></i>
+                <input type="text" id="tablaSearch" class="form-control ps-5" placeholder="Buscar por folio, nombre o CURP">
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -1066,6 +1045,13 @@ $(document).ready(function() {
                 </tr>
             `);
         });
+        if (!items.length) {
+            tbody.html(`<tr><td colspan="5"><div class="tc-empty-state">
+                <div class="tc-empty-state-icon"><i class="fas fa-folder-open"></i></div>
+                <div class="fw-semibold">No hay expedientes para mostrar</div>
+                <small>Modifica la búsqueda o sincroniza nuevamente.</small>
+            </div></td></tr>`);
+        }
         $("#tableInfo").html(`Mostrando <b>${items.length}</b> de <b>${filteredData.length}</b> registros`);
         renderPaginationUI();
     }

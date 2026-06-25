@@ -220,20 +220,18 @@
 <link rel="stylesheet" href="/css/tierracorazon-ui.css">
 
 <div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-md-7">
-            <h2 class="fw-bold text-guinda mb-0">Dashboard: Tierra con Corazón</h2>
+    <header class="tc-hero mb-4">
+        <div class="tc-hero-copy">
+            <span class="tc-eyebrow"><i class="fas fa-chart-line"></i> Inteligencia operativa</span>
+            <h1>Dashboard Tierra con Corazón</h1>
+            <p>Panorama general del censo, cobertura territorial y seguimiento de expedientes.</p>
         </div>
-        <div class="col-md-5 text-end">
-            <button id="btnExportar" class="btn btn-outline-secondary me-2">
-                <i class="fas fa-file-export"></i> Exportar Excel
-            </button>
-            <button onclick="location.reload()" class="btn btn-guinda"><i class="fas fa-sync-alt"></i> Sincronizar</button>
-            <button onclick="confirmarSalida()" class="btn btn-danger shadow-sm">
-                <i class="fas fa-sign-out-alt"></i> Salir
-            </button>
+        <div class="tc-hero-actions">
+            <button id="btnExportar" class="btn btn-outline-secondary"><i class="fas fa-file-export me-1"></i>Exportar</button>
+            <button onclick="location.reload()" class="btn btn-guinda"><i class="fas fa-sync-alt me-1"></i>Sincronizar</button>
+            <button onclick="confirmarSalida()" class="btn btn-danger"><i class="fas fa-sign-out-alt me-1"></i>Salir</button>
         </div>
-    </div>
+    </header>
 
     <div class="module-nav-card">
         <div class="module-nav">
@@ -249,51 +247,11 @@
 
     <div id="dashboardGeneral" class="module-view">
 
-    <div class="row mb-2">
-        <div class="col-md-3">
-            <div class="card p-3 border-start border-4 border-primary">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <h6 class="text-muted small mb-1">ENCUESTAS TOTALES</h6>
-                        <h3 class="fw-bold mb-0" id="kpi-total">0</h3>
-                    </div>
-                    <i class="fas fa-file-signature fa-2x text-light"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card p-3 border-start border-4 border-success">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <h6 class="text-muted small mb-1">HECTÁREAS TOTALES</h6>
-                        <h3 class="fw-bold mb-0" id="kpi-hectareas">0.00</h3>
-                    </div>
-                    <i class="fas fa-seedling fa-2x text-light"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card p-3 border-start border-4 border-info">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <h6 class="text-muted small mb-1">TÉCNICOS ACTIVOS</h6>
-                        <h3 class="fw-bold mb-0" id="kpi-tecnicos">0</h3>
-                    </div>
-                    <i class="fas fa-user-check fa-2x text-light"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card p-3 border-start border-4 border-warning">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <h6 class="text-muted small mb-1">AVANCE PROMEDIO</h6>
-                        <h3 class="fw-bold mb-0" id="kpi-avance">0</h3>
-                    </div>
-                    <i class="fas fa-chart-line fa-2x text-light"></i>
-                </div>
-            </div>
-        </div>
+    <div class="row g-3 mb-4 tc-kpi-row">
+        <div class="col-xl-3 col-md-6"><div class="card tc-kpi-card tc-kpi-primary"><div class="tc-kpi-icon"><i class="fas fa-file-signature"></i></div><div><span>Encuestas totales</span><strong id="kpi-total">0</strong><small>Registros capturados</small></div></div></div>
+        <div class="col-xl-3 col-md-6"><div class="card tc-kpi-card tc-kpi-success"><div class="tc-kpi-icon"><i class="fas fa-seedling"></i></div><div><span>Hectáreas totales</span><strong id="kpi-hectareas">0.00</strong><small>Superficie registrada</small></div></div></div>
+        <div class="col-xl-3 col-md-6"><div class="card tc-kpi-card tc-kpi-info"><div class="tc-kpi-icon"><i class="fas fa-user-check"></i></div><div><span>Técnicos activos</span><strong id="kpi-tecnicos">0</strong><small>Personal con registros</small></div></div></div>
+        <div class="col-xl-3 col-md-6"><div class="card tc-kpi-card tc-kpi-warning"><div class="tc-kpi-icon"><i class="fas fa-chart-line"></i></div><div><span>Avance promedio</span><strong id="kpi-avance">0</strong><small>Levantamientos por día</small></div></div></div>
     </div>
 
     <div class="row">
@@ -851,6 +809,14 @@ $(document).ready(function() {
             `);
         });
 
+        if (!items.length) {
+            tbody.html(`<tr><td colspan="7"><div class="tc-empty-state">
+                <div class="tc-empty-state-icon"><i class="fas fa-table-list"></i></div>
+                <div class="fw-semibold">No hay encuestas para mostrar</div>
+                <small>Prueba con otro término de búsqueda.</small>
+            </div></td></tr>`);
+        }
+
         $("#tableInfo").html(`Mostrando <b>${items.length}</b> de <b>${filteredData.length}</b> encuestas`);
         renderPaginationUI();
     }
@@ -892,6 +858,10 @@ $(document).ready(function() {
 
     // 2. Renderizar Cuerpo de la Tabla
     $tbody.empty();
+    if (!data.length) {
+        $tbody.html('<tr><td colspan="24"><div class="tc-empty-state"><div class="tc-empty-state-icon"><i class="fas fa-database"></i></div><div class="fw-semibold">Sin registros detallados</div></div></td></tr>');
+        return;
+    }
     data.forEach(reg => {
         try {
             const json = reg.respuestas_json ? JSON.parse(reg.respuestas_json) : {};
