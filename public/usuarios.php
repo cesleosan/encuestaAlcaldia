@@ -1,8 +1,7 @@
 <?php
-// Crear usuario administrador/root para Tierra con Corazón
-// IMPORTANTE: Ejecutar una sola vez y borrar este archivo del servidor.
+// Crea o actualiza usuarios de demostración para Tierra con Corazón.
+// IMPORTANTE: ejecutar una sola vez y eliminar este archivo del servidor.
 
-// Configuración de la base de datos
 $db = new PDO(
     'mysql:host=localhost;dbname=censo_tlalpan;charset=utf8mb4',
     'admin_encuesta',
@@ -13,116 +12,100 @@ $db = new PDO(
     ]
 );
 
-// Refuerzo de codificación para evitar nombres tipo MARTÃ�NEZ
 $db->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
 
-// Usuario administrador a crear
-$usuarioNuevo = [
-    'nombre' => 'FERNANDO ROMERO ROMERO',
-    'user'   => 'fernando.romero',
-    'pass'   => 'F3rnando*Romero.26',
-    'tel'    => '5500000000',
-
-    // En tu sistema el admin real usa rol ROOT.
-    // Si de verdad quieres guardarlo como "admin", cambia root por admin,
-    // pero root es lo más compatible con tu BD actual.
-    'rol'    => 'root'
+$usuarios = [
+    [
+        'nombre' => 'FERNANDO ROMERO ROMERO',
+        'user'   => 'fernando.romero',
+        'pass'   => 'F3rnando*Romero.26',
+        'tel'    => '5500000000',
+        'rol'    => 'root'
+    ],
+    [
+        'nombre' => 'USUARIO DEMO CONSULTA',
+        'user'   => 'consulta.demo',
+        'pass'   => 'Consulta*Demo.26',
+        'tel'    => '5500000001',
+        'rol'    => 'consulta'
+    ]
 ];
 
-echo "<h2>🛡️ Registro de Seguridad: Nuevo Administrador</h2>";
-echo "<p><b>Importante:</b> guarda estas credenciales y elimina este archivo después de ejecutarlo.</p>";
+function escapar($valor) {
+    return htmlspecialchars((string)$valor, ENT_QUOTES, 'UTF-8');
+}
+
+echo "<h2 style='font-family:sans-serif;'>Usuarios de Tierra con Corazón</h2>";
+echo "<p style='font-family:sans-serif;'><b>Importante:</b> elimina este archivo después de ejecutarlo.</p>";
 
 try {
-    echo "<table border='1' style='border-collapse: collapse; width: 100%; font-family: sans-serif;'>
-            <tr style='background-color: #773357; color: white;'>
-                <th style='padding: 12px;'>Nombre</th>
-                <th style='padding: 12px;'>Usuario</th>
-                <th style='padding: 12px;'>Contraseña</th>
-                <th style='padding: 12px;'>Rol</th>
-                <th style='padding: 12px;'>Resultado</th>
+    $check = $db->prepare("SELECT id FROM usuarios WHERE usuario = :usuario LIMIT 1");
+    $update = $db->prepare("
+        UPDATE usuarios
+        SET password = :password,
+            nombre_completo = :nombre,
+            telefono = :telefono,
+            rol = :rol,
+            modulo = 'TIERRA',
+            activo = 1
+        WHERE usuario = :usuario
+    ");
+    $insert = $db->prepare("
+        INSERT INTO usuarios
+            (usuario, password, nombre_completo, telefono, rol, modulo, activo)
+        VALUES
+            (:usuario, :password, :nombre, :telefono, :rol, 'TIERRA', 1)
+    ");
+
+    echo "<table border='1' style='border-collapse:collapse;width:100%;font-family:sans-serif;'>
+            <tr style='background:#773357;color:white;'>
+                <th style='padding:12px;'>Nombre</th>
+                <th style='padding:12px;'>Usuario</th>
+                <th style='padding:12px;'>Contraseña</th>
+                <th style='padding:12px;'>Rol</th>
+                <th style='padding:12px;'>Resultado</th>
             </tr>";
 
-    // Verificar si ya existe el usuario
-    $check = $db->prepare("SELECT id, rol FROM usuarios WHERE usuario = :usuario LIMIT 1");
-    $check->execute([
-        ':usuario' => $usuarioNuevo['user']
-    ]);
+    foreach ($usuarios as $usuario) {
+        $check->execute([':usuario' => $usuario['user']]);
+        $existe = (bool)$check->fetch();
 
-    $existe = $check->fetch();
+        $parametros = [
+            ':usuario'  => $usuario['user'],
+            ':password' => password_hash($usuario['pass'], PASSWORD_BCRYPT),
+            ':nombre'   => $usuario['nombre'],
+            ':telefono' => $usuario['tel'],
+            ':rol'      => $usuario['rol']
+        ];
 
-    if ($existe) {
-        // Si ya existe, lo actualizamos a administrador/root y activo
-        $passwordHash = password_hash($usuarioNuevo['pass'], PASSWORD_BCRYPT);
+        if ($existe) {
+            $update->execute($parametros);
+            $resultado = 'ACTUALIZADO';
+            $color = '#fff3cd';
+        } else {
+            $insert->execute($parametros);
+            $resultado = 'CREADO';
+            $color = '#e6ffed';
+        }
 
-        $update = $db->prepare("
-            UPDATE usuarios
-            SET 
-                password = :password,
-                nombre_completo = :nombre,
-                telefono = :telefono,
-                rol = :rol,
-                activo = 1
-            WHERE usuario = :usuario
-        ");
-
-        $update->execute([
-            ':usuario'  => $usuarioNuevo['user'],
-            ':password' => $passwordHash,
-            ':nombre'   => $usuarioNuevo['nombre'],
-            ':telefono' => $usuarioNuevo['tel'],
-            ':rol'      => $usuarioNuevo['rol']
-        ]);
-
-        echo "<tr style='background-color:#fff3cd;'>
-                <td style='padding:10px;'>{$usuarioNuevo['nombre']}</td>
-                <td style='padding:10px;'><code>{$usuarioNuevo['user']}</code></td>
-                <td style='padding:10px;'><mark>{$usuarioNuevo['pass']}</mark></td>
-                <td style='padding:10px;'><b>{$usuarioNuevo['rol']}</b></td>
-                <td style='padding:10px; text-align:center;'>
-                    <b style='color:#856404;'>YA EXISTÍA, SE ACTUALIZÓ A ADMIN/ROOT</b>
-                </td>
-              </tr>";
-    } else {
-        // Crear nuevo usuario
-        $passwordHash = password_hash($usuarioNuevo['pass'], PASSWORD_BCRYPT);
-
-        $insert = $db->prepare("
-            INSERT INTO usuarios 
-                (usuario, password, nombre_completo, telefono, rol, activo)
-            VALUES 
-                (:usuario, :password, :nombre, :telefono, :rol, 1)
-        ");
-
-        $insert->execute([
-            ':usuario'  => $usuarioNuevo['user'],
-            ':password' => $passwordHash,
-            ':nombre'   => $usuarioNuevo['nombre'],
-            ':telefono' => $usuarioNuevo['tel'],
-            ':rol'      => $usuarioNuevo['rol']
-        ]);
-
-        echo "<tr style='background-color:#e6ffed;'>
-                <td style='padding:10px;'>{$usuarioNuevo['nombre']}</td>
-                <td style='padding:10px;'><code>{$usuarioNuevo['user']}</code></td>
-                <td style='padding:10px;'><mark>{$usuarioNuevo['pass']}</mark></td>
-                <td style='padding:10px;'><b>{$usuarioNuevo['rol']}</b></td>
-                <td style='padding:10px; text-align:center;'>
-                    <b style='color:green;'>ADMINISTRADOR REGISTRADO</b>
-                </td>
+        echo "<tr style='background:{$color};'>
+                <td style='padding:10px;'>" . escapar($usuario['nombre']) . "</td>
+                <td style='padding:10px;'><code>" . escapar($usuario['user']) . "</code></td>
+                <td style='padding:10px;'><mark>" . escapar($usuario['pass']) . "</mark></td>
+                <td style='padding:10px;'><b>" . escapar($usuario['rol']) . "</b></td>
+                <td style='padding:10px;text-align:center;'><b>{$resultado}</b></td>
               </tr>";
     }
 
     echo "</table>";
-
-    echo "<br><div style='font-family:sans-serif; padding:15px; background:#f8f9fa; border-left:5px solid #773357;'>
-            <b>Credenciales:</b><br>
-            Usuario: <code>{$usuarioNuevo['user']}</code><br>
-            Contraseña: <code>{$usuarioNuevo['pass']}</code><br>
-            Rol en sistema: <code>{$usuarioNuevo['rol']}</code>
+    echo "<div style='font-family:sans-serif;margin-top:20px;padding:15px;background:#f8f9fa;border-left:5px solid #773357;'>
+            <b>Acceso demo de consulta</b><br>
+            Usuario: <code>consulta.demo</code><br>
+            Contraseña: <code>Consulta*Demo.26</code><br>
+            Este perfil solamente verá expedientes en estatus <code>COMITE</code>.
           </div>";
-
 } catch (PDOException $e) {
-    echo "<h3 style='color:red;'>Error al crear/actualizar usuario</h3>";
-    echo "<pre>" . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . "</pre>";
+    echo "<h3 style='color:red;'>Error al crear o actualizar usuarios</h3>";
+    echo "<pre>" . escapar($e->getMessage()) . "</pre>";
 }
 ?>
