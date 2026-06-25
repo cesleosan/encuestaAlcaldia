@@ -1,114 +1,85 @@
 <?php require_once APPROOT . '/views/inc/header_dashboard.php'; ?>
 
-<div class="top-header">
+<header class="top-header">
     <div class="page-title">
-        <h1>Padrón de Productores</h1>
-        <p>Gestión y seguimiento de las unidades productivas censadas</p>
+        <h1>Padrón de productores</h1>
+        <p>Consulta y seguimiento de las unidades productivas censadas</p>
     </div>
-    <button class="btn-action">
-        <i class="fa-solid fa-file-excel"></i> Exportar Base
-    </button>
-</div>
+    <button class="btn-action"><i class="fa-solid fa-file-excel"></i>Exportar base</button>
+</header>
 
-<div class="card" style="margin-bottom: 20px; padding: 15px; display: flex; gap: 15px; flex-wrap: wrap;">
-    <div style="flex: 2; min-width: 200px;">
-        <input type="text" placeholder="Buscar por nombre, folio o actividad..." 
-               style="width: 100%; padding: 10px 15px; border: 1px solid #e2e8f0; border-radius: 8px; outline: none; font-family:inherit;">
-    </div>
-    <div style="flex: 1; min-width: 150px;">
-        <select style="width: 100%; padding: 10px 15px; border: 1px solid #e2e8f0; border-radius: 8px; background: white; font-family:inherit; color:#64748b;">
-            <option value="">Todos los Pueblos</option>
+<section class="card">
+    <div class="tc-toolbar">
+        <div class="position-relative flex-grow-1" style="min-width:240px;">
+            <i class="fa-solid fa-magnifying-glass position-absolute" style="left:15px;top:14px;color:#94a3b8;"></i>
+            <input id="buscarProductor" class="form-control ps-5" placeholder="Buscar por nombre, folio, pueblo o actividad">
+        </div>
+        <select id="filtroPueblo" class="form-select" style="max-width:260px;">
+            <option value="">Todos los pueblos</option>
             <option value="topilejo">San Miguel Topilejo</option>
             <option value="parres">Parres El Guarda</option>
             <option value="ajusco">San Miguel Ajusco</option>
         </select>
     </div>
-    <button class="btn-action" style="background: var(--dorado); border: none;">
-        <i class="fa-solid fa-magnifying-glass"></i> Buscar
-    </button>
-</div>
+</section>
 
-<div class="card" style="padding: 0; overflow: hidden; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-    <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
-            <thead style="background-color: #f8f9fa; border-bottom: 2px solid #eef2f6;">
+<section class="card p-0 overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" id="tablaProductores" style="min-width:850px;">
+            <thead>
                 <tr>
-                    <th style="padding: 15px 20px; text-align: left; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Folio</th>
-                    <th style="padding: 15px 20px; text-align: left; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase;">Productor</th>
-                    <th style="padding: 15px 20px; text-align: left; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase;">Ubicación</th>
-                    <th style="padding: 15px 20px; text-align: left; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase;">Actividad</th>
-                    <th style="padding: 15px 20px; text-align: left; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase;">Estatus</th>
-                    <th style="padding: 15px 20px; text-align: center; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase;">Acciones</th>
+                    <th>Folio</th>
+                    <th>Productor</th>
+                    <th>Ubicación</th>
+                    <th>Actividad</th>
+                    <th>Estatus</th>
+                    <th class="text-center">Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach($data['lista'] as $fila): ?>
-                <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
-                    
-                    <td style="padding: 15px 20px;">
-                        <span style="font-weight: 600; color: var(--guinda); font-family: monospace; font-size: 14px;">
-                            <?php echo $fila['folio']; ?>
-                        </span>
+                <?php
+                    $estadoClase = 'success';
+                    if ($fila['estatus'] === 'Pendiente') $estadoClase = 'warning';
+                    if ($fila['estatus'] === 'Revisión') $estadoClase = 'danger';
+                    if ($fila['estatus'] === 'Nueva') $estadoClase = 'info';
+                    $textoBusqueda = strtolower(implode(' ', [$fila['folio'], $fila['nombre'], $fila['pueblo'], $fila['actividad'], $fila['estatus']]));
+                ?>
+                <tr data-search="<?php echo htmlspecialchars($textoBusqueda, ENT_QUOTES, 'UTF-8'); ?>">
+                    <td><span class="badge text-bg-light border text-guinda font-monospace"><?php echo htmlspecialchars($fila['folio'], ENT_QUOTES, 'UTF-8'); ?></span></td>
+                    <td>
+                        <div class="fw-bold"><?php echo htmlspecialchars($fila['nombre'], ENT_QUOTES, 'UTF-8'); ?></div>
+                        <small class="text-muted"><i class="fa-regular fa-calendar me-1"></i><?php echo htmlspecialchars($fila['fecha'], ENT_QUOTES, 'UTF-8'); ?></small>
                     </td>
-
-                    <td style="padding: 15px 20px;">
-                        <div style="font-weight: 600; color: var(--oscuro);"><?php echo $fila['nombre']; ?></div>
-                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
-                            <i class="fa-regular fa-calendar"></i> <?php echo $fila['fecha']; ?>
-                        </div>
-                    </td>
-
-                    <td style="padding: 15px 20px; color: #475569;">
-                        <?php echo $fila['pueblo']; ?>
-                    </td>
-
-                    <td style="padding: 15px 20px;">
-                        <span style="background: #eff6ff; color: #3b82f6; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1px solid #dbeafe;">
-                            <?php echo $fila['actividad']; ?>
-                        </span>
-                    </td>
-
-                    <td style="padding: 15px 20px;">
-                        <?php 
-                            // Lógica simple para colores
-                            $color = '#10b981'; // Verde por defecto (Completa)
-                            if($fila['estatus'] == 'Pendiente') $color = '#f59e0b'; // Naranja
-                            if($fila['estatus'] == 'Revisión') $color = '#ef4444'; // Rojo
-                            if($fila['estatus'] == 'Nueva') $color = '#3b82f6'; // Azul
-                        ?>
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                            <span style="width: 8px; height: 8px; border-radius: 50%; background-color: <?php echo $color; ?>;"></span>
-                            <span style="font-weight: 500; font-size: 13px; color: <?php echo $color; ?>;">
-                                <?php echo $fila['estatus']; ?>
-                            </span>
-                        </div>
-                    </td>
-
-                    <td style="padding: 15px 20px; text-align: center;">
-                        <div style="display: flex; justify-content: center; gap: 8px;">
-                            <button title="Ver Detalle" style="width: 32px; height: 32px; border-radius: 6px; border: 1px solid #e2e8f0; background: white; color: #64748b; cursor: pointer; transition: 0.2s;" onmouseover="this.style.borderColor='var(--guinda)'; this.style.color='var(--guinda)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.color='#64748b';">
-                                <i class="fa-solid fa-eye"></i>
-                            </button>
-                            <button title="Descargar PDF" style="width: 32px; height: 32px; border-radius: 6px; border: 1px solid #e2e8f0; background: white; color: #64748b; cursor: pointer; transition: 0.2s;" onmouseover="this.style.borderColor='#ef4444'; this.style.color='#ef4444';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.color='#64748b';">
-                                <i class="fa-solid fa-file-pdf"></i>
-                            </button>
-                        </div>
+                    <td><i class="fa-solid fa-location-dot text-guinda me-1"></i><?php echo htmlspecialchars($fila['pueblo'], ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td><span class="badge text-bg-light border"><?php echo htmlspecialchars($fila['actividad'], ENT_QUOTES, 'UTF-8'); ?></span></td>
+                    <td><span class="badge text-bg-<?php echo $estadoClase; ?>"><?php echo htmlspecialchars($fila['estatus'], ENT_QUOTES, 'UTF-8'); ?></span></td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-secondary" title="Ver detalle"><i class="fa-solid fa-eye"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" title="Descargar PDF"><i class="fa-solid fa-file-pdf"></i></button>
                     </td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
     </div>
-    
-    <div style="padding: 15px 20px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; color: #64748b; font-size: 13px;">
-        <div>Mostrando 1 a 6 de 1,250 registros</div>
-        <div style="display: flex; gap: 5px;">
-            <button style="padding: 5px 10px; border: 1px solid #e2e8f0; background: white; border-radius: 4px; cursor: pointer;">Anterior</button>
-            <button style="padding: 5px 10px; border: 1px solid var(--guinda); background: var(--guinda); color: white; border-radius: 4px; cursor: pointer;">1</button>
-            <button style="padding: 5px 10px; border: 1px solid #e2e8f0; background: white; border-radius: 4px; cursor: pointer;">2</button>
-            <button style="padding: 5px 10px; border: 1px solid #e2e8f0; background: white; border-radius: 4px; cursor: pointer;">Siguiente</button>
-        </div>
-    </div>
-</div>
+    <footer class="tc-table-footer d-flex justify-content-between align-items-center">
+        <span id="conteoProductores"><?php echo count($data['lista']); ?> registros</span>
+        <small>Información de demostración</small>
+    </footer>
+</section>
+
+<script>
+document.getElementById('buscarProductor').addEventListener('input', function() {
+    const texto = this.value.toLowerCase().trim();
+    let visibles = 0;
+    document.querySelectorAll('#tablaProductores tbody tr').forEach(fila => {
+        const mostrar = fila.dataset.search.includes(texto);
+        fila.style.display = mostrar ? '' : 'none';
+        if (mostrar) visibles++;
+    });
+    document.getElementById('conteoProductores').textContent = `${visibles} registro${visibles === 1 ? '' : 's'}`;
+});
+</script>
 
 <?php require_once APPROOT . '/views/inc/footer_dashboard.php'; ?>

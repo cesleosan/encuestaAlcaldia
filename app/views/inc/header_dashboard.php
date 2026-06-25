@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo isset($data['titulo']) ? $data['titulo'] : 'Censo Tlalpan'; ?></title>
     
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -117,41 +118,48 @@
             .menu-item { justify-content: center; }
         }
     </style>
+    <link rel="stylesheet" href="/css/tierracorazon-ui.css">
 </head>
 <body>
 
+    <?php
+        $rutaActual = strtolower($_SERVER['REQUEST_URI'] ?? '');
+        $activo = function($segmento) use ($rutaActual) {
+            return strpos($rutaActual, strtolower($segmento)) !== false ? ' active' : '';
+        };
+    ?>
     <div class="sidebar">
         <div class="sidebar-header">
-            <i class="fa-solid fa-leaf" style="color:var(--guinda); font-size: 24px;"></i>
-            <div class="logo-text">Censo<br>Tlalpan</div>
+            <i class="fa-solid fa-seedling" style="color:var(--guinda); font-size: 24px;"></i>
+            <div class="logo-text">Tierra con<br>Corazón</div>
         </div>
         
         <nav class="menu">
-            <a href="<?php echo URLROOT; ?>/Dashboard" class="menu-item">
+            <a href="<?php echo URLROOT; ?>/Dashboard" class="menu-item<?php echo $activo('/dashboard'); ?>">
                 <i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span>
             </a>
             
             <?php if($_SESSION['rol'] == 'root' || $_SESSION['rol'] == 'supervisor'): ?>
-            <a href="<?php echo URLROOT; ?>/Productores" class="menu-item">
+            <a href="<?php echo URLROOT; ?>/Productores" class="menu-item<?php echo $activo('/productores'); ?>">
                 <i class="fa-solid fa-users"></i> <span>Productores</span>
             </a>
-            <a href="<?php echo URLROOT; ?>/Mapa" class="menu-item">
+            <a href="<?php echo URLROOT; ?>/Mapa" class="menu-item<?php echo $activo('/mapa'); ?>">
                 <i class="fa-solid fa-map-location-dot"></i> <span>Mapa GPS</span>
             </a>
             <?php endif; ?>
 
             <?php if($_SESSION['rol'] == 'root'): ?>
-            <a href="<?php echo URLROOT; ?>/Usuarios" class="menu-item">
+            <a href="<?php echo URLROOT; ?>/Usuarios" class="menu-item<?php echo $activo('/usuarios'); ?>">
                 <i class="fa-solid fa-user-gear"></i> <span>Usuarios</span>
             </a>
             <?php endif; ?>
         </nav>
 
         <div class="user-profile">
-            <div class="avatar"><?php echo strtoupper(substr($_SESSION['nombre'], 0, 1)); ?></div>
+            <div class="avatar"><?php echo htmlspecialchars(strtoupper(substr($_SESSION['nombre'] ?? 'U', 0, 1)), ENT_QUOTES, 'UTF-8'); ?></div>
             <div class="user-info">
-                <h4><?php echo $_SESSION['nombre']; ?></h4>
-                <p><?php echo $_SESSION['rol']; ?></p>
+                <h4><?php echo htmlspecialchars($_SESSION['nombre'] ?? 'Usuario', ENT_QUOTES, 'UTF-8'); ?></h4>
+                <p><?php echo htmlspecialchars($_SESSION['rol'] ?? '', ENT_QUOTES, 'UTF-8'); ?></p>
             </div>
             <a href="<?php echo URLROOT; ?>/Auth/logout" style="margin-left:auto; color:#e74c3c;">
                 <i class="fa-solid fa-right-from-bracket"></i>

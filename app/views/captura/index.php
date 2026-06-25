@@ -216,6 +216,7 @@ $puedeAprobarCaptura = in_array($rolSesionCaptura, ['root', 'admin'], true);
     transform: scale(1.1);
 }
 </style>
+<link rel="stylesheet" href="/css/tierracorazon-ui.css">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 </head>
