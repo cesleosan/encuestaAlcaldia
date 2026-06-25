@@ -483,6 +483,7 @@
                                 <option value="SOLICITUD_INGRESADA">Solicitud ingresada</option>
                                 <option value="VALIDACION_DOCS">Validación docs</option>
                                 <option value="EN_REVISION">En revisión técnica</option>
+                                <option value="COMITE">Comité</option>
                                 <option value="APROBADO">Aprobado</option>
                                 <option value="RECHAZADO">Rechazado</option>
                             </select>
@@ -691,8 +692,9 @@
                                     <option value="SOLICITUD_INGRESADA">2. SOLICITUD INGRESADA</option>
                                     <option value="VALIDACION_DOCS">3. VALIDACIÓN DE DOCS</option>
                                     <option value="EN_REVISION">4. EN REVISIÓN TÉCNICA</option>
-                                    <option value="APROBADO" class="fase-admin-only">5. APROBADO</option>
-                                    <option value="RECHAZADO" class="fase-admin-only">6. RECHAZADO</option>
+                                    <option value="COMITE">5. COMITÉ</option>
+                                    <option value="APROBADO" class="fase-admin-only">6. APROBADO</option>
+                                    <option value="RECHAZADO" class="fase-admin-only">7. RECHAZADO</option>
                                 </select>
                                 <div class="small text-muted mt-2" id="modalAyudaFase">Selecciona una fase y guarda el cambio. Solo administrador/root puede modificar el flujo desde aquí.</div>
                             </div>
@@ -1049,6 +1051,7 @@ $(document).ready(function() {
             'SOLICITUD_INGRESADA': 'badge-soft-info',
             'VALIDACION_DOCS': 'badge-soft-info',
             'EN_REVISION': 'badge-soft-warning',
+            'COMITE': 'badge-soft-guinda',
             'APROBADO': 'badge-soft-success',
             'RECHAZADO': 'badge-soft-danger'
         };
@@ -1412,7 +1415,7 @@ $(document).ready(function() {
             return;
         }
 
-        const fasesValidas = ['SOLICITUD_INGRESADA', 'VALIDACION_DOCS', 'EN_REVISION', 'APROBADO', 'RECHAZADO'];
+        const fasesValidas = ['SOLICITUD_INGRESADA', 'VALIDACION_DOCS', 'EN_REVISION', 'COMITE', 'APROBADO', 'RECHAZADO'];
         if (!fasesValidas.includes(nuevaFase)) {
             Swal.fire('Fase inválida', 'Selecciona una fase válida para continuar.', 'warning');
             return;

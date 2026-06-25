@@ -56,6 +56,7 @@ $puedeAprobarCaptura = in_array($rolSesionCaptura, ['root', 'admin'], true);
     .fase-EMPADRONADO { background-color: #6c757d; color: white; }
     .fase-VALIDACION_DOCS { background-color: #17a2b8; color: white; }
     .fase-EN_REVISION { background-color: #ffc107; color: #333; }
+    .fase-COMITE { background-color: #773357; color: white; }
     .fase-APROBADO { background-color: #28a745; color: white; }
     .fase-RECHAZADO { background-color: #dc3545; color: white; }
 
@@ -548,9 +549,10 @@ $puedeAprobarCaptura = in_array($rolSesionCaptura, ['root', 'admin'], true);
                                     <option value="SOLICITUD_INGRESADA">2. SOLICITUD INGRESADA</option>
                                     <option value="VALIDACION_DOCS">3. VALIDACIÓN DE DOCS</option>
                                     <option value="EN_REVISION">4. EN REVISIÓN TÉCNICA</option>
+                                    <option value="COMITE">5. COMITÉ</option>
                                     <?php if ($puedeAprobarCaptura): ?>
-                                        <option value="APROBADO">5. APROBADO</option>
-                                        <option value="RECHAZADO">6. RECHAZADO</option>
+                                        <option value="APROBADO">6. APROBADO</option>
+                                        <option value="RECHAZADO">7. RECHAZADO</option>
                                     <?php endif; ?>
                                 </select>
                                 <?php if (!$puedeAprobarCaptura): ?>
@@ -787,6 +789,22 @@ $puedeAprobarCaptura = in_array($rolSesionCaptura, ['root', 'admin'], true);
                             </div>
                         </div>
 
+                        <div class="list-group-item py-3 doc-row" id="row_formatos_tecnicos">
+                            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                                <div class="d-flex align-items-center">
+                                    <input type="checkbox" name="check_formatos_tecnicos" value="1" class="form-check-input h5 mb-0 me-3 doc-check" disabled>
+                                    <span>
+                                        <i class="fas fa-file-image text-guinda me-2"></i> <b>Formatos técnicos</b><br>
+                                        <small class="text-muted">Adjunte hasta 3 imágenes</small>
+                                    </span>
+                                </div>
+                                <div class="text-end">
+                                    <label for="formatos_tecnicos" class="btn-upload"><i class="fas fa-images me-1"></i> AGREGAR IMÁGENES</label>
+                                    <input type="file" name="formatos_tecnicos[]" id="formatos_tecnicos" class="d-none" accept="image/jpeg,image/png,image/webp" multiple>
+                                    <div id="galeria_formatos_tecnicos" class="d-flex gap-2 flex-wrap justify-content-end mt-2"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -896,6 +914,7 @@ $puedeAprobarCaptura = in_array($rolSesionCaptura, ['root', 'admin'], true);
 window.puedeAprobarCaptura = <?php echo $puedeAprobarCaptura ? 'true' : 'false'; ?>;
 window.fasesFinalesCaptura = ['APROBADO', 'RECHAZADO'];
 window.archivosEvidenciaSeleccionados = window.archivosEvidenciaSeleccionados || [];
+window.formatosTecnicosGuardados = 0;
 window.registroActualCaptura = null;
 
 $(document).ready(function() {
@@ -1103,6 +1122,9 @@ window.abrirEdicion = function(id) {
     $(".file-preview-container").addClass('d-none');
     $(".doc-row").css('background-color', '');
     $(".btn-upload").html('<i class="fas fa-camera me-1"></i> SUBIR/TOMAR');
+    $("#formatos_tecnicos").val('');
+    $("#galeria_formatos_tecnicos").empty();
+    window.formatosTecnicosGuardados = 0;
     
     // Limpieza Verificación
     $("#in_lat_verif, #in_lon_verif").val('');
@@ -1162,7 +1184,7 @@ window.abrirEdicion = function(id) {
     $("#in_lon_verif").val(obtenerDatoFinal(reg, "longitud_verif", json));
 
     // 6. Marcar Checks de Documentos
-    const listadoDocs = ['solicitud', 'identidad', 'domicilio', 'curp_doc', 'rfc_doc', 'manifiesto', 'propiedad', 'finiquito', 'siniiga_doc'];
+    const listadoDocs = ['solicitud', 'identidad', 'domicilio', 'curp_doc', 'rfc_doc', 'manifiesto', 'propiedad', 'finiquito', 'siniiga_doc', 'formatos_tecnicos'];
     listadoDocs.forEach(c => {
         $(`input[name="check_${c}"]`).prop('checked', parseInt(reg['check_' + c]) === 1);
     });
@@ -1191,6 +1213,24 @@ window.abrirEdicion = function(id) {
                     }
                 }
             });
+        });
+
+    fetch(`<?php echo URLROOT; ?>/Captura/getFormatosTecnicos/${id}`)
+        .then(res => res.json())
+        .then(fotos => {
+            window.formatosTecnicosGuardados = Array.isArray(fotos) ? fotos.length : 0;
+            const galeria = $("#galeria_formatos_tecnicos").empty();
+            (fotos || []).forEach(foto => {
+                galeria.append(`
+                    <span class="position-relative" id="formato_tecnico_${foto.id}">
+                        <a href="${foto.url}" target="_blank">
+                            <img src="${foto.url}" alt="Formato técnico" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:2px solid #eee;">
+                        </a>
+                        <button type="button" class="btn btn-danger btn-sm rounded-circle position-absolute top-0 start-100 translate-middle p-0"
+                                style="width:22px;height:22px;line-height:18px;" onclick="borrarFormatoTecnico(${foto.id})">&times;</button>
+                    </span>`);
+            });
+            $('input[name="check_formatos_tecnicos"]').prop('checked', window.formatosTecnicosGuardados > 0);
         });
 
     // 8. CARGA DE FOTOS DE EVIDENCIA (Pestaña 4) - CON PROTECCIÓN CONTRA HTML
@@ -1277,6 +1317,28 @@ window.borrarEvidencia = function(fotoId) {
     });
 };
 
+window.borrarFormatoTecnico = function(fotoId) {
+    Swal.fire({
+        title: '¿Eliminar formato técnico?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Sí, eliminar'
+    }).then(result => {
+        if (!result.isConfirmed) return;
+        fetch(`<?php echo URLROOT; ?>/Captura/eliminarEvidencia/${fotoId}`, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status !== 'success') throw new Error(data.msg || 'No se pudo eliminar');
+                $(`#formato_tecnico_${fotoId}`).remove();
+                window.formatosTecnicosGuardados = Math.max(0, window.formatosTecnicosGuardados - 1);
+                $('input[name="check_formatos_tecnicos"]').prop('checked', window.formatosTecnicosGuardados > 0);
+                Toast.fire({ icon: 'success', title: 'Formato eliminado' });
+            })
+            .catch(err => Swal.fire('Error', err.message, 'error'));
+    });
+};
+
     function renderTabResumen(reg, json) {
         const $resumen = $("#resumenCaptura").empty();
         const config = { "1. Registro": ["folio", "fase_proceso"], "2. Identidad": ["nombre_productor", "curp", "rfc", "sexo", "grado_estudios"], "3. Ubicación": ["calle_numero", "pueblo_colonia", "cp", "tel_particular"], "4. Perfil": ["ocupacion", "grupo_etnico"], "5. Producción": ["tipo_produccion", "superficie_prod", "cultivo_principal"] };
@@ -1306,6 +1368,23 @@ window.borrarEvidencia = function(fotoId) {
             $(`label[for="file_${suffix}"]`).html('<i class="fas fa-sync me-1"></i> CAMBIAR');
             $(`input[name="check_${suffix}"]`).prop('checked', true);
         }
+    });
+
+    $("#formatos_tecnicos").on('change', function() {
+        const archivos = Array.from(this.files || []);
+        const disponibles = Math.max(0, 3 - window.formatosTecnicosGuardados);
+        if (archivos.length > disponibles) {
+            this.value = '';
+            Swal.fire('Límite de imágenes', `Puede agregar ${disponibles} imagen(es) más. El máximo es 3.`, 'warning');
+            return;
+        }
+        const galeria = $("#galeria_formatos_tecnicos");
+        galeria.find('.formato-nuevo').remove();
+        archivos.forEach(file => {
+            const url = URL.createObjectURL(file);
+            galeria.append(`<span class="formato-nuevo"><img src="${url}" alt="Nuevo formato técnico" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:2px solid #198754;"></span>`);
+        });
+        $('input[name="check_formatos_tecnicos"]').prop('checked', (window.formatosTecnicosGuardados + archivos.length) > 0);
     });
 
     window.eliminarArchivo = function(suffix) {
@@ -1468,7 +1547,7 @@ function confirmarGuardado() {
     });
 
     // Checkboxes
-    const listChecks = ['check_solicitud', 'check_identidad', 'check_domicilio', 'check_curp_doc', 'check_rfc_doc', 'check_manifiesto', 'check_propiedad', 'check_finiquito', 'check_siniiga_doc'];
+    const listChecks = ['check_solicitud', 'check_identidad', 'check_domicilio', 'check_curp_doc', 'check_rfc_doc', 'check_manifiesto', 'check_propiedad', 'check_finiquito', 'check_siniiga_doc', 'check_formatos_tecnicos'];
     listChecks.forEach(c => {
         formData.set(c, $(`input[name="${c}"]`).is(':checked') ? 1 : 0);
     });

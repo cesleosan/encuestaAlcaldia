@@ -46,7 +46,7 @@ $lon_verif = filter_var($_POST['longitud_verif'], FILTER_SANITIZE_NUMBER_FLOAT, 
         $rolSesion = $_SESSION['rol'] ?? '';
         $puedeFaseFinal = in_array($rolSesion, ['root', 'admin'], true);
         $faseSolicitada = $_POST['fase_proceso'] ?? $registro->fase_proceso;
-        $fasesBasicas = ['EMPADRONADO', 'SOLICITUD_INGRESADA', 'VALIDACION_DOCS', 'EN_REVISION'];
+        $fasesBasicas = ['EMPADRONADO', 'SOLICITUD_INGRESADA', 'VALIDACION_DOCS', 'EN_REVISION', 'COMITE'];
         $fasesFinales = ['APROBADO', 'RECHAZADO'];
 
         if (!$puedeFaseFinal && in_array($faseSolicitada, $fasesFinales, true)) {
@@ -156,6 +156,7 @@ $lon_verif = filter_var($_POST['longitud_verif'], FILTER_SANITIZE_NUMBER_FLOAT, 
             
             // Fases y Observaciones
             'fase_proceso'      => $faseSolicitada,
+            'estatus'           => $this->estatusPorFase($faseSolicitada),
             'observaciones_capturista' => mb_strtoupper($_POST['observaciones_capturista'] ?? '', 'UTF-8'),
             
             // VERIFICACIÓN (Pestaña 4)
@@ -172,12 +173,52 @@ $lon_verif = filter_var($_POST['longitud_verif'], FILTER_SANITIZE_NUMBER_FLOAT, 
             'check_propiedad'   => $dbChecks['check_propiedad'],
             'check_finiquito'   => $dbChecks['check_finiquito'],
             'check_siniiga_doc' => $dbChecks['check_siniiga_doc'],
+            'check_formatos_tecnicos' => 0,
             
             'json'              => $registro->respuestas_json 
         ];
 
         // 4. EJECUTAR ACTUALIZACIÓN PRINCIPAL
+        $formatosActuales = $this->encuestaModel->contarEvidencias($id, 'FORMATOS_TECNICOS');
+        $formatosNuevos = [];
+        if (!empty($_FILES['formatos_tecnicos']['name'][0])) {
+            foreach ($_FILES['formatos_tecnicos']['name'] as $key => $nombreOriginal) {
+                if ($_FILES['formatos_tecnicos']['error'][$key] === UPLOAD_ERR_OK) {
+                    $ext = strtolower(pathinfo($nombreOriginal, PATHINFO_EXTENSION));
+                    if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true)) {
+                        http_response_code(422);
+                        echo json_encode(['status' => 'error', 'msg' => 'Formatos tÃ©cnicos solo acepta imÃ¡genes JPG, PNG o WEBP.']);
+                        return;
+                    }
+                    $formatosNuevos[] = $key;
+                }
+            }
+        }
+        if (($formatosActuales + count($formatosNuevos)) > 3) {
+            http_response_code(422);
+            echo json_encode(['status' => 'error', 'msg' => 'Formatos tÃ©cnicos permite un mÃ¡ximo de 3 imÃ¡genes.']);
+            return;
+        }
+        $data['check_formatos_tecnicos'] = ($formatosActuales + count($formatosNuevos)) > 0 ? 1 : 0;
+
         if ($this->encuestaModel->actualizarExpediente($data)) {
+            if (!empty($formatosNuevos)) {
+                $rutaFormatos = PUBROOT . '/uploads/formatos_tecnicos/' . $folioCarpeta;
+                if (!is_dir($rutaFormatos)) { @mkdir($rutaFormatos, 0775, true); }
+
+                foreach ($formatosNuevos as $key) {
+                    $nombreOriginal = $_FILES['formatos_tecnicos']['name'][$key];
+                    $ext = strtolower(pathinfo($nombreOriginal, PATHINFO_EXTENSION));
+
+                    $nombreFoto = 'FT_' . date('Ymd_His') . '_' . uniqid() . '_' . ($key + 1) . '.' . $ext;
+                    $destinoFoto = $rutaFormatos . '/' . $nombreFoto;
+                    if (move_uploaded_file($_FILES['formatos_tecnicos']['tmp_name'][$key], $destinoFoto)) {
+                        $rutaRelativa = 'uploads/formatos_tecnicos/' . $folioCarpeta . '/' . $nombreFoto;
+                        $this->encuestaModel->guardarEvidenciaFoto($id, $rutaRelativa, 'FORMATOS_TECNICOS');
+                    }
+                }
+                $this->encuestaModel->actualizarCheckFormatosTecnicos($id);
+            }
             
             // 5. PROCESAR EVIDENCIAS FOTOGRÁFICAS (Pestaña 4)
             if (!empty($_FILES['fotos_evidencia']['name'][0])) {
@@ -314,6 +355,9 @@ public function eliminarEvidencia($fotoId) {
 
             // 3. Pedir al modelo que borre el registro en la BD
             if ($this->encuestaModel->eliminarEvidenciaRow($fotoId)) {
+                if (($foto->tipo_evidencia ?? '') === 'FORMATOS_TECNICOS') {
+                    $this->encuestaModel->actualizarCheckFormatosTecnicos($foto->encuesta_id);
+                }
                 echo json_encode(['status' => 'success', 'msg' => 'Evidencia eliminada']);
             } else {
                 throw new Exception("Error al eliminar el registro de la base de datos");
@@ -327,10 +371,45 @@ public function eliminarEvidencia($fotoId) {
     exit;
 }
 
+public function getFormatosTecnicos($id) {
+    if (ob_get_length()) ob_clean();
+    header('Content-Type: application/json; charset=utf-8');
+
+    try {
+        if (!is_numeric($id)) throw new Exception('ID invÃ¡lido');
+        $fotos = $this->encuestaModel->getEvidencias($id, 'FORMATOS_TECNICOS');
+        $data = [];
+        foreach ($fotos as $f) {
+            $data[] = [
+                'id' => $f->id,
+                'url' => URLROOT . '/' . $f->ruta_archivo
+            ];
+        }
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => $e->getMessage()]);
+    }
+    exit;
+}
+
 private function normalizarLineaAyuda($valor) {
     $valor = strtoupper(trim((string)$valor));
     $permitidas = ['AGRICOLA', 'PECUARIA', 'GRANJA_INTEGRAL', 'HUERTO_URBANO'];
     return in_array($valor, $permitidas, true) ? $valor : 'AGRICOLA';
+}
+
+private function estatusPorFase($fase) {
+    $estatus = [
+        'EMPADRONADO' => 'Empadronado',
+        'SOLICITUD_INGRESADA' => 'Solicitud ingresada',
+        'VALIDACION_DOCS' => 'ValidaciÃ³n docs',
+        'EN_REVISION' => 'En revisiÃ³n',
+        'COMITE' => 'ComitÃ©',
+        'APROBADO' => 'Aprobado',
+        'RECHAZADO' => 'Rechazado'
+    ];
+    return $estatus[$fase] ?? $fase;
 }
 
 }

@@ -164,8 +164,8 @@ class EncuestaModelo {
     /**
      * Listado Maestro (Soporta todas las columnas nuevas)
      */
-    public function getListadoMaestro() {
-        $this->db->query("SELECT 
+    public function getListadoMaestro($faseProceso = null) {
+        $sql = "SELECT
                             e.*, 
                             u.nombre_completo as encuestador,
                             IFNULL(ev.total_fotos, 0) as total_fotos
@@ -174,9 +174,17 @@ class EncuestaModelo {
                         LEFT JOIN (
                             SELECT encuesta_id, COUNT(*) as total_fotos
                             FROM encuesta_evidencias
+                            WHERE tipo_evidencia = 'VERIFICACION_CAMPO'
                             GROUP BY encuesta_id
-                        ) ev ON ev.encuesta_id = e.id
-                        ORDER BY e.fecha_inicio DESC");
+                        ) ev ON ev.encuesta_id = e.id";
+        if ($faseProceso !== null) {
+            $sql .= " WHERE e.fase_proceso = :fase_proceso";
+        }
+        $sql .= " ORDER BY e.fecha_inicio DESC";
+        $this->db->query($sql);
+        if ($faseProceso !== null) {
+            $this->db->bind(':fase_proceso', $faseProceso);
+        }
         return $this->db->resultSet();
     }
 
@@ -257,8 +265,10 @@ class EncuestaModelo {
                     check_propiedad = :check_prop,
                     check_finiquito = :check_fin,
                     check_siniiga_doc = :check_sin,
+                    check_formatos_tecnicos = :check_formatos,
                     -- Control y VERIFICACIÓN (Nuevos Campos)
-                    fase_proceso = :fase, 
+                    fase_proceso = :fase,
+                    estatus = :estatus,
                     observaciones_capturista = :obs,
                     latitud_verif = :lat_v,
                     longitud_verif = :lon_v,
@@ -316,9 +326,11 @@ class EncuestaModelo {
         $this->db->bind(':check_prop', $data['check_propiedad']);
         $this->db->bind(':check_fin', $data['check_finiquito']);
         $this->db->bind(':check_sin', $data['check_siniiga_doc']);
+        $this->db->bind(':check_formatos', $data['check_formatos_tecnicos']);
 
         // Control, Observaciones y VERIFICACIÓN (GPS NUEVO)
         $this->db->bind(':fase', $data['fase_proceso']);
+        $this->db->bind(':estatus', $data['estatus']);
         $this->db->bind(':obs', $data['observaciones_capturista'] ?? '');
         $this->db->bind(':lat_v', $data['latitud_verif'] ?? null);
         $this->db->bind(':lon_v', $data['longitud_verif'] ?? null);
@@ -330,15 +342,24 @@ class EncuestaModelo {
     die(json_encode(['status' => 'error', 'msg' => 'Error SQL: ' . $e->getMessage()]));
 }
 }
-public function getEvidencias($encuestaId) {
-    $this->db->query("SELECT * FROM encuesta_evidencias WHERE encuesta_id = :id");
+public function getEvidencias($encuestaId, $tipo = 'VERIFICACION_CAMPO') {
+    $this->db->query("SELECT * FROM encuesta_evidencias WHERE encuesta_id = :id AND tipo_evidencia = :tipo ORDER BY created_at ASC, id ASC");
     $this->db->bind(':id', $encuestaId);
+    $this->db->bind(':tipo', $tipo);
     return $this->db->resultSet();
+}
+
+public function contarEvidencias($encuestaId, $tipo) {
+    $this->db->query("SELECT COUNT(*) AS total FROM encuesta_evidencias WHERE encuesta_id = :id AND tipo_evidencia = :tipo");
+    $this->db->bind(':id', $encuestaId);
+    $this->db->bind(':tipo', $tipo);
+    $row = $this->db->single();
+    return (int)($row->total ?? 0);
 }
 
 // Obtener los datos de una sola evidencia
 public function getEvidenciaById($id) {
-    $this->db->query("SELECT ruta_archivo FROM encuesta_evidencias WHERE id = :id");
+    $this->db->query("SELECT encuesta_id, ruta_archivo, tipo_evidencia FROM encuesta_evidencias WHERE id = :id");
     $this->db->bind(':id', $id);
     return $this->db->single();
 }
@@ -350,13 +371,14 @@ public function eliminarEvidenciaRow($id) {
     return $this->db->execute();
 }
 
-public function guardarEvidenciaFoto($encuestaId, $ruta) {
+public function guardarEvidenciaFoto($encuestaId, $ruta, $tipo = 'VERIFICACION_CAMPO') {
         try {
-            $this->db->query("INSERT INTO encuesta_evidencias (encuesta_id, ruta_archivo) 
-                              VALUES (:eid, :ruta)");
+            $this->db->query("INSERT INTO encuesta_evidencias (encuesta_id, ruta_archivo, tipo_evidencia)
+                              VALUES (:eid, :ruta, :tipo)");
             
             $this->db->bind(':eid', $encuestaId);
             $this->db->bind(':ruta', $ruta);
+            $this->db->bind(':tipo', $tipo);
             
             return $this->db->execute();
         } catch (Exception $e) {
@@ -394,5 +416,19 @@ public function guardarEvidenciaFoto($encuestaId, $ruta) {
             return false;
         }
     }
+
+public function actualizarCheckFormatosTecnicos($encuestaId) {
+    $this->db->query("UPDATE encuestas
+                      SET check_formatos_tecnicos = (
+                          SELECT IF(COUNT(*) > 0, 1, 0)
+                          FROM encuesta_evidencias
+                          WHERE encuesta_id = :evidencia_encuesta_id
+                            AND tipo_evidencia = 'FORMATOS_TECNICOS'
+                      )
+                      WHERE id = :encuesta_id");
+    $this->db->bind(':evidencia_encuesta_id', $encuestaId);
+    $this->db->bind(':encuesta_id', $encuestaId);
+    return $this->db->execute();
+}
 
 }

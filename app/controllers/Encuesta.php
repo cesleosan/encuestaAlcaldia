@@ -9,6 +9,10 @@ class Encuesta extends Controller {
 
     public function index() {
         if (!isset($_SESSION['user_id'])) { header('Location: ' . URLROOT . '/Auth'); exit; }
+        if (($_SESSION['rol'] ?? '') === 'consulta') {
+            header('Location: ' . URLROOT . '/Dashboard/index');
+            exit;
+        }
 
         $coloniasPreview = $this->encuestaModel->getColoniasTlalpan(10);
         $preguntaModel = $this->model('PreguntaModel');
@@ -30,6 +34,11 @@ class Encuesta extends Controller {
 
     public function guardar() {
         if (session_status() === PHP_SESSION_NONE) session_start();
+        if (($_SESSION['rol'] ?? '') === 'consulta') {
+            http_response_code(403);
+            echo json_encode(['status' => 'error', 'msg' => 'El perfil consulta es de solo lectura']);
+            return;
+        }
         if (!isset($_SESSION['user_id'])) {
             echo json_encode(['status' => 'error', 'msg' => 'Sesión expirada']);
             return;
@@ -174,8 +183,23 @@ public function getTodasLasColonias() {
 }
 
 public function getEstadisticas() {
+    if (session_status() === PHP_SESSION_NONE) session_start();
     if (ob_get_length()) ob_clean();
     header('Content-Type: application/json');
+
+    if (!isset($_SESSION['user_id'])) {
+        http_response_code(401);
+        echo json_encode(['status' => 'error', 'msg' => 'SesiÃ³n expirada']);
+        exit;
+    }
+
+    if (($_SESSION['rol'] ?? '') === 'consulta') {
+        echo json_encode([
+            'status' => 'success',
+            'maestro' => $this->encuestaModel->getListadoMaestro('COMITE')
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 
     $datos = [
         'kpis'        => $this->encuestaModel->getDashboardKPIs(),
@@ -231,6 +255,7 @@ public function cambiarFaseVerificacion() {
             'SOLICITUD_INGRESADA',
             'VALIDACION_DOCS',
             'EN_REVISION',
+            'COMITE',
             'APROBADO',
             'RECHAZADO'
         ];
@@ -252,6 +277,7 @@ public function cambiarFaseVerificacion() {
             'SOLICITUD_INGRESADA' => 'Solicitud ingresada',
             'VALIDACION_DOCS'     => 'Validación docs',
             'EN_REVISION'         => 'En revisión',
+            'COMITE'              => 'ComitÃ©',
             'APROBADO'            => 'Aprobado',
             'RECHAZADO'           => 'Rechazado'
         ];
@@ -279,6 +305,41 @@ public function cambiarFaseVerificacion() {
         echo json_encode(['status' => 'error', 'msg' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
         exit;
     }
+}
+
+public function getEvidenciasConsulta($id) {
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    if (ob_get_length()) ob_clean();
+    header('Content-Type: application/json; charset=utf-8');
+
+    if (!isset($_SESSION['user_id']) || ($_SESSION['rol'] ?? '') !== 'consulta') {
+        http_response_code(403);
+        echo json_encode(['status' => 'error', 'msg' => 'Acceso no autorizado']);
+        exit;
+    }
+
+    $registro = $this->encuestaModel->getEncuestaById((int)$id);
+    if (!$registro || ($registro->fase_proceso ?? '') !== 'COMITE') {
+        http_response_code(404);
+        echo json_encode(['status' => 'error', 'msg' => 'Registro no disponible para consulta']);
+        exit;
+    }
+
+    $convertir = function($evidencias) {
+        return array_map(function($foto) {
+            return [
+                'id' => $foto->id,
+                'url' => URLROOT . '/' . $foto->ruta_archivo
+            ];
+        }, $evidencias ?: []);
+    };
+
+    echo json_encode([
+        'status' => 'success',
+        'verificacion' => $convertir($this->encuestaModel->getEvidencias($registro->id, 'VERIFICACION_CAMPO')),
+        'formatos_tecnicos' => $convertir($this->encuestaModel->getEvidencias($registro->id, 'FORMATOS_TECNICOS'))
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
 }
 
 }

@@ -51,6 +51,11 @@ class Dashboard extends Controller {
             'stats' => $stats
         ];
 
+        if (($_SESSION['rol'] ?? '') === 'consulta') {
+            $this->view('dashboard/consulta', $datos);
+            return;
+        }
+
         $this->view('dashboard/index', $datos);
     }
 }
