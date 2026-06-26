@@ -189,7 +189,7 @@ public function getEstadisticas() {
 
     if (!isset($_SESSION['user_id'])) {
         http_response_code(401);
-        echo json_encode(['status' => 'error', 'msg' => 'SesiÃ³n expirada']);
+        echo json_encode(['status' => 'error', 'msg' => 'Sesion expirada']);
         exit;
     }
 
@@ -280,7 +280,7 @@ public function cambiarFaseVerificacion() {
                 http_response_code(403);
                 echo json_encode([
                     'status' => 'error',
-                    'msg' => 'El perfil consulta solo puede dictaminar expedientes que estÃ¡n en ComitÃ©'
+                    'msg' => 'El perfil consulta solo puede dictaminar expedientes en COMITE'
                 ], JSON_UNESCAPED_UNICODE);
                 exit;
             }
@@ -290,7 +290,7 @@ public function cambiarFaseVerificacion() {
             'SOLICITUD_INGRESADA' => 'Solicitud ingresada',
             'VALIDACION_DOCS'     => 'Validación docs',
             'EN_REVISION'         => 'En revisión',
-            'COMITE'              => 'ComitÃ©',
+            'COMITE'              => 'Comite',
             'APROBADO'            => 'Aprobado',
             'RECHAZADO'           => 'Rechazado'
         ];

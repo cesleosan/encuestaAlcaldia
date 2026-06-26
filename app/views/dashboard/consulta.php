@@ -262,6 +262,35 @@
             word-break: break-word;
         }
 
+        .cedula-section {
+            border: 1px solid #eef0f4;
+            border-radius: 18px;
+            background: #fff;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .cedula-section-title {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            color: var(--tc-primary);
+            font-weight: 800;
+            font-size: .9rem;
+            margin-bottom: 13px;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .cedula-section-title i {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            display: inline-grid;
+            place-items: center;
+            background: var(--tc-primary-soft);
+        }
+
         .consulta-footer {
             background: #fff;
             border-top: 1px solid #edf0f4;
@@ -484,7 +513,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body bg-light p-4">
-                <div class="row g-3 mb-3" id="detalleCasoGrid"></div>
+                <div id="detalleCasoGrid"></div>
 
                 <div class="card border-0 shadow-sm mb-3">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
@@ -545,12 +574,32 @@ const URLROOT_CONSULTA = '<?php echo URLROOT; ?>';
 
 function escapar(valor) {
     const div = document.createElement('div');
-    div.textContent = valor ?? '';
+    div.textContent = repararTexto(valor ?? '');
     return div.innerHTML;
 }
 
+function repararTexto(valor) {
+    return String(valor ?? '')
+        .replace(/\u00c3\u00a1/g, '\u00e1')
+        .replace(/\u00c3\u00a9/g, '\u00e9')
+        .replace(/\u00c3\u00ad/g, '\u00ed')
+        .replace(/\u00c3\u00b3/g, '\u00f3')
+        .replace(/\u00c3\u00ba/g, '\u00fa')
+        .replace(/\u00c3\u0081/g, '\u00c1')
+        .replace(/\u00c3\u0089/g, '\u00c9')
+        .replace(/\u00c3\u008d/g, '\u00cd')
+        .replace(/\u00c3\u0093/g, '\u00d3')
+        .replace(/\u00c3\u009a/g, '\u00da')
+        .replace(/\u00c3\u00b1/g, '\u00f1')
+        .replace(/\u00c3\u0091/g, '\u00d1')
+        .replace(/\u00c2\u00bf/g, '\u00bf')
+        .replace(/\u00c2\u00a1/g, '\u00a1')
+        .replace(/\u00c2\u00b7/g, '\u00b7')
+        .replace(/\u00c2/g, '');
+}
+
 function normalizar(valor) {
-    return String(valor ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return repararTexto(valor ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
 function nombreCompleto(reg) {
@@ -558,7 +607,7 @@ function nombreCompleto(reg) {
 }
 
 function valorCorto(valor, fallback = 'Sin dato') {
-    const limpio = String(valor ?? '').trim();
+    const limpio = repararTexto(valor ?? '').trim();
     return limpio ? limpio : fallback;
 }
 
@@ -678,21 +727,138 @@ function detalleItem(label, value) {
     </div>`;
 }
 
+function respuestasPlano(reg) {
+    const plano = {};
+    try {
+        const parsed = typeof reg.respuestas_json === 'string' ? JSON.parse(reg.respuestas_json) : reg.respuestas_json;
+        const recorrer = (nodo) => {
+            if (Array.isArray(nodo)) {
+                nodo.forEach(recorrer);
+                return;
+            }
+            if (!nodo || typeof nodo !== 'object') return;
+            if (nodo.name) {
+                let valor = nodo.value;
+                if (Array.isArray(valor)) {
+                    valor = valor.map(item => typeof item === 'object' ? (item.value ?? item.label ?? JSON.stringify(item)) : item).join(', ');
+                } else if (valor && typeof valor === 'object') {
+                    valor = valor.value ?? valor.label ?? JSON.stringify(valor);
+                }
+                plano[nodo.name] = valor;
+            }
+            Object.values(nodo).forEach(recorrer);
+        };
+        recorrer(parsed);
+    } catch (e) {
+        console.warn('No fue posible leer respuestas_json', e);
+    }
+    return plano;
+}
+
+function pick(reg, plano, columnas, fallback = 'Sin dato') {
+    for (const columna of columnas) {
+        const valor = reg[columna] ?? plano[columna];
+        if (valor !== undefined && valor !== null && String(valor).trim() !== '') return valor;
+    }
+    return fallback;
+}
+
+function siNo(valor) {
+    return Number(valor || 0) === 1 ? 'SI' : 'NO';
+}
+
+function detalleSeccion(titulo, icono, items) {
+    return `<section class="cedula-section">
+        <div class="cedula-section-title"><i class="fas ${icono}"></i>${titulo}</div>
+        <div class="row g-3">
+            ${items.map(item => detalleItem(item[0], item[1])).join('')}
+        </div>
+    </section>`;
+}
+
 function renderDetalleCaso(reg) {
     const grid = document.getElementById('detalleCasoGrid');
+    const plano = respuestasPlano(reg);
+
+    const superficie = Number(pick(reg, plano, ['superficie_total', 'superficie_prod'], 0));
+    const volumen = Number(pick(reg, plano, ['volumen_total', 'volumen_prod'], 0));
+    const superficieDoc = Number(pick(reg, plano, ['superficie_documental'], 0));
+
     grid.innerHTML = [
-        detalleItem('Productor', nombreCompleto(reg)),
-        detalleItem('CURP', reg.curp),
-        detalleItem('Tel&eacute;fono', reg.tel_particular || reg.tel_casa || reg.tel_familiar),
-        detalleItem('Colonia / Pueblo', reg.colonia_nombre),
-        detalleItem('Actividad', reg.actividad_principal || reg.linea_ayuda),
-        detalleItem('Superficie', `${Number(reg.superficie_total || 0).toFixed(2)} ha`),
-        detalleItem('Capturista / T&eacute;cnico', reg.encuestador),
-        detalleItem('Fecha de captura', fechaCorta(reg.fecha_inicio)),
-        detalleItem('Fase actual', 'COMITE'),
-        detalleItem('Estatus operativo', reg.estatus || 'Comit&eacute;'),
-        detalleItem('Latitud verif.', reg.latitud_verif || reg.latitud),
-        detalleItem('Longitud verif.', reg.longitud_verif || reg.longitud)
+        detalleSeccion('Identidad del solicitante', 'fa-id-card', [
+            ['Folio', reg.folio],
+            ['Productor', nombreCompleto(reg)],
+            ['CURP', reg.curp],
+            ['RFC', pick(reg, plano, ['rfc'])],
+            ['Tipo de identificaci&oacute;n', pick(reg, plano, ['tipo_id'])],
+            ['N&uacute;mero de identificaci&oacute;n', pick(reg, plano, ['numero_id'])],
+            ['Fecha de nacimiento', pick(reg, plano, ['fecha_nacimiento'])],
+            ['Sexo', pick(reg, plano, ['sexo'])]
+        ]),
+        detalleSeccion('Contacto y ubicaci&oacute;n', 'fa-location-dot', [
+            ['Tel&eacute;fono particular', pick(reg, plano, ['tel_particular'])],
+            ['Tel&eacute;fono de casa', pick(reg, plano, ['tel_casa'])],
+            ['Tel&eacute;fono familiar/recados', pick(reg, plano, ['tel_familiar', 'tel_recados'])],
+            ['Calle y n&uacute;mero', pick(reg, plano, ['calle', 'calle_numero'])],
+            ['N&uacute;mero exterior', pick(reg, plano, ['numero_exterior'])],
+            ['N&uacute;mero interior', pick(reg, plano, ['numero_interior'])],
+            ['Colonia / Pueblo', pick(reg, plano, ['colonia_nombre', 'pueblo_colonia'])],
+            ['C&oacute;digo postal', pick(reg, plano, ['codigo_postal', 'cp'])],
+            ['Referencia', pick(reg, plano, ['referencia'])],
+            ['Latitud original', pick(reg, plano, ['latitud'])],
+            ['Longitud original', pick(reg, plano, ['longitud'])],
+            ['Precisi&oacute;n GPS', pick(reg, plano, ['precision_gps'])]
+        ]),
+        detalleSeccion('Perfil social', 'fa-user-group', [
+            ['Estado civil', pick(reg, plano, ['estado_civil'])],
+            ['Escolaridad', pick(reg, plano, ['escolaridad', 'grado_estudios'])],
+            ['Ocupaci&oacute;n', pick(reg, plano, ['ocupacion'])],
+            ['Grupo &eacute;tnico', pick(reg, plano, ['grupo_etnico'])],
+            ['Grupo &eacute;tnico - cu&aacute;l', pick(reg, plano, ['grupo_etnico_cual'])],
+            ['Tiene discapacidad', pick(reg, plano, ['tiene_discapacidad'])],
+            ['Discapacidad - cu&aacute;l', pick(reg, plano, ['cual_discapacidad'])],
+            ['Residencia en Tlalpan', pick(reg, plano, ['tiempo_residencia_tlalpan', 'tiempo_residencia'])],
+            ['Residencia en CDMX', pick(reg, plano, ['tiempo_residencia_cdmx'])]
+        ]),
+        detalleSeccion('Producci&oacute;n y unidad productiva', 'fa-seedling', [
+            ['L&iacute;nea de ayuda', pick(reg, plano, ['linea_ayuda', 'tipo_produccion'])],
+            ['Actividad principal', pick(reg, plano, ['actividad_principal'])],
+            ['Cultivo / especie principal', pick(reg, plano, ['especie_cultivo_principal', 'cultivo_principal'])],
+            ['Superficie productiva', Number.isFinite(superficie) ? `${superficie.toFixed(2)} ha` : pick(reg, plano, ['superficie_total', 'superficie_prod'])],
+            ['Volumen de producci&oacute;n', Number.isFinite(volumen) ? volumen.toFixed(2) : pick(reg, plano, ['volumen_total', 'volumen_prod'])],
+            ['Unidad de medida', pick(reg, plano, ['unidad_medida'])],
+            ['N&uacute;mero de animales / colmenas', pick(reg, plano, ['numero_cabezas_colmenas', 'num_animales'])],
+            ['Registro SINIIGA', pick(reg, plano, ['registro_siniiga', 'siniiga_status'])],
+            ['Total de predios', pick(reg, plano, ['num_total_predios'])]
+        ]),
+        detalleSeccion('Tierra y documentaci&oacute;n', 'fa-file-signature', [
+            ['Tipo documento propiedad', pick(reg, plano, ['tipo_documento_propiedad', 'tipo_documento_prop'])],
+            ['Superficie documental', Number.isFinite(superficieDoc) ? `${superficieDoc.toFixed(4)} ha` : pick(reg, plano, ['superficie_documental'])],
+            ['Pueblo / colonia UP', pick(reg, plano, ['pueblo_colonia_up'])],
+            ['Parajes', pick(reg, plano, ['parajes'])],
+            ['Tenencia de tierra', pick(reg, plano, ['tenencia_tierra'])],
+            ['Solicitud', siNo(reg.check_solicitud)],
+            ['Identidad', siNo(reg.check_identidad)],
+            ['Domicilio', siNo(reg.check_domicilio)],
+            ['CURP doc.', siNo(reg.check_curp_doc)],
+            ['RFC doc.', siNo(reg.check_rfc_doc)],
+            ['Manifiesto', siNo(reg.check_manifiesto)],
+            ['Propiedad', siNo(reg.check_propiedad)],
+            ['Finiquito', siNo(reg.check_finiquito)],
+            ['SINIIGA doc.', siNo(reg.check_siniiga_doc)],
+            ['Formatos t&eacute;cnicos', siNo(reg.check_formatos_tecnicos)]
+        ]),
+        detalleSeccion('Proceso y verificaci&oacute;n', 'fa-clipboard-check', [
+            ['Capturista / T&eacute;cnico', reg.encuestador],
+            ['Fecha de captura', fechaCorta(reg.fecha_inicio)],
+            ['Fecha conclusi&oacute;n', fechaCorta(reg.fecha_conclusion)],
+            ['Fase actual', 'COMITE'],
+            ['Estatus operativo', reg.estatus || 'Comite'],
+            ['Latitud verificada', pick(reg, plano, ['latitud_verif'])],
+            ['Longitud verificada', pick(reg, plano, ['longitud_verif'])],
+            ['Fotos de verificaci&oacute;n', reg.total_fotos || 0],
+            ['Observaciones capturista', pick(reg, plano, ['observaciones_capturista'])]
+        ])
     ].join('');
 }
 
@@ -759,7 +925,7 @@ function cambiarDictamenComite() {
     const fase = select.value;
     const etiqueta = select.options[select.selectedIndex]?.textContent || fase;
 
-    if (!confirm(`¿Confirmas mover el expediente ${registroConsultaActual.folio} a "${etiqueta}"?`)) {
+    if (!confirm(`Confirmas mover el expediente ${registroConsultaActual.folio} a "${etiqueta}"?`)) {
         return;
     }
 
