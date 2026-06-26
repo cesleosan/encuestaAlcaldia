@@ -14,8 +14,6 @@ $db = new PDO(
 
 $db->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
 
-$passwordComite = 'Comite*2026';
-
 $usuarios = [
     [
         'nombre' => 'FERNANDO ROMERO ROMERO',
@@ -26,17 +24,9 @@ $usuarios = [
         'grupo'  => 'Administrador'
     ],
     [
-        'nombre' => 'USUARIO DEMO CONSULTA',
-        'user'   => 'consulta.demo',
-        'pass'   => 'Consulta*Demo.26',
-        'tel'    => '5500000001',
-        'rol'    => 'consulta',
-        'grupo'  => 'Demo consulta'
-    ],
-    [
         'nombre' => 'LIC. FRANCISCO HERN&Aacute;NDEZ GONZ&Aacute;LEZ',
         'user'   => 'francisco.hernandez',
-        'pass'   => $passwordComite,
+        'pass'   => 'Francisco*Hernandez.26',
         'tel'    => null,
         'rol'    => 'consulta',
         'grupo'  => 'Comite'
@@ -44,7 +34,7 @@ $usuarios = [
     [
         'nombre' => 'LIC. EDGAR AD&Aacute;N ZAVALA FLORES',
         'user'   => 'edgar.zavala',
-        'pass'   => $passwordComite,
+        'pass'   => 'Edgar*Zavala.26',
         'tel'    => null,
         'rol'    => 'consulta',
         'grupo'  => 'Comite'
@@ -52,7 +42,7 @@ $usuarios = [
     [
         'nombre' => 'MTRA. CLAUDIA ISLAS LAGOS',
         'user'   => 'claudia.islas',
-        'pass'   => $passwordComite,
+        'pass'   => 'Claudia*Islas.26',
         'tel'    => null,
         'rol'    => 'consulta',
         'grupo'  => 'Comite'
@@ -60,7 +50,7 @@ $usuarios = [
     [
         'nombre' => 'LIC. ANDR&Eacute;S DE JES&Uacute;S HERN&Aacute;NDEZ FLORES',
         'user'   => 'andres.hernandez',
-        'pass'   => $passwordComite,
+        'pass'   => 'Andres*Hernandez.26',
         'tel'    => null,
         'rol'    => 'consulta',
         'grupo'  => 'Comite'
@@ -68,7 +58,7 @@ $usuarios = [
     [
         'nombre' => 'LIC. AMMY BETHSUA BA&Ntilde;UELOS D&Iacute;AZ',
         'user'   => 'ammy.banuelos',
-        'pass'   => $passwordComite,
+        'pass'   => 'Ammy*Banuelos.26',
         'tel'    => null,
         'rol'    => 'consulta',
         'grupo'  => 'Comite'
@@ -76,7 +66,7 @@ $usuarios = [
     [
         'nombre' => 'C. DALIA PATRICIA HERRERA &Aacute;LVAREZ',
         'user'   => 'dalia.herrera',
-        'pass'   => $passwordComite,
+        'pass'   => 'Dalia*Herrera.26',
         'tel'    => null,
         'rol'    => 'consulta',
         'grupo'  => 'Comite'
@@ -84,7 +74,7 @@ $usuarios = [
     [
         'nombre' => 'MTRA. DULCE JANETH RAM&Iacute;REZ LUGO',
         'user'   => 'dulce.ramirez',
-        'pass'   => $passwordComite,
+        'pass'   => 'Dulce*Ramirez.26',
         'tel'    => null,
         'rol'    => 'consulta',
         'grupo'  => 'Comite'
@@ -92,7 +82,7 @@ $usuarios = [
     [
         'nombre' => 'DRA. JUANA AMALIA SALGADO L&Oacute;PEZ',
         'user'   => 'juana.salgado',
-        'pass'   => $passwordComite,
+        'pass'   => 'Juana*Salgado.26',
         'tel'    => null,
         'rol'    => 'consulta',
         'grupo'  => 'Comite'
@@ -100,7 +90,7 @@ $usuarios = [
     [
         'nombre' => 'LIC. ALDO JOVANI SALDA&Ntilde;A MART&Iacute;NEZ',
         'user'   => 'aldo.saldana',
-        'pass'   => $passwordComite,
+        'pass'   => 'Aldo*Saldana.26',
         'tel'    => null,
         'rol'    => 'consulta',
         'grupo'  => 'Comite'
@@ -108,7 +98,7 @@ $usuarios = [
     [
         'nombre' => 'C. DAN AK&Eacute; DE LA LUZ',
         'user'   => 'dan.ake',
-        'pass'   => $passwordComite,
+        'pass'   => 'Dan*Ake.26',
         'tel'    => null,
         'rol'    => 'consulta',
         'grupo'  => 'Comite'
@@ -116,7 +106,7 @@ $usuarios = [
     [
         'nombre' => 'C. FERNANDO ROMERO ROMERO',
         'user'   => 'fernando.romero.comite',
-        'pass'   => $passwordComite,
+        'pass'   => 'Fernando*Comite.26',
         'tel'    => null,
         'rol'    => 'consulta',
         'grupo'  => 'Comite'
@@ -133,7 +123,7 @@ function texto($valor) {
 
 echo "<h2 style='font-family:sans-serif;'>Usuarios de Tierra con Corazon</h2>";
 echo "<p style='font-family:sans-serif;'><b>Importante:</b> elimina este archivo despues de ejecutarlo.</p>";
-echo "<p style='font-family:sans-serif;'>Los usuarios de Comite tienen rol <code>consulta</code>: solo ven expedientes en <code>COMITE</code> y no editan ni cambian estatus.</p>";
+echo "<p style='font-family:sans-serif;'>Usuarios finales. Los usuarios de Comite tienen rol <code>consulta</code>: solo ven expedientes en <code>COMITE</code> y no editan ni cambian estatus.</p>";
 
 try {
     $check = $db->prepare("SELECT id FROM usuarios WHERE usuario = :usuario LIMIT 1");
@@ -153,13 +143,18 @@ try {
         VALUES
             (:usuario, :password, :nombre, :telefono, :rol, 'TIERRA', 1)
     ");
+    $desactivarDemo = $db->prepare("
+        UPDATE usuarios
+        SET activo = 0
+        WHERE usuario = 'consulta.demo'
+    ");
 
     echo "<table border='1' style='border-collapse:collapse;width:100%;font-family:sans-serif;'>
             <tr style='background:#773357;color:white;'>
                 <th style='padding:12px;'>Grupo</th>
                 <th style='padding:12px;'>Nombre</th>
                 <th style='padding:12px;'>Usuario</th>
-                <th style='padding:12px;'>Contrasena inicial</th>
+                <th style='padding:12px;'>Contrasena</th>
                 <th style='padding:12px;'>Rol</th>
                 <th style='padding:12px;'>Resultado</th>
             </tr>";
@@ -196,11 +191,13 @@ try {
               </tr>";
     }
 
+    $desactivarDemo->execute();
+
     echo "</table>";
     echo "<div style='font-family:sans-serif;margin-top:20px;padding:15px;background:#f8f9fa;border-left:5px solid #773357;'>
-            <b>Acceso Comite</b><br>
-            Contrasena inicial comun: <code>" . escapar($passwordComite) . "</code><br>
-            Estos perfiles solamente consultan expedientes en estatus <code>COMITE</code>.
+            <b>Accesos finales de Comite</b><br>
+            Cada usuario tiene contrasena individual, visible en la tabla superior.<br>
+            Estos perfiles solamente consultan expedientes en estatus <code>COMITE</code>; no editan datos ni cambian estatus.
           </div>";
 } catch (PDOException $e) {
     echo "<h3 style='color:red;'>Error al crear o actualizar usuarios</h3>";
