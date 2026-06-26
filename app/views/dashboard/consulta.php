@@ -5,122 +5,530 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light only">
     <meta name="theme-color" content="#f5f7fa">
-    <title>Consulta · Tierra con Corazón</title>
+    <title>Consulta Comit&eacute; &middot; Tierra con Coraz&oacute;n</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/tierracorazon-ui.css?v=20260625-2">
+    <link rel="stylesheet" href="/css/tierracorazon-ui.css?v=20260626-1">
     <style>
-        body { min-height: 100vh; font-family: 'Montserrat', sans-serif; }
-        .consulta-shell { max-width: 1680px; margin: 0 auto; padding: 30px clamp(16px, 3vw, 42px); }
-        .consulta-brand { display:flex; align-items:center; gap:14px; }
+        body {
+            min-height: 100vh;
+            font-family: 'Montserrat', sans-serif;
+            background: #f5f7fa !important;
+            color: #263238 !important;
+        }
+
+        .consulta-shell {
+            max-width: 1740px;
+            margin: 0 auto;
+            padding: 30px clamp(16px, 3vw, 42px);
+        }
+
+        .consulta-hero {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 18px;
+            flex-wrap: wrap;
+            background:
+                radial-gradient(circle at top left, rgba(119, 51, 87, .12), transparent 34%),
+                linear-gradient(135deg, #fff, #f9fbfd);
+            border: 1px solid #eef1f5;
+            border-radius: 24px;
+            box-shadow: 0 14px 34px rgba(20, 32, 54, .08);
+            padding: clamp(20px, 3vw, 34px);
+            overflow: hidden;
+        }
+
+        .consulta-brand {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            min-width: 0;
+        }
+
         .consulta-brand-icon {
-            width:52px; height:52px; display:grid; place-items:center; border-radius:16px;
-            color:#fff; background:linear-gradient(145deg, var(--tc-primary), var(--tc-primary-dark));
-            box-shadow:0 9px 22px rgba(119,51,87,.22); font-size:1.25rem;
+            width: 58px;
+            height: 58px;
+            display: grid;
+            place-items: center;
+            border-radius: 18px;
+            color: #fff;
+            background: linear-gradient(145deg, var(--tc-primary), var(--tc-primary-dark));
+            box-shadow: 0 12px 24px rgba(119, 51, 87, .25);
+            font-size: 1.35rem;
+            flex: 0 0 auto;
         }
-        .consulta-brand h1 { margin:0; color:var(--tc-primary); font-size:clamp(1.55rem,3vw,2.25rem); font-weight:800; letter-spacing:-.04em; }
-        .consulta-brand p { margin:4px 0 0; color:var(--tc-muted); font-size:.92rem; }
-        .consulta-card { overflow:hidden; }
-        .consulta-card .table-responsive { min-height:310px; }
-        .consulta-card .table { min-width:1040px; }
-        .consulta-card .table tbody tr { cursor:default; }
-        .consulta-card .table td { font-size:.8rem; }
-        .badge-comite { background:var(--tc-primary-soft); color:var(--tc-primary); border:1px solid #e2c8d5; }
-        .consulta-count {
-            display:inline-flex; align-items:center; gap:7px; padding:7px 11px;
-            background:#f3f5f8; border-radius:999px; color:var(--tc-muted); font-size:.78rem; font-weight:700;
+
+        .consulta-brand h1 {
+            margin: 0;
+            color: var(--tc-primary);
+            font-size: clamp(1.55rem, 3vw, 2.55rem);
+            font-weight: 800;
+            letter-spacing: -.045em;
+            line-height: 1.04;
         }
-        .consulta-note { display:flex; gap:10px; align-items:flex-start; color:var(--tc-muted); font-size:.8rem; }
-        .consulta-note i { color:var(--tc-primary); margin-top:2px; }
-        @media (max-width: 700px) {
-            .consulta-shell { padding-top:20px; }
-            .consulta-header { align-items:flex-start !important; }
-            .consulta-brand-icon { width:44px; height:44px; }
-            .consulta-card tbody td[colspan] .tc-empty-state {
-                position: sticky;
-                left: 0;
-                width: calc(100vw - 34px);
+
+        .consulta-brand p {
+            margin: 6px 0 0;
+            color: var(--tc-muted);
+            font-size: .95rem;
+        }
+
+        .consulta-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: var(--tc-primary-soft);
+            color: var(--tc-primary);
+            border: 1px solid #e5cbd8;
+            font-size: .76rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .consulta-kpi {
+            border: 0;
+            border-radius: 20px;
+            box-shadow: 0 10px 26px rgba(20, 32, 54, .07);
+            min-height: 112px;
+        }
+
+        .consulta-kpi .card-body {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .consulta-kpi-icon {
+            width: 46px;
+            height: 46px;
+            display: grid;
+            place-items: center;
+            border-radius: 15px;
+            color: var(--tc-primary);
+            background: var(--tc-primary-soft);
+            flex: 0 0 auto;
+        }
+
+        .consulta-kpi span {
+            display: block;
+            color: var(--tc-muted);
+            font-size: .72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+
+        .consulta-kpi strong {
+            color: #1f2937;
+            display: block;
+            font-size: 1.65rem;
+            line-height: 1;
+            margin-top: 4px;
+        }
+
+        .consulta-board {
+            overflow: hidden;
+            border: 0;
+            border-radius: 22px;
+            box-shadow: 0 14px 34px rgba(20, 32, 54, .08);
+        }
+
+        .consulta-board .table-responsive {
+            min-height: 360px;
+        }
+
+        .consulta-board .table {
+            min-width: 1320px;
+        }
+
+        .consulta-board .table td {
+            font-size: .79rem;
+            vertical-align: middle;
+        }
+
+        .consulta-board .table tbody tr:hover {
+            background: #fff8fb !important;
+        }
+
+        .consulta-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            padding: 18px;
+            border-bottom: 1px solid #edf0f4;
+            background: #fff;
+        }
+
+        .consulta-toolbar-title {
+            min-width: 260px;
+        }
+
+        .consulta-toolbar-title h5 {
+            margin: 0;
+            color: var(--tc-primary);
+            font-weight: 800;
+        }
+
+        .consulta-toolbar-title small {
+            color: var(--tc-muted);
+        }
+
+        .consulta-toolbar-controls {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+            flex: 1 1 600px;
+        }
+
+        .consulta-search {
+            position: relative;
+            flex: 1 1 320px;
+            max-width: 520px;
+        }
+
+        .consulta-search i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--tc-muted);
+        }
+
+        .consulta-search input {
+            padding-left: 40px;
+        }
+
+        .badge-comite {
+            background: var(--tc-primary-soft);
+            color: var(--tc-primary);
+            border: 1px solid #e2c8d5;
+            border-radius: 999px;
+            padding: 7px 10px;
+            font-size: .68rem;
+            font-weight: 800;
+            letter-spacing: .02em;
+        }
+
+        .badge-readonly {
+            background: #eef6ff;
+            color: #0b5ed7;
+            border: 1px solid #cde4ff;
+            border-radius: 999px;
+            padding: 7px 10px;
+            font-size: .68rem;
+            font-weight: 800;
+        }
+
+        .case-title {
+            color: #1f2937;
+            font-weight: 800;
+        }
+
+        .case-subtitle {
+            color: var(--tc-muted);
+            font-size: .72rem;
+        }
+
+        .detalle-pill {
+            height: 100%;
+            border: 1px solid #eef0f4;
+            background: #fff;
+            border-radius: 16px;
+            padding: 13px;
+        }
+
+        .detalle-pill .label {
+            color: var(--tc-muted);
+            font-size: .67rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+
+        .detalle-pill .value {
+            color: #1f2937;
+            font-size: .88rem;
+            font-weight: 800;
+            margin-top: 4px;
+            word-break: break-word;
+        }
+
+        .consulta-footer {
+            background: #fff;
+            border-top: 1px solid #edf0f4;
+            color: var(--tc-muted);
+            padding: 15px 18px;
+        }
+
+        .image-card {
+            display: block;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #eef0f4;
+            background: #fff;
+            box-shadow: 0 8px 18px rgba(20, 32, 54, .08);
+            text-decoration: none;
+        }
+
+        .image-card img {
+            width: 100%;
+            height: 185px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .image-card span {
+            display: block;
+            padding: 9px 10px;
+            color: var(--tc-muted);
+            font-size: .72rem;
+            font-weight: 700;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body,
+            .consulta-hero,
+            .consulta-toolbar,
+            .consulta-footer,
+            .consulta-board,
+            .card,
+            .modal-content,
+            .detalle-pill {
+                background-color: #fff !important;
+                color: #263238 !important;
+            }
+
+            .consulta-brand h1,
+            .consulta-toolbar-title h5,
+            .text-guinda {
+                color: var(--tc-primary) !important;
+            }
+
+            .table,
+            .form-control,
+            .form-select {
+                background-color: #fff !important;
+                color: #263238 !important;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .consulta-shell {
+                padding-top: 18px;
+            }
+
+            .consulta-brand {
+                align-items: flex-start;
+            }
+
+            .consulta-brand-icon {
+                width: 48px;
+                height: 48px;
+            }
+
+            .consulta-toolbar-controls {
+                justify-content: stretch;
+            }
+
+            .consulta-search,
+            .consulta-toolbar-controls .form-select,
+            .consulta-toolbar-controls .btn {
+                width: 100%;
                 max-width: none;
+                flex-basis: 100%;
             }
         }
     </style>
 </head>
 <body>
 <main class="consulta-shell">
-    <header class="consulta-header d-flex justify-content-between align-items-center gap-3 flex-wrap mb-4">
+    <header class="consulta-hero mb-4">
         <div class="consulta-brand">
-            <div class="consulta-brand-icon"><i class="fas fa-seedling"></i></div>
+            <div class="consulta-brand-icon"><i class="fas fa-people-group"></i></div>
             <div>
-                <h1>Tierra con Corazón</h1>
-                <p>Consulta de expedientes enviados a Comité</p>
+                <span class="consulta-pill mb-2"><i class="fas fa-shield-halved"></i> Sin editar c&eacute;dula</span>
+                <h1>Bandeja de Comit&eacute;</h1>
+                <p>Consulta de folios enviados por Captura a Comit&eacute;. Puede dictaminar estatus sin modificar datos, documentos ni im&aacute;genes.</p>
             </div>
         </div>
-        <a href="<?php echo URLROOT; ?>/Auth/logout" class="btn btn-danger px-3">
-            <i class="fas fa-arrow-right-from-bracket me-2"></i>Salir
-        </a>
+        <div class="d-flex gap-2 flex-wrap">
+            <button type="button" class="btn btn-outline-secondary" onclick="location.reload()">
+                <i class="fas fa-sync-alt me-1"></i>Actualizar
+            </button>
+            <a href="<?php echo URLROOT; ?>/Auth/logout" class="btn btn-danger">
+                <i class="fas fa-arrow-right-from-bracket me-2"></i>Salir
+            </a>
+        </div>
     </header>
 
-    <section class="card consulta-card">
-        <div class="tc-toolbar">
-            <div>
-                <h5 class="fw-bold text-guinda mb-1"><i class="fas fa-users me-2"></i>Tabla de encuestados</h5>
-                <div class="consulta-note">
-                    <i class="fas fa-shield-halved"></i>
-                    <span>Vista de solo lectura. Únicamente aparecen registros con estatus Comité.</span>
+    <section class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card consulta-kpi">
+                <div class="card-body">
+                    <div class="consulta-kpi-icon"><i class="fas fa-folder-open"></i></div>
+                    <div>
+                        <span>Casos visibles</span>
+                        <strong id="kpiCasos">0</strong>
+                    </div>
                 </div>
             </div>
-            <div class="position-relative" style="width:min(100%, 480px);">
-                <i class="fas fa-magnifying-glass position-absolute top-50 translate-middle-y text-muted" style="left:15px;"></i>
-                <input id="buscarConsulta" class="form-control ps-5" placeholder="Buscar folio, nombre, CURP o colonia">
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card consulta-kpi">
+                <div class="card-body">
+                    <div class="consulta-kpi-icon"><i class="fas fa-images"></i></div>
+                    <div>
+                        <span>Con evidencias</span>
+                        <strong id="kpiEvidencias">0</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card consulta-kpi">
+                <div class="card-body">
+                    <div class="consulta-kpi-icon"><i class="fas fa-map-location-dot"></i></div>
+                    <div>
+                        <span>Con coordenadas</span>
+                        <strong id="kpiCoordenadas">0</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card consulta-kpi">
+                <div class="card-body">
+                    <div class="consulta-kpi-icon"><i class="fas fa-route"></i></div>
+                    <div>
+                        <span>Bandeja actual</span>
+                        <strong style="font-size:1.25rem;">COMIT&Eacute;</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="card consulta-board">
+        <div class="consulta-toolbar">
+            <div class="consulta-toolbar-title">
+                <h5><i class="fas fa-table-list me-2"></i>Folios y casos para consulta</h5>
+                <small>Vista homologada con admin, limitada a expedientes en Comit&eacute;.</small>
+            </div>
+            <div class="consulta-toolbar-controls">
+                <div class="consulta-search">
+                    <i class="fas fa-magnifying-glass"></i>
+                    <input id="buscarConsulta" class="form-control" placeholder="Buscar folio, productor, CURP, colonia o actividad">
+                </div>
+                <select id="filtroEstatusConsulta" class="form-select" style="max-width:230px;">
+                    <option value="COMITE">Estatus: Comit&eacute;</option>
+                </select>
+                <button type="button" class="btn btn-outline-secondary" id="btnLimpiarConsulta">
+                    <i class="fas fa-eraser me-1"></i>Limpiar
+                </button>
             </div>
         </div>
 
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr>
-                        <th>Folio</th>
-                        <th>Nombre</th>
+                        <th class="ps-3">Folio</th>
+                        <th>Productor</th>
                         <th>CURP</th>
-                        <th>Colonia</th>
+                        <th>Colonia / Pueblo</th>
                         <th>Actividad</th>
-                        <th>Fecha</th>
-                        <th>Estatus</th>
-                        <th class="text-center">Imágenes</th>
+                        <th class="text-center">Superficie</th>
+                        <th class="text-center">Fecha</th>
+                        <th class="text-center">Estatus</th>
+                        <th class="text-center">Im&aacute;genes</th>
+                        <th class="text-center">Acci&oacute;n</th>
                     </tr>
                 </thead>
                 <tbody id="consultaBody">
                     <tr>
-                        <td colspan="8">
+                        <td colspan="10">
                             <div class="tc-empty-state">
                                 <div class="tc-empty-state-icon"><i class="fas fa-spinner fa-spin"></i></div>
-                                <div class="fw-semibold">Cargando expedientes...</div>
+                                <div class="fw-semibold">Cargando folios de Comit&eacute;...</div>
                             </div>
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
-        <footer class="tc-table-footer d-flex justify-content-between align-items-center gap-3 flex-wrap">
-            <span class="consulta-count" id="consultaConteo"><i class="fas fa-list"></i> Cargando...</span>
-            <small>Los datos e imágenes no pueden modificarse desde este perfil.</small>
+
+        <footer class="consulta-footer d-flex justify-content-between align-items-center gap-3 flex-wrap">
+            <span id="consultaConteo"><i class="fas fa-list me-1"></i>Cargando...</span>
+            <span><i class="fas fa-lock me-1"></i>Este perfil no edita datos ni archivos; solo puede dictaminar el estatus del caso.</span>
         </footer>
     </section>
 </main>
 
-<div class="modal fade" id="visorImagenesModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="detalleConsultaModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow-lg" style="border-radius:20px;overflow:hidden;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:22px;overflow:hidden;">
             <div class="modal-header border-0 px-4 py-3" style="background:var(--tc-primary);color:#fff;">
                 <div>
-                    <h5 class="modal-title fw-bold mb-0"><i class="fas fa-images me-2"></i>Imágenes del expediente</h5>
-                    <small class="opacity-75">Vista de solo consulta</small>
+                    <h5 class="modal-title fw-bold mb-0"><i class="fas fa-folder-open me-2"></i>Detalle del expediente <span id="modalFolio">---</span></h5>
+                    <small class="opacity-75">Consulta de caso en Comit&eacute; &middot; sin edici&oacute;n</small>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-            <div class="modal-body bg-light p-4" id="visorImagenesContenido"></div>
-            <div class="modal-footer border-0">
+            <div class="modal-body bg-light p-4">
+                <div class="row g-3 mb-3" id="detalleCasoGrid"></div>
+
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 fw-bold text-guinda"><i class="fas fa-route me-2"></i>Dictamen de estatus</h6>
+                        <span class="badge-readonly"><i class="fas fa-check-to-slot me-1"></i>Comit&eacute;</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-light border mb-3">
+                            <div class="fw-bold text-guinda mb-1">Este expediente fue enviado a Comit&eacute; por el perfil de Captura.</div>
+                            <div class="small text-muted">Puedes cambiar el estatus del caso, sin modificar datos de la c&eacute;dula, documentos ni im&aacute;genes.</div>
+                        </div>
+                        <div class="row g-2 align-items-end">
+                            <div class="col-lg-8">
+                                <label class="small fw-bold text-muted text-uppercase mb-1" for="selectDictamenComite">Mover expediente a</label>
+                                <select id="selectDictamenComite" class="form-select fw-bold">
+                                    <option value="APROBADO">Aprobado</option>
+                                    <option value="RECHAZADO">Rechazado</option>
+                                    <option value="EN_REVISION">Devolver a revisi&oacute;n t&eacute;cnica</option>
+                                </select>
+                                <small class="text-muted">Al cambiarlo dejar&aacute; de aparecer en esta bandeja si ya no est&aacute; en Comit&eacute;.</small>
+                            </div>
+                            <div class="col-lg-4 d-grid">
+                                <button type="button" class="btn btn-guinda" id="btnGuardarDictamenComite">
+                                    <i class="fas fa-save me-1"></i>Guardar estatus
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 fw-bold text-guinda"><i class="fas fa-images me-2"></i>Im&aacute;genes del expediente</h6>
+                        <small class="text-muted" id="modalImagenesStatus">Consultando...</small>
+                    </div>
+                    <div class="card-body" id="visorImagenesContenido">
+                        <div class="tc-empty-state">
+                            <div class="tc-empty-state-icon"><i class="fas fa-spinner fa-spin"></i></div>
+                            Cargando im&aacute;genes...
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-white">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>
@@ -130,6 +538,10 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 let registrosConsulta = [];
+let registrosFiltrados = [];
+let registroConsultaActual = null;
+
+const URLROOT_CONSULTA = '<?php echo URLROOT; ?>';
 
 function escapar(valor) {
     const div = document.createElement('div');
@@ -137,95 +549,263 @@ function escapar(valor) {
     return div.innerHTML;
 }
 
-function estadoVacio(mensaje, icono = 'fa-folder-open') {
-    return `<tr><td colspan="8"><div class="tc-empty-state">
+function normalizar(valor) {
+    return String(valor ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function nombreCompleto(reg) {
+    return [reg.nombre, reg.apellido_paterno, reg.apellido_materno].filter(Boolean).join(' ').trim() || 'Sin nombre';
+}
+
+function valorCorto(valor, fallback = 'Sin dato') {
+    const limpio = String(valor ?? '').trim();
+    return limpio ? limpio : fallback;
+}
+
+function fechaCorta(valor) {
+    return valor ? String(valor).substring(0, 10) : 'Sin fecha';
+}
+
+function tieneCoordenadas(reg) {
+    return Boolean((reg.latitud_verif && reg.longitud_verif) || (reg.latitud && reg.longitud));
+}
+
+function estadoVacio(mensaje, ayuda = 'Cuando Captura env&iacute;e un expediente a Comit&eacute; aparecer&aacute; aqu&iacute;.', icono = 'fa-folder-open') {
+    return `<tr><td colspan="10"><div class="tc-empty-state">
         <div class="tc-empty-state-icon"><i class="fas ${icono}"></i></div>
         <div class="fw-semibold">${mensaje}</div>
-        <small>Cuando Captura envíe un expediente a Comité aparecerá aquí.</small>
+        <small>${ayuda}</small>
     </div></td></tr>`;
 }
 
-function renderConsulta(registros) {
-    const body = document.getElementById('consultaBody');
-    body.innerHTML = '';
-    registros.forEach(reg => {
-        const nombre = [reg.nombre, reg.apellido_paterno, reg.apellido_materno].filter(Boolean).join(' ');
-        body.insertAdjacentHTML('beforeend', `
-            <tr>
-                <td><span class="badge text-bg-light border text-guinda">${escapar(reg.folio)}</span></td>
-                <td class="fw-semibold">${escapar(nombre)}</td>
-                <td><span class="font-monospace">${escapar(reg.curp)}</span></td>
-                <td>${escapar(reg.colonia_nombre || 'Sin dato')}</td>
-                <td>${escapar(reg.actividad_principal || 'Sin dato')}</td>
-                <td>${escapar((reg.fecha_inicio || '').substring(0, 10))}</td>
-                <td><span class="badge badge-comite"><i class="fas fa-people-group me-1"></i>COMITÉ</span></td>
-                <td class="text-center">
-                    <button class="btn btn-sm btn-outline-secondary" onclick="verImagenes(${Number(reg.id)})">
-                        <i class="fas fa-images me-1"></i>Ver
-                    </button>
-                </td>
-            </tr>`);
-    });
-    if (!registros.length) body.innerHTML = estadoVacio('No hay registros en estatus Comité');
-    document.getElementById('consultaConteo').innerHTML =
-        `<i class="fas fa-list"></i> ${registros.length} registro${registros.length === 1 ? '' : 's'} visible${registros.length === 1 ? '' : 's'}`;
+function badgeComite() {
+    return '<span class="badge-comite"><i class="fas fa-people-group me-1"></i>COMIT&Eacute;</span>';
 }
 
-fetch('<?php echo URLROOT; ?>/Encuesta/getEstadisticas')
-    .then(res => {
-        if (!res.ok) throw new Error('No fue posible obtener los registros');
-        return res.json();
-    })
-    .then(data => {
-        registrosConsulta = data.maestro || [];
-        renderConsulta(registrosConsulta);
-    })
-    .catch(() => {
-        document.getElementById('consultaBody').innerHTML = estadoVacio('No fue posible cargar los registros', 'fa-triangle-exclamation');
-        document.getElementById('consultaConteo').innerHTML = '<i class="fas fa-circle-exclamation"></i> Sin conexión';
+function actualizarKpis(registrosBase) {
+    document.getElementById('kpiCasos').textContent = registrosBase.length;
+    document.getElementById('kpiEvidencias').textContent = registrosBase.filter(reg => Number(reg.total_fotos || 0) > 0 || Number(reg.check_formatos_tecnicos || 0) === 1).length;
+    document.getElementById('kpiCoordenadas').textContent = registrosBase.filter(tieneCoordenadas).length;
+}
+
+function renderConsulta(registros) {
+    registrosFiltrados = registros;
+    const body = document.getElementById('consultaBody');
+    body.innerHTML = '';
+
+    if (!registros.length) {
+        body.innerHTML = estadoVacio('No hay folios visibles con estos filtros');
+    } else {
+        registros.forEach(reg => {
+            const productor = nombreCompleto(reg);
+            const superficie = Number(reg.superficie_total || 0);
+            const imagenes = Number(reg.total_fotos || 0) + (Number(reg.check_formatos_tecnicos || 0) === 1 ? 1 : 0);
+
+            body.insertAdjacentHTML('beforeend', `
+                <tr>
+                    <td class="ps-3">
+                        <span class="badge text-bg-light border text-guinda">${escapar(reg.folio)}</span>
+                    </td>
+                    <td>
+                        <div class="case-title">${escapar(productor)}</div>
+                        <div class="case-subtitle">Captur&oacute;: ${escapar(reg.encuestador || 'Sin dato')}</div>
+                    </td>
+                    <td><span class="font-monospace">${escapar(reg.curp || 'Sin dato')}</span></td>
+                    <td>${escapar(valorCorto(reg.colonia_nombre))}</td>
+                    <td>${escapar(valorCorto(reg.actividad_principal || reg.linea_ayuda))}</td>
+                    <td class="text-center">${Number.isFinite(superficie) ? superficie.toFixed(2) : '0.00'} ha</td>
+                    <td class="text-center">${escapar(fechaCorta(reg.fecha_inicio))}</td>
+                    <td class="text-center">${badgeComite()}</td>
+                    <td class="text-center">
+                        <span class="badge text-bg-light border"><i class="fas fa-images me-1"></i>${imagenes}</span>
+                    </td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-secondary" type="button" onclick="abrirDetalle(${Number(reg.id)})">
+                            <i class="fas fa-eye me-1"></i>Consultar
+                        </button>
+                    </td>
+                </tr>
+            `);
+        });
+    }
+
+    document.getElementById('consultaConteo').innerHTML =
+        `<i class="fas fa-list me-1"></i>${registros.length} de ${registrosConsulta.length} folio${registrosConsulta.length === 1 ? '' : 's'} visible${registros.length === 1 ? '' : 's'}`;
+}
+
+function aplicarFiltrosConsulta() {
+    const texto = normalizar(document.getElementById('buscarConsulta').value).trim();
+    const filtrados = registrosConsulta.filter(reg => {
+        const busqueda = normalizar([
+            reg.folio,
+            nombreCompleto(reg),
+            reg.curp,
+            reg.colonia_nombre,
+            reg.actividad_principal,
+            reg.linea_ayuda,
+            reg.encuestador,
+            reg.estatus,
+            reg.fase_proceso
+        ].join(' '));
+        return !texto || busqueda.includes(texto);
     });
-
-document.getElementById('buscarConsulta').addEventListener('input', function() {
-    const texto = this.value.toLowerCase().trim();
-    const filtrados = registrosConsulta.filter(reg => [
-        reg.folio, reg.nombre, reg.apellido_paterno, reg.apellido_materno,
-        reg.curp, reg.colonia_nombre, reg.actividad_principal
-    ].join(' ').toLowerCase().includes(texto));
     renderConsulta(filtrados);
-});
+}
 
-function verImagenes(id) {
-    const contenido = document.getElementById('visorImagenesContenido');
-    contenido.innerHTML = '<div class="tc-empty-state"><div class="tc-empty-state-icon"><i class="fas fa-spinner fa-spin"></i></div>Cargando imágenes...</div>';
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('visorImagenesModal')).show();
-
-    fetch(`<?php echo URLROOT; ?>/Encuesta/getEvidenciasConsulta/${id}`)
+function cargarRegistrosConsulta() {
+    fetch(`${URLROOT_CONSULTA}/Encuesta/getEstadisticas`, { cache: 'no-store' })
         .then(res => {
-            if (!res.ok) throw new Error();
+            if (!res.ok) throw new Error('No fue posible obtener los registros');
             return res.json();
         })
         .then(data => {
-            const grupos = [
-                ['Formatos técnicos', data.formatos_tecnicos || []],
-                ['Evidencias de campo', data.verificacion || []]
-            ];
-            contenido.innerHTML = grupos.map(([titulo, fotos]) => `
-                <section class="card p-3 mb-3">
-                    <h6 class="fw-bold text-guinda mb-3">${titulo} <span class="badge text-bg-light border ms-1">${fotos.length}</span></h6>
-                    <div class="row g-3">
-                        ${fotos.length ? fotos.map(foto => `
-                            <div class="col-6 col-md-4 col-lg-3">
-                                <a href="${foto.url}" target="_blank" class="d-block">
-                                    <img src="${foto.url}" alt="${titulo}" class="img-fluid rounded shadow-sm" style="width:100%;height:190px;object-fit:cover;">
-                                </a>
-                            </div>`).join('') : '<div class="col-12 text-muted small">Sin imágenes disponibles.</div>'}
-                    </div>
-                </section>`).join('');
+            registrosConsulta = Array.isArray(data.maestro) ? data.maestro : [];
+            actualizarKpis(registrosConsulta);
+            renderConsulta(registrosConsulta);
         })
         .catch(() => {
-            contenido.innerHTML = '<div class="alert alert-danger mb-0">No fue posible cargar las imágenes.</div>';
+            document.getElementById('consultaBody').innerHTML = estadoVacio('No fue posible cargar los folios', 'Revisa la sesi&oacute;n o intenta actualizar la pantalla.', 'fa-triangle-exclamation');
+            document.getElementById('consultaConteo').innerHTML = '<i class="fas fa-circle-exclamation me-1"></i>Sin conexi&oacute;n';
         });
 }
+
+function detalleItem(label, value) {
+    return `<div class="col-md-4 col-xl-3">
+        <div class="detalle-pill">
+            <div class="label">${label}</div>
+            <div class="value">${escapar(valorCorto(value))}</div>
+        </div>
+    </div>`;
+}
+
+function renderDetalleCaso(reg) {
+    const grid = document.getElementById('detalleCasoGrid');
+    grid.innerHTML = [
+        detalleItem('Productor', nombreCompleto(reg)),
+        detalleItem('CURP', reg.curp),
+        detalleItem('Tel&eacute;fono', reg.tel_particular || reg.tel_casa || reg.tel_familiar),
+        detalleItem('Colonia / Pueblo', reg.colonia_nombre),
+        detalleItem('Actividad', reg.actividad_principal || reg.linea_ayuda),
+        detalleItem('Superficie', `${Number(reg.superficie_total || 0).toFixed(2)} ha`),
+        detalleItem('Capturista / T&eacute;cnico', reg.encuestador),
+        detalleItem('Fecha de captura', fechaCorta(reg.fecha_inicio)),
+        detalleItem('Fase actual', 'COMITE'),
+        detalleItem('Estatus operativo', reg.estatus || 'Comit&eacute;'),
+        detalleItem('Latitud verif.', reg.latitud_verif || reg.latitud),
+        detalleItem('Longitud verif.', reg.longitud_verif || reg.longitud)
+    ].join('');
+}
+
+function renderGrupoImagenes(titulo, fotos, icono) {
+    return `<section class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold text-guinda mb-0"><i class="fas ${icono} me-2"></i>${titulo}</h6>
+            <span class="badge text-bg-light border">${fotos.length}</span>
+        </div>
+        <div class="row g-3">
+            ${fotos.length ? fotos.map((foto, index) => `
+                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="${escapar(foto.url)}" target="_blank" class="image-card">
+                        <img src="${escapar(foto.url)}" alt="${escapar(titulo)} ${index + 1}">
+                        <span><i class="fas fa-up-right-from-square me-1"></i>Abrir imagen ${index + 1}</span>
+                    </a>
+                </div>
+            `).join('') : '<div class="col-12 text-muted small">Sin im&aacute;genes disponibles.</div>'}
+        </div>
+    </section>`;
+}
+
+function cargarImagenes(id) {
+    const contenido = document.getElementById('visorImagenesContenido');
+    const status = document.getElementById('modalImagenesStatus');
+    contenido.innerHTML = '<div class="tc-empty-state"><div class="tc-empty-state-icon"><i class="fas fa-spinner fa-spin"></i></div>Cargando im&aacute;genes...</div>';
+    status.textContent = 'Consultando...';
+
+    fetch(`${URLROOT_CONSULTA}/Encuesta/getEvidenciasConsulta/${id}`, { cache: 'no-store' })
+        .then(res => {
+            if (!res.ok) throw new Error('No fue posible cargar imagenes');
+            return res.json();
+        })
+        .then(data => {
+            const formatos = data.formatos_tecnicos || [];
+            const verificacion = data.verificacion || [];
+            status.textContent = `${formatos.length + verificacion.length} imagen(es)`;
+            contenido.innerHTML = [
+                renderGrupoImagenes('Formatos t&eacute;cnicos', formatos, 'fa-file-image'),
+                renderGrupoImagenes('Evidencias de campo', verificacion, 'fa-camera')
+            ].join('');
+        })
+        .catch(() => {
+            status.textContent = 'Error';
+            contenido.innerHTML = '<div class="alert alert-danger mb-0">No fue posible cargar las im&aacute;genes del expediente.</div>';
+        });
+}
+
+function abrirDetalle(id) {
+    const reg = registrosConsulta.find(item => Number(item.id) === Number(id));
+    if (!reg) return;
+
+    registroConsultaActual = reg;
+    document.getElementById('modalFolio').textContent = reg.folio || '---';
+    renderDetalleCaso(reg);
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('detalleConsultaModal')).show();
+    cargarImagenes(id);
+}
+
+function cambiarDictamenComite() {
+    if (!registroConsultaActual) return;
+
+    const select = document.getElementById('selectDictamenComite');
+    const fase = select.value;
+    const etiqueta = select.options[select.selectedIndex]?.textContent || fase;
+
+    if (!confirm(`¿Confirmas mover el expediente ${registroConsultaActual.folio} a "${etiqueta}"?`)) {
+        return;
+    }
+
+    const boton = document.getElementById('btnGuardarDictamenComite');
+    const textoOriginal = boton.innerHTML;
+    boton.disabled = true;
+    boton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Guardando...';
+
+    fetch(`${URLROOT_CONSULTA}/Encuesta/cambiarFaseVerificacion`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            id: registroConsultaActual.id,
+            fase
+        })
+    })
+        .then(res => res.json().then(data => ({ ok: res.ok, data })))
+        .then(({ ok, data }) => {
+            if (!ok || data.status !== 'success') {
+                throw new Error(data.msg || 'No fue posible guardar el estatus');
+            }
+
+            registrosConsulta = registrosConsulta.filter(item => Number(item.id) !== Number(registroConsultaActual.id));
+            actualizarKpis(registrosConsulta);
+            aplicarFiltrosConsulta();
+
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('detalleConsultaModal')).hide();
+            alert('Estatus actualizado correctamente.');
+        })
+        .catch(error => {
+            alert(error.message || 'No fue posible guardar el estatus.');
+        })
+        .finally(() => {
+            boton.disabled = false;
+            boton.innerHTML = textoOriginal;
+        });
+}
+
+document.getElementById('buscarConsulta').addEventListener('input', aplicarFiltrosConsulta);
+document.getElementById('btnLimpiarConsulta').addEventListener('click', function() {
+    document.getElementById('buscarConsulta').value = '';
+    aplicarFiltrosConsulta();
+});
+document.getElementById('btnGuardarDictamenComite').addEventListener('click', cambiarDictamenComite);
+
+cargarRegistrosConsulta();
 </script>
 </body>
 </html>
