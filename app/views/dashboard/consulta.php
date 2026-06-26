@@ -386,7 +386,7 @@
             <div>
                 <span class="consulta-pill mb-2"><i class="fas fa-shield-halved"></i> Sin editar c&eacute;dula</span>
                 <h1>Bandeja de Comit&eacute;</h1>
-                <p>Consulta de folios enviados por Captura a Comit&eacute;. Puede dictaminar estatus sin modificar datos, documentos ni im&aacute;genes.</p>
+                <p>Consulta de folios enviados por Captura a Comit&eacute;. Revisa datos, documentos e im&aacute;genes sin modificar la c&eacute;dula ni el estatus.</p>
             </div>
         </div>
         <div class="d-flex gap-2 flex-wrap">
@@ -497,7 +497,7 @@
 
         <footer class="consulta-footer d-flex justify-content-between align-items-center gap-3 flex-wrap">
             <span id="consultaConteo"><i class="fas fa-list me-1"></i>Cargando...</span>
-            <span><i class="fas fa-lock me-1"></i>Este perfil no edita datos ni archivos; solo puede dictaminar el estatus del caso.</span>
+            <span><i class="fas fa-lock me-1"></i>Este perfil no edita datos, archivos ni estatus; solamente consulta expedientes en Comit&eacute;.</span>
         </footer>
     </section>
 </main>
@@ -517,29 +517,13 @@
 
                 <div class="card border-0 shadow-sm mb-3">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                        <h6 class="m-0 fw-bold text-guinda"><i class="fas fa-route me-2"></i>Dictamen de estatus</h6>
-                        <span class="badge-readonly"><i class="fas fa-check-to-slot me-1"></i>Comit&eacute;</span>
+                        <h6 class="m-0 fw-bold text-guinda"><i class="fas fa-route me-2"></i>Estatus del proceso</h6>
+                        <span class="badge-readonly"><i class="fas fa-lock me-1"></i>Solo consulta</span>
                     </div>
                     <div class="card-body">
-                        <div class="alert alert-light border mb-3">
+                        <div class="alert alert-light border mb-0">
                             <div class="fw-bold text-guinda mb-1">Este expediente fue enviado a Comit&eacute; por el perfil de Captura.</div>
-                            <div class="small text-muted">Puedes cambiar el estatus del caso, sin modificar datos de la c&eacute;dula, documentos ni im&aacute;genes.</div>
-                        </div>
-                        <div class="row g-2 align-items-end">
-                            <div class="col-lg-8">
-                                <label class="small fw-bold text-muted text-uppercase mb-1" for="selectDictamenComite">Mover expediente a</label>
-                                <select id="selectDictamenComite" class="form-select fw-bold">
-                                    <option value="APROBADO">Aprobado</option>
-                                    <option value="RECHAZADO">Rechazado</option>
-                                    <option value="EN_REVISION">Devolver a revisi&oacute;n t&eacute;cnica</option>
-                                </select>
-                                <small class="text-muted">Al cambiarlo dejar&aacute; de aparecer en esta bandeja si ya no est&aacute; en Comit&eacute;.</small>
-                            </div>
-                            <div class="col-lg-4 d-grid">
-                                <button type="button" class="btn btn-guinda" id="btnGuardarDictamenComite">
-                                    <i class="fas fa-save me-1"></i>Guardar estatus
-                                </button>
-                            </div>
+                            <div class="small text-muted">El perfil Comit&eacute; revisa la informaci&oacute;n, documentos e im&aacute;genes, pero no aprueba ni cambia estatus.</div>
                         </div>
                     </div>
                 </div>
@@ -568,7 +552,6 @@
 <script>
 let registrosConsulta = [];
 let registrosFiltrados = [];
-let registroConsultaActual = null;
 
 const URLROOT_CONSULTA = '<?php echo URLROOT; ?>';
 
@@ -911,57 +894,10 @@ function abrirDetalle(id) {
     const reg = registrosConsulta.find(item => Number(item.id) === Number(id));
     if (!reg) return;
 
-    registroConsultaActual = reg;
     document.getElementById('modalFolio').textContent = reg.folio || '---';
     renderDetalleCaso(reg);
     bootstrap.Modal.getOrCreateInstance(document.getElementById('detalleConsultaModal')).show();
     cargarImagenes(id);
-}
-
-function cambiarDictamenComite() {
-    if (!registroConsultaActual) return;
-
-    const select = document.getElementById('selectDictamenComite');
-    const fase = select.value;
-    const etiqueta = select.options[select.selectedIndex]?.textContent || fase;
-
-    if (!confirm(`Confirmas mover el expediente ${registroConsultaActual.folio} a "${etiqueta}"?`)) {
-        return;
-    }
-
-    const boton = document.getElementById('btnGuardarDictamenComite');
-    const textoOriginal = boton.innerHTML;
-    boton.disabled = true;
-    boton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Guardando...';
-
-    fetch(`${URLROOT_CONSULTA}/Encuesta/cambiarFaseVerificacion`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            id: registroConsultaActual.id,
-            fase
-        })
-    })
-        .then(res => res.json().then(data => ({ ok: res.ok, data })))
-        .then(({ ok, data }) => {
-            if (!ok || data.status !== 'success') {
-                throw new Error(data.msg || 'No fue posible guardar el estatus');
-            }
-
-            registrosConsulta = registrosConsulta.filter(item => Number(item.id) !== Number(registroConsultaActual.id));
-            actualizarKpis(registrosConsulta);
-            aplicarFiltrosConsulta();
-
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('detalleConsultaModal')).hide();
-            alert('Estatus actualizado correctamente.');
-        })
-        .catch(error => {
-            alert(error.message || 'No fue posible guardar el estatus.');
-        })
-        .finally(() => {
-            boton.disabled = false;
-            boton.innerHTML = textoOriginal;
-        });
 }
 
 document.getElementById('buscarConsulta').addEventListener('input', aplicarFiltrosConsulta);
@@ -969,7 +905,6 @@ document.getElementById('btnLimpiarConsulta').addEventListener('click', function
     document.getElementById('buscarConsulta').value = '';
     aplicarFiltrosConsulta();
 });
-document.getElementById('btnGuardarDictamenComite').addEventListener('click', cambiarDictamenComite);
 
 cargarRegistrosConsulta();
 </script>

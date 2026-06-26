@@ -236,9 +236,8 @@ public function cambiarFaseVerificacion() {
 
         $rol = $_SESSION['rol'] ?? '';
         $puedeAdministrar = in_array($rol, ['root', 'admin'], true);
-        $puedeDictaminarComite = ($rol === 'consulta');
 
-        if (!$puedeAdministrar && !$puedeDictaminarComite) {
+        if (!$puedeAdministrar) {
             http_response_code(403);
             echo json_encode(['status' => 'error', 'msg' => 'Solo administrador/root puede mover fases desde este módulo']);
             exit;
@@ -272,18 +271,6 @@ public function cambiarFaseVerificacion() {
             http_response_code(404);
             echo json_encode(['status' => 'error', 'msg' => 'Expediente no encontrado']);
             exit;
-        }
-
-        if ($puedeDictaminarComite && !$puedeAdministrar) {
-            $fasesComite = ['EN_REVISION', 'APROBADO', 'RECHAZADO'];
-            if (($registro->fase_proceso ?? '') !== 'COMITE' || !in_array($fase, $fasesComite, true)) {
-                http_response_code(403);
-                echo json_encode([
-                    'status' => 'error',
-                    'msg' => 'El perfil consulta solo puede dictaminar expedientes en COMITE'
-                ], JSON_UNESCAPED_UNICODE);
-                exit;
-            }
         }
 
         $estatusPorFase = [

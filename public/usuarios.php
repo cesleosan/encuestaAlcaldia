@@ -1,5 +1,5 @@
 <?php
-// Crea o actualiza usuarios de demostración para Tierra con Corazón.
+// Crea o actualiza usuarios para Tierra con Corazon.
 // IMPORTANTE: ejecutar una sola vez y eliminar este archivo del servidor.
 
 $db = new PDO(
@@ -14,20 +14,112 @@ $db = new PDO(
 
 $db->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
 
+$passwordComite = 'Comite*2026';
+
 $usuarios = [
     [
         'nombre' => 'FERNANDO ROMERO ROMERO',
         'user'   => 'fernando.romero',
         'pass'   => 'F3rnando*Romero.26',
         'tel'    => '5500000000',
-        'rol'    => 'root'
+        'rol'    => 'root',
+        'grupo'  => 'Administrador'
     ],
     [
         'nombre' => 'USUARIO DEMO CONSULTA',
         'user'   => 'consulta.demo',
         'pass'   => 'Consulta*Demo.26',
         'tel'    => '5500000001',
-        'rol'    => 'consulta'
+        'rol'    => 'consulta',
+        'grupo'  => 'Demo consulta'
+    ],
+    [
+        'nombre' => 'LIC. FRANCISCO HERN&Aacute;NDEZ GONZ&Aacute;LEZ',
+        'user'   => 'francisco.hernandez',
+        'pass'   => $passwordComite,
+        'tel'    => null,
+        'rol'    => 'consulta',
+        'grupo'  => 'Comite'
+    ],
+    [
+        'nombre' => 'LIC. EDGAR AD&Aacute;N ZAVALA FLORES',
+        'user'   => 'edgar.zavala',
+        'pass'   => $passwordComite,
+        'tel'    => null,
+        'rol'    => 'consulta',
+        'grupo'  => 'Comite'
+    ],
+    [
+        'nombre' => 'MTRA. CLAUDIA ISLAS LAGOS',
+        'user'   => 'claudia.islas',
+        'pass'   => $passwordComite,
+        'tel'    => null,
+        'rol'    => 'consulta',
+        'grupo'  => 'Comite'
+    ],
+    [
+        'nombre' => 'LIC. ANDR&Eacute;S DE JES&Uacute;S HERN&Aacute;NDEZ FLORES',
+        'user'   => 'andres.hernandez',
+        'pass'   => $passwordComite,
+        'tel'    => null,
+        'rol'    => 'consulta',
+        'grupo'  => 'Comite'
+    ],
+    [
+        'nombre' => 'LIC. AMMY BETHSUA BA&Ntilde;UELOS D&Iacute;AZ',
+        'user'   => 'ammy.banuelos',
+        'pass'   => $passwordComite,
+        'tel'    => null,
+        'rol'    => 'consulta',
+        'grupo'  => 'Comite'
+    ],
+    [
+        'nombre' => 'C. DALIA PATRICIA HERRERA &Aacute;LVAREZ',
+        'user'   => 'dalia.herrera',
+        'pass'   => $passwordComite,
+        'tel'    => null,
+        'rol'    => 'consulta',
+        'grupo'  => 'Comite'
+    ],
+    [
+        'nombre' => 'MTRA. DULCE JANETH RAM&Iacute;REZ LUGO',
+        'user'   => 'dulce.ramirez',
+        'pass'   => $passwordComite,
+        'tel'    => null,
+        'rol'    => 'consulta',
+        'grupo'  => 'Comite'
+    ],
+    [
+        'nombre' => 'DRA. JUANA AMALIA SALGADO L&Oacute;PEZ',
+        'user'   => 'juana.salgado',
+        'pass'   => $passwordComite,
+        'tel'    => null,
+        'rol'    => 'consulta',
+        'grupo'  => 'Comite'
+    ],
+    [
+        'nombre' => 'LIC. ALDO JOVANI SALDA&Ntilde;A MART&Iacute;NEZ',
+        'user'   => 'aldo.saldana',
+        'pass'   => $passwordComite,
+        'tel'    => null,
+        'rol'    => 'consulta',
+        'grupo'  => 'Comite'
+    ],
+    [
+        'nombre' => 'C. DAN AK&Eacute; DE LA LUZ',
+        'user'   => 'dan.ake',
+        'pass'   => $passwordComite,
+        'tel'    => null,
+        'rol'    => 'consulta',
+        'grupo'  => 'Comite'
+    ],
+    [
+        'nombre' => 'C. FERNANDO ROMERO ROMERO',
+        'user'   => 'fernando.romero.comite',
+        'pass'   => $passwordComite,
+        'tel'    => null,
+        'rol'    => 'consulta',
+        'grupo'  => 'Comite'
     ]
 ];
 
@@ -35,8 +127,13 @@ function escapar($valor) {
     return htmlspecialchars((string)$valor, ENT_QUOTES, 'UTF-8');
 }
 
-echo "<h2 style='font-family:sans-serif;'>Usuarios de Tierra con Corazón</h2>";
-echo "<p style='font-family:sans-serif;'><b>Importante:</b> elimina este archivo después de ejecutarlo.</p>";
+function texto($valor) {
+    return html_entity_decode((string)$valor, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+}
+
+echo "<h2 style='font-family:sans-serif;'>Usuarios de Tierra con Corazon</h2>";
+echo "<p style='font-family:sans-serif;'><b>Importante:</b> elimina este archivo despues de ejecutarlo.</p>";
+echo "<p style='font-family:sans-serif;'>Los usuarios de Comite tienen rol <code>consulta</code>: solo ven expedientes en <code>COMITE</code> y no editan ni cambian estatus.</p>";
 
 try {
     $check = $db->prepare("SELECT id FROM usuarios WHERE usuario = :usuario LIMIT 1");
@@ -59,9 +156,10 @@ try {
 
     echo "<table border='1' style='border-collapse:collapse;width:100%;font-family:sans-serif;'>
             <tr style='background:#773357;color:white;'>
+                <th style='padding:12px;'>Grupo</th>
                 <th style='padding:12px;'>Nombre</th>
                 <th style='padding:12px;'>Usuario</th>
-                <th style='padding:12px;'>Contraseña</th>
+                <th style='padding:12px;'>Contrasena inicial</th>
                 <th style='padding:12px;'>Rol</th>
                 <th style='padding:12px;'>Resultado</th>
             </tr>";
@@ -73,7 +171,7 @@ try {
         $parametros = [
             ':usuario'  => $usuario['user'],
             ':password' => password_hash($usuario['pass'], PASSWORD_BCRYPT),
-            ':nombre'   => $usuario['nombre'],
+            ':nombre'   => texto($usuario['nombre']),
             ':telefono' => $usuario['tel'],
             ':rol'      => $usuario['rol']
         ];
@@ -89,7 +187,8 @@ try {
         }
 
         echo "<tr style='background:{$color};'>
-                <td style='padding:10px;'>" . escapar($usuario['nombre']) . "</td>
+                <td style='padding:10px;'>" . escapar($usuario['grupo']) . "</td>
+                <td style='padding:10px;'>" . escapar(texto($usuario['nombre'])) . "</td>
                 <td style='padding:10px;'><code>" . escapar($usuario['user']) . "</code></td>
                 <td style='padding:10px;'><mark>" . escapar($usuario['pass']) . "</mark></td>
                 <td style='padding:10px;'><b>" . escapar($usuario['rol']) . "</b></td>
@@ -99,10 +198,9 @@ try {
 
     echo "</table>";
     echo "<div style='font-family:sans-serif;margin-top:20px;padding:15px;background:#f8f9fa;border-left:5px solid #773357;'>
-            <b>Acceso demo de consulta</b><br>
-            Usuario: <code>consulta.demo</code><br>
-            Contraseña: <code>Consulta*Demo.26</code><br>
-            Este perfil solamente verá expedientes en estatus <code>COMITE</code>.
+            <b>Acceso Comite</b><br>
+            Contrasena inicial comun: <code>" . escapar($passwordComite) . "</code><br>
+            Estos perfiles solamente consultan expedientes en estatus <code>COMITE</code>.
           </div>";
 } catch (PDOException $e) {
     echo "<h3 style='color:red;'>Error al crear o actualizar usuarios</h3>";
