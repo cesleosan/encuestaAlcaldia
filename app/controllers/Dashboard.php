@@ -5,8 +5,18 @@ class Dashboard extends Controller {
         if (session_status() === PHP_SESSION_NONE) session_start();
 
         // Seguridad
-        if (!isset($_SESSION['user_id']) || $_SESSION['rol'] === 'encuestador') {
+        if (!isset($_SESSION['user_id'])) {
             header('Location: ' . URLROOT . '/Auth');
+            exit;
+        }
+
+        if (($_SESSION['rol'] ?? '') === 'capturista') {
+            header('Location: ' . URLROOT . '/Captura/index');
+            exit;
+        }
+
+        if (($_SESSION['rol'] ?? '') === 'encuestador') {
+            header('Location: ' . URLROOT . '/Encuesta/index');
             exit;
         }
 

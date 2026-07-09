@@ -137,8 +137,10 @@
         </div>
         
         <nav class="menu">
-            <a href="<?php echo URLROOT; ?>/Dashboard" class="menu-item<?php echo $activo('/dashboard'); ?>">
-                <i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span>
+            <?php $esFlujoCaptura = (($_SESSION['rol'] ?? '') === 'capturista'); ?>
+            <a href="<?php echo URLROOT . ($esFlujoCaptura ? '/Captura/index' : '/Dashboard'); ?>" class="menu-item<?php echo $activo($esFlujoCaptura ? '/captura' : '/dashboard'); ?>">
+                <i class="fa-solid <?php echo $esFlujoCaptura ? 'fa-folder-open' : 'fa-chart-pie'; ?>"></i>
+                <span><?php echo $esFlujoCaptura ? 'Captura' : 'Dashboard'; ?></span>
             </a>
             
             <?php if($_SESSION['rol'] == 'root' || $_SESSION['rol'] == 'supervisor'): ?>

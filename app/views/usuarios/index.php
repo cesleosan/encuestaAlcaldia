@@ -29,6 +29,11 @@
         <p>Monitoreo de usuarios, modulos, ultimo acceso y actividad reciente del sistema.</p>
     </div>
     <div class="tc-hero-actions">
+        <?php if(($_SESSION['rol'] ?? '') === 'capturista'): ?>
+        <a href="<?php echo URLROOT; ?>/Captura/index" class="btn btn-guinda">
+            <i class="fa-solid fa-arrow-left me-1"></i>Volver a captura
+        </a>
+        <?php endif; ?>
         <button type="button" class="btn btn-outline-secondary" onclick="location.reload()">
             <i class="fa-solid fa-rotate me-1"></i>Actualizar
         </button>

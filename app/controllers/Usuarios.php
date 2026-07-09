@@ -10,7 +10,7 @@ class Usuarios extends Controller {
         if (session_status() === PHP_SESSION_NONE) session_start();
 
         if (!$this->puedeVerModulo()) {
-            header('Location: ' . URLROOT . '/Dashboard');
+            $this->redireccionarFlujoNormal();
             exit;
         }
 
@@ -31,5 +31,24 @@ class Usuarios extends Controller {
 
         $usuario = $this->usuarioModel->obtenerUsuarioPorId((int)$_SESSION['user_id']);
         return $usuario && $usuario->usuario === 'aGuillen';
+    }
+
+    private function redireccionarFlujoNormal() {
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: ' . URLROOT . '/Auth');
+            return;
+        }
+
+        switch ($_SESSION['rol'] ?? '') {
+            case 'capturista':
+                header('Location: ' . URLROOT . '/Captura/index');
+                break;
+            case 'encuestador':
+                header('Location: ' . URLROOT . '/Encuesta/index');
+                break;
+            default:
+                header('Location: ' . URLROOT . '/Dashboard/index');
+                break;
+        }
     }
 }
