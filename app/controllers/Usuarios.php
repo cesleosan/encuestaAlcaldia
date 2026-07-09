@@ -26,12 +26,11 @@ class Usuarios extends Controller {
     private function puedeVerModulo() {
         if (!isset($_SESSION['user_id'])) return false;
 
-        $usuarioSesion = $_SESSION['usuario'] ?? '';
         $rolSesion = $_SESSION['rol'] ?? '';
-        if ($usuarioSesion === 'aGuillen' && $rolSesion === 'root') return true;
+        if ($rolSesion === 'root') return true;
 
         $usuario = $this->usuarioModel->obtenerUsuarioPorId((int)$_SESSION['user_id']);
-        return $usuario && $usuario->usuario === 'aGuillen' && $usuario->rol === 'root';
+        return $usuario && $usuario->rol === 'root';
     }
 
     private function redireccionarFlujoNormal() {

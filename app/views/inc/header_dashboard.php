@@ -129,6 +129,7 @@
         $activo = function($segmento) use ($rutaActual) {
             return strpos($rutaActual, strtolower($segmento)) !== false ? ' active' : '';
         };
+        $esRoot = (($_SESSION['rol'] ?? '') === 'root');
     ?>
     <div class="sidebar">
         <div class="sidebar-header">
@@ -142,6 +143,12 @@
                 <i class="fa-solid <?php echo $esFlujoCaptura ? 'fa-folder-open' : 'fa-chart-pie'; ?>"></i>
                 <span><?php echo $esFlujoCaptura ? 'Captura' : 'Dashboard'; ?></span>
             </a>
+
+            <?php if($esRoot): ?>
+            <a href="<?php echo URLROOT; ?>/Captura/index" class="menu-item<?php echo $activo('/captura'); ?>">
+                <i class="fa-solid fa-folder-open"></i> <span>Captura</span>
+            </a>
+            <?php endif; ?>
             
             <?php if($_SESSION['rol'] == 'root' || $_SESSION['rol'] == 'supervisor'): ?>
             <a href="<?php echo URLROOT; ?>/Productores" class="menu-item<?php echo $activo('/productores'); ?>">
@@ -152,14 +159,7 @@
             </a>
             <?php endif; ?>
 
-            <?php
-                $puedeVerUsuarios = (($_SESSION['rol'] ?? '') === 'root')
-                    && (
-                        (($_SESSION['usuario'] ?? '') === 'aGuillen')
-                        || (stripos($_SESSION['nombre'] ?? '', 'adan guillen') !== false)
-                    );
-            ?>
-            <?php if($puedeVerUsuarios): ?>
+            <?php if($esRoot): ?>
             <a href="<?php echo URLROOT; ?>/Usuarios" class="menu-item<?php echo $activo('/usuarios'); ?>">
                 <i class="fa-solid fa-user-gear"></i> <span>Usuarios</span>
             </a>

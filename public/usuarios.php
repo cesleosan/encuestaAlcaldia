@@ -113,6 +113,10 @@ $usuarios = [
     ]
 ];
 
+$superusuariosExistentes = [
+    'aGuillen'
+];
+
 function escapar($valor) {
     return htmlspecialchars((string)$valor, ENT_QUOTES, 'UTF-8');
 }
@@ -147,6 +151,13 @@ try {
         UPDATE usuarios
         SET activo = 0
         WHERE usuario = 'consulta.demo'
+    ");
+    $activarSuperusuario = $db->prepare("
+        UPDATE usuarios
+        SET rol = 'root',
+            modulo = 'TIERRA',
+            activo = 1
+        WHERE LOWER(usuario) = LOWER(:usuario)
     ");
 
     echo "<table border='1' style='border-collapse:collapse;width:100%;font-family:sans-serif;'>
@@ -191,9 +202,17 @@ try {
               </tr>";
     }
 
+    foreach ($superusuariosExistentes as $superusuario) {
+        $activarSuperusuario->execute([':usuario' => $superusuario]);
+    }
+
     $desactivarDemo->execute();
 
     echo "</table>";
+    echo "<div style='font-family:sans-serif;margin-top:20px;padding:15px;background:#e8f4ff;border-left:5px solid #0d6efd;'>
+            <b>Superusuario confirmado</b><br>
+            El usuario <code>aGuillen</code> queda activo como <code>root</code> en el modulo <code>TIERRA</code>. No se modifica su contrasena.
+          </div>";
     echo "<div style='font-family:sans-serif;margin-top:20px;padding:15px;background:#f8f9fa;border-left:5px solid #773357;'>
             <b>Accesos finales de Comite</b><br>
             Cada usuario tiene contrasena individual, visible en la tabla superior.<br>

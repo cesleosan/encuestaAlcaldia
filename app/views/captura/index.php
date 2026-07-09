@@ -1,6 +1,7 @@
 <?php
 $rolSesionCaptura = $_SESSION['rol'] ?? '';
 $puedeAprobarCaptura = in_array($rolSesionCaptura, ['root', 'admin'], true);
+$esRootCaptura = ($rolSesionCaptura === 'root');
 ?>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -227,7 +228,7 @@ $puedeAprobarCaptura = in_array($rolSesionCaptura, ['root', 'admin'], true);
             <p>Validación de documentos, captura complementaria y seguimiento de productores.</p>
         </div>
         <div class="tc-hero-actions">
-            <?php if(($_SESSION['rol'] ?? '') === 'root' && (($_SESSION['usuario'] ?? '') === 'aGuillen' || stripos($_SESSION['nombre'] ?? '', 'adan guillen') !== false)): ?>
+            <?php if($esRootCaptura): ?>
             <a href="<?php echo URLROOT; ?>/Usuarios" class="btn btn-outline-secondary">
                 <i class="fas fa-user-clock me-1"></i>Accesos
             </a>
