@@ -20,6 +20,10 @@
         if (strpos($ua, 'tablet') !== false || strpos($ua, 'ipad') !== false) return 'Tablet';
         return 'Escritorio';
     };
+
+    $puedeVerAccesosUsuarios = function_exists('tc_puede_ver_accesos_usuarios')
+        ? tc_puede_ver_accesos_usuarios()
+        : false;
 ?>
 
 <header class="tc-hero mb-4">
@@ -29,9 +33,12 @@
         <p>Monitoreo de usuarios, modulos, ultimo acceso y actividad reciente del sistema.</p>
     </div>
     <div class="tc-hero-actions">
-        <?php if(($_SESSION['rol'] ?? '') === 'capturista'): ?>
+        <?php if($puedeVerAccesosUsuarios): ?>
+        <a href="<?php echo URLROOT; ?>/Dashboard/index" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-chart-pie me-1"></i>Dashboard
+        </a>
         <a href="<?php echo URLROOT; ?>/Captura/index" class="btn btn-guinda">
-            <i class="fa-solid fa-arrow-left me-1"></i>Volver a captura
+            <i class="fa-solid fa-folder-open me-1"></i>Captura
         </a>
         <?php endif; ?>
         <button type="button" class="btn btn-outline-secondary" onclick="location.reload()">

@@ -9,6 +9,11 @@ require_once __DIR__ . '/../app/config/config.php';
 // 2. Cargar la Base de Datos (Indispensable para los modelos)
 // Usamos APPPATH que ya definiste en tu config
 require_once APPPATH . '/libraries/Database.php';
+require_once APPPATH . '/helpers/auth_helper.php';
+
+if (!empty($_SESSION['user_id']) && function_exists('tc_refrescar_sesion_usuario')) {
+    tc_refrescar_sesion_usuario();
+}
 
 if (!empty($_SESSION['user_id'])) {
     try {

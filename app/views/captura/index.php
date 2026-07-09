@@ -1,7 +1,9 @@
 <?php
 $rolSesionCaptura = $_SESSION['rol'] ?? '';
 $puedeAprobarCaptura = in_array($rolSesionCaptura, ['root', 'admin'], true);
-$esRootCaptura = ($rolSesionCaptura === 'root');
+$puedeVerAccesosCaptura = function_exists('tc_puede_ver_accesos_usuarios')
+    ? tc_puede_ver_accesos_usuarios()
+    : false;
 ?>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -228,7 +230,7 @@ $esRootCaptura = ($rolSesionCaptura === 'root');
             <p>Validación de documentos, captura complementaria y seguimiento de productores.</p>
         </div>
         <div class="tc-hero-actions">
-            <?php if($esRootCaptura): ?>
+            <?php if($puedeVerAccesosCaptura): ?>
             <a href="<?php echo URLROOT; ?>/Usuarios" class="btn btn-outline-secondary">
                 <i class="fas fa-user-clock me-1"></i>Accesos
             </a>

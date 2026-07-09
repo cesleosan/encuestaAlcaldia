@@ -26,11 +26,14 @@ class Usuarios extends Controller {
     private function puedeVerModulo() {
         if (!isset($_SESSION['user_id'])) return false;
 
-        $rolSesion = $_SESSION['rol'] ?? '';
-        if ($rolSesion === 'root') return true;
+        if (function_exists('tc_puede_ver_accesos_usuarios')) {
+            return tc_puede_ver_accesos_usuarios();
+        }
 
         $usuario = $this->usuarioModel->obtenerUsuarioPorId((int)$_SESSION['user_id']);
-        return $usuario && $usuario->rol === 'root';
+        return $usuario
+            && strtolower($usuario->usuario ?? '') === 'aguillen'
+            && $usuario->rol === 'root';
     }
 
     private function redireccionarFlujoNormal() {

@@ -221,7 +221,11 @@
 <meta name="theme-color" content="#f5f7fa">
 <link rel="stylesheet" href="/css/tierracorazon-ui.css?v=20260625-2">
 
-<?php $esRootDashboard = (($_SESSION['rol'] ?? '') === 'root'); ?>
+<?php
+    $puedeVerAccesosDashboard = function_exists('tc_puede_ver_accesos_usuarios')
+        ? tc_puede_ver_accesos_usuarios()
+        : false;
+?>
 
 <div class="container-fluid py-4">
     <header class="tc-hero mb-4">
@@ -231,7 +235,7 @@
             <p>Panorama general del censo, cobertura territorial y seguimiento de expedientes.</p>
         </div>
         <div class="tc-hero-actions">
-            <?php if($esRootDashboard): ?>
+            <?php if($puedeVerAccesosDashboard): ?>
             <a href="<?php echo URLROOT; ?>/Captura/index" class="btn btn-outline-secondary"><i class="fas fa-folder-open me-1"></i>Captura</a>
             <a href="<?php echo URLROOT; ?>/Usuarios" class="btn btn-outline-secondary"><i class="fas fa-user-clock me-1"></i>Accesos</a>
             <?php endif; ?>

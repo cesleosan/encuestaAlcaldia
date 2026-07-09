@@ -130,6 +130,9 @@
             return strpos($rutaActual, strtolower($segmento)) !== false ? ' active' : '';
         };
         $esRoot = (($_SESSION['rol'] ?? '') === 'root');
+        $puedeVerAccesosUsuarios = function_exists('tc_puede_ver_accesos_usuarios')
+            ? tc_puede_ver_accesos_usuarios()
+            : false;
     ?>
     <div class="sidebar">
         <div class="sidebar-header">
@@ -144,7 +147,7 @@
                 <span><?php echo $esFlujoCaptura ? 'Captura' : 'Dashboard'; ?></span>
             </a>
 
-            <?php if($esRoot): ?>
+            <?php if($puedeVerAccesosUsuarios): ?>
             <a href="<?php echo URLROOT; ?>/Captura/index" class="menu-item<?php echo $activo('/captura'); ?>">
                 <i class="fa-solid fa-folder-open"></i> <span>Captura</span>
             </a>
@@ -159,7 +162,7 @@
             </a>
             <?php endif; ?>
 
-            <?php if($esRoot): ?>
+            <?php if($puedeVerAccesosUsuarios): ?>
             <a href="<?php echo URLROOT; ?>/Usuarios" class="menu-item<?php echo $activo('/usuarios'); ?>">
                 <i class="fa-solid fa-user-gear"></i> <span>Usuarios</span>
             </a>
