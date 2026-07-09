@@ -1,9 +1,6 @@
 <?php
 $rolSesionCaptura = $_SESSION['rol'] ?? '';
 $puedeAprobarCaptura = in_array($rolSesionCaptura, ['root', 'admin'], true);
-$puedeVerAccesosCaptura = function_exists('tc_puede_ver_accesos_usuarios')
-    ? tc_puede_ver_accesos_usuarios()
-    : false;
 ?>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -221,7 +218,7 @@ $puedeVerAccesosCaptura = function_exists('tc_puede_ver_accesos_usuarios')
 </style>
 <meta name="color-scheme" content="light only">
 <meta name="theme-color" content="#f5f7fa">
-<link rel="stylesheet" href="/css/tierracorazon-ui.css?v=20260625-2">
+<link rel="stylesheet" href="/css/tierracorazon-ui.css?v=20260708-1">
 <div class="container-fluid py-4">
     <header class="tc-hero mb-4">
         <div class="tc-hero-copy">
@@ -230,15 +227,12 @@ $puedeVerAccesosCaptura = function_exists('tc_puede_ver_accesos_usuarios')
             <p>Validación de documentos, captura complementaria y seguimiento de productores.</p>
         </div>
         <div class="tc-hero-actions">
-            <?php if($puedeVerAccesosCaptura): ?>
-            <a href="<?php echo URLROOT; ?>/Usuarios" class="btn btn-outline-secondary">
-                <i class="fas fa-user-clock me-1"></i>Accesos
-            </a>
-            <?php endif; ?>
             <button onclick="location.reload()" class="btn btn-guinda"><i class="fas fa-sync-alt me-2"></i>Sincronizar</button>
             <button onclick="confirmarSalida()" class="btn btn-danger"><i class="fas fa-power-off me-1"></i>Salir</button>
         </div>
     </header>
+
+    <?php require APPROOT . '/views/inc/superuser_nav.php'; ?>
 
     <div class="row g-3 mb-4 tc-kpi-row">
         <div class="col-xl col-md-4 col-6"><div class="card tc-kpi-card tc-kpi-neutral"><div class="tc-kpi-icon"><i class="fas fa-folder-open"></i></div><div><span>Total registros</span><strong id="kpi-total">0</strong><small>Expedientes</small></div></div></div>

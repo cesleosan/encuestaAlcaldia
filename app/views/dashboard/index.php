@@ -219,13 +219,7 @@
 </style>
 <meta name="color-scheme" content="light only">
 <meta name="theme-color" content="#f5f7fa">
-<link rel="stylesheet" href="/css/tierracorazon-ui.css?v=20260625-2">
-
-<?php
-    $puedeVerAccesosDashboard = function_exists('tc_puede_ver_accesos_usuarios')
-        ? tc_puede_ver_accesos_usuarios()
-        : false;
-?>
+<link rel="stylesheet" href="/css/tierracorazon-ui.css?v=20260708-1">
 
 <div class="container-fluid py-4">
     <header class="tc-hero mb-4">
@@ -235,15 +229,13 @@
             <p>Panorama general del censo, cobertura territorial y seguimiento de expedientes.</p>
         </div>
         <div class="tc-hero-actions">
-            <?php if($puedeVerAccesosDashboard): ?>
-            <a href="<?php echo URLROOT; ?>/Captura/index" class="btn btn-outline-secondary"><i class="fas fa-folder-open me-1"></i>Captura</a>
-            <a href="<?php echo URLROOT; ?>/Usuarios" class="btn btn-outline-secondary"><i class="fas fa-user-clock me-1"></i>Accesos</a>
-            <?php endif; ?>
             <button id="btnExportar" class="btn btn-outline-secondary"><i class="fas fa-file-export me-1"></i>Exportar</button>
             <button onclick="location.reload()" class="btn btn-guinda"><i class="fas fa-sync-alt me-1"></i>Sincronizar</button>
             <button onclick="confirmarSalida()" class="btn btn-danger"><i class="fas fa-sign-out-alt me-1"></i>Salir</button>
         </div>
     </header>
+
+    <?php require APPROOT . '/views/inc/superuser_nav.php'; ?>
 
     <div class="module-nav-card">
         <div class="module-nav">

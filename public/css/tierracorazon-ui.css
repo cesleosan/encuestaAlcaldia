@@ -337,6 +337,78 @@ table tbody td {
 .tc-eyebrow { display:inline-flex; align-items:center; gap:7px; color:var(--tc-primary); font-size:.69rem; font-weight:800; letter-spacing:.09em; text-transform:uppercase; }
 .tc-hero-actions { flex:0 1 auto; display:flex; align-items:center; justify-content:flex-end; gap:9px; flex-wrap:wrap; }
 
+.tc-super-nav-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: -8px 0 22px;
+    padding: 12px;
+    border: 1px solid rgba(119, 51, 87, .12);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, .96);
+    box-shadow: var(--tc-shadow-soft);
+}
+
+.tc-super-nav-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 8px;
+    min-width: 190px;
+}
+
+.tc-super-nav-copy span {
+    color: var(--tc-primary);
+    font-size: .75rem;
+    font-weight: 900;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.tc-super-nav-copy small {
+    color: var(--tc-muted);
+    font-size: .76rem;
+}
+
+.tc-super-nav-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.tc-super-nav-link {
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 10px 16px;
+    border: 1px solid #e1e6ee;
+    border-radius: 13px;
+    background: #fff;
+    color: #596373;
+    text-decoration: none;
+    font-size: .82rem;
+    font-weight: 850;
+    transition: transform .12s ease, box-shadow .12s ease, background .12s ease, color .12s ease;
+}
+
+.tc-super-nav-link:hover {
+    transform: translateY(-1px);
+    border-color: #d8b8c8;
+    background: var(--tc-primary-soft);
+    color: var(--tc-primary);
+}
+
+.tc-super-nav-link.active {
+    border-color: var(--tc-primary);
+    background: var(--tc-primary);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(119, 51, 87, .22);
+}
+
 .tc-kpi-card {
     min-height: 126px;
     margin: 0 !important;
@@ -489,6 +561,17 @@ table tbody td {
         background-color: #fff !important;
         border-color: var(--tc-border) !important;
     }
+    .tc-super-nav-card,
+    .tc-super-nav-link:not(.active) {
+        color: var(--tc-text) !important;
+        background-color: #fff !important;
+        border-color: var(--tc-border) !important;
+    }
+    .tc-super-nav-link.active {
+        color: #fff !important;
+        background-color: var(--tc-primary) !important;
+        border-color: var(--tc-primary) !important;
+    }
     .text-muted,
     small,
     .tc-hero-copy p {
@@ -519,6 +602,9 @@ table tbody td {
     .tc-hero { align-items:flex-start; flex-direction:column; }
     .tc-hero-copy { flex-basis: auto; width: 100%; }
     .tc-hero-actions { width: 100%; justify-content: flex-start; }
+    .tc-super-nav-card { align-items: stretch; flex-direction: column; }
+    .tc-super-nav-copy { min-width: 0; padding-inline: 4px; }
+    .tc-super-nav-actions { justify-content: flex-start; }
     .module-nav { align-items: stretch !important; flex-direction: column; }
     .module-tab { width: 100%; justify-content: flex-start; }
 }
@@ -527,6 +613,8 @@ table tbody td {
     .main-content { padding: 14px !important; }
     .container-fluid.py-4 { padding: 12px !important; }
     .card, .consulta-card, .module-nav-card { border-radius: 14px !important; }
+    .tc-super-nav-actions { flex-direction: column; align-items: stretch; }
+    .tc-super-nav-link { width: 100%; justify-content: flex-start; }
     .table thead th, table thead th,
     .table tbody td, table tbody td { padding: 11px 12px !important; }
 }
