@@ -171,7 +171,12 @@
 
     <footer class="tc-table-footer d-flex justify-content-between align-items-center gap-3 flex-wrap">
         <span id="usuariosInfo"><?php echo count($usuarios); ?> usuario(s) visibles</span>
-        <small class="text-muted"><i class="fa-solid fa-lock me-1"></i>Consulta operativa sin botones de edicion.</small>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <small class="text-muted"><i class="fa-solid fa-lock me-1"></i>Consulta operativa sin botones de edicion.</small>
+            <nav aria-label="Paginacion usuarios">
+                <ul class="pagination pagination-sm mb-0" id="usuariosPaginacion"></ul>
+            </nav>
+        </div>
     </footer>
 </section>
 
@@ -181,28 +186,101 @@ const filtroModulo = document.getElementById('filtroModulo');
 const filtroEstado = document.getElementById('filtroEstado');
 const filasUsuarios = Array.from(document.querySelectorAll('#tablaUsuarios tbody tr'));
 const usuariosInfo = document.getElementById('usuariosInfo');
+const usuariosPaginacion = document.getElementById('usuariosPaginacion');
+const pageSizeUsuarios = 10;
+let paginaUsuarios = 1;
 
 function filtrarUsuarios() {
     const texto = inputUsuario.value.toLowerCase().trim();
     const modulo = filtroModulo.value;
     const estado = filtroEstado.value;
-    let visibles = 0;
 
-    filasUsuarios.forEach(fila => {
+    const filtradas = filasUsuarios.filter(fila => {
         const pasaTexto = !texto || fila.dataset.search.includes(texto);
         const pasaModulo = !modulo || fila.dataset.modulo === modulo;
         const pasaEstado = !estado || fila.dataset.estado === estado || fila.dataset.activo === estado;
-        const visible = pasaTexto && pasaModulo && pasaEstado;
-        fila.style.display = visible ? '' : 'none';
-        if (visible) visibles++;
+        return pasaTexto && pasaModulo && pasaEstado;
     });
 
-    usuariosInfo.textContent = `${visibles} usuario(s) visibles`;
+    const totalPaginas = Math.max(1, Math.ceil(filtradas.length / pageSizeUsuarios));
+    if (paginaUsuarios > totalPaginas) paginaUsuarios = totalPaginas;
+
+    const inicio = (paginaUsuarios - 1) * pageSizeUsuarios;
+    const fin = inicio + pageSizeUsuarios;
+    const paginaActual = filtradas.slice(inicio, fin);
+
+    filasUsuarios.forEach(fila => {
+        fila.style.display = paginaActual.includes(fila) ? '' : 'none';
+    });
+
+    usuariosInfo.textContent = filtradas.length
+        ? `Mostrando ${inicio + 1}-${Math.min(fin, filtradas.length)} de ${filtradas.length} usuario(s)`
+        : '0 usuario(s) visibles';
+
+    renderPaginacionUsuarios(totalPaginas);
 }
 
-inputUsuario.addEventListener('input', filtrarUsuarios);
-filtroModulo.addEventListener('change', filtrarUsuarios);
-filtroEstado.addEventListener('change', filtrarUsuarios);
+function renderPaginacionUsuarios(totalPaginas) {
+    usuariosPaginacion.innerHTML = '';
+    if (totalPaginas <= 1) return;
+
+    const crearItem = (label, page, disabled = false, active = false) => {
+        const li = document.createElement('li');
+        li.className = `page-item${disabled ? ' disabled' : ''}${active ? ' active' : ''}`;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'page-link';
+        button.innerHTML = label;
+        button.disabled = disabled;
+        button.addEventListener('click', () => {
+            paginaUsuarios = page;
+            filtrarUsuarios();
+        });
+        li.appendChild(button);
+        usuariosPaginacion.appendChild(li);
+    };
+
+    crearItem('<i class="fa-solid fa-chevron-left"></i>', Math.max(1, paginaUsuarios - 1), paginaUsuarios === 1);
+
+    const inicio = Math.max(1, paginaUsuarios - 2);
+    const fin = Math.min(totalPaginas, paginaUsuarios + 2);
+
+    if (inicio > 1) {
+        crearItem('1', 1, false, paginaUsuarios === 1);
+        if (inicio > 2) {
+            const li = document.createElement('li');
+            li.className = 'page-item disabled';
+            li.innerHTML = '<span class="page-link">...</span>';
+            usuariosPaginacion.appendChild(li);
+        }
+    }
+
+    for (let i = inicio; i <= fin; i++) {
+        crearItem(String(i), i, false, paginaUsuarios === i);
+    }
+
+    if (fin < totalPaginas) {
+        if (fin < totalPaginas - 1) {
+            const li = document.createElement('li');
+            li.className = 'page-item disabled';
+            li.innerHTML = '<span class="page-link">...</span>';
+            usuariosPaginacion.appendChild(li);
+        }
+        crearItem(String(totalPaginas), totalPaginas, false, paginaUsuarios === totalPaginas);
+    }
+
+    crearItem('<i class="fa-solid fa-chevron-right"></i>', Math.min(totalPaginas, paginaUsuarios + 1), paginaUsuarios === totalPaginas);
+}
+
+function reiniciarFiltroUsuarios() {
+    paginaUsuarios = 1;
+    filtrarUsuarios();
+}
+
+inputUsuario.addEventListener('input', reiniciarFiltroUsuarios);
+filtroModulo.addEventListener('change', reiniciarFiltroUsuarios);
+filtroEstado.addEventListener('change', reiniciarFiltroUsuarios);
+filtrarUsuarios();
 </script>
 
 <?php require_once APPROOT . '/views/inc/footer_dashboard.php'; ?>
