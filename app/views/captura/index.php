@@ -227,7 +227,7 @@ $puedeAprobarCaptura = in_array($rolSesionCaptura, ['root', 'admin'], true);
             <p>Validación de documentos, captura complementaria y seguimiento de productores.</p>
         </div>
         <div class="tc-hero-actions">
-            <?php if(($_SESSION['usuario'] ?? '') === 'aGuillen' || stripos($_SESSION['nombre'] ?? '', 'adan guillen') !== false): ?>
+            <?php if(($_SESSION['rol'] ?? '') === 'root' && (($_SESSION['usuario'] ?? '') === 'aGuillen' || stripos($_SESSION['nombre'] ?? '', 'adan guillen') !== false)): ?>
             <a href="<?php echo URLROOT; ?>/Usuarios" class="btn btn-outline-secondary">
                 <i class="fas fa-user-clock me-1"></i>Accesos
             </a>

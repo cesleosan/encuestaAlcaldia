@@ -153,8 +153,11 @@
             <?php endif; ?>
 
             <?php
-                $puedeVerUsuarios = (($_SESSION['usuario'] ?? '') === 'aGuillen')
-                    || (stripos($_SESSION['nombre'] ?? '', 'adan guillen') !== false);
+                $puedeVerUsuarios = (($_SESSION['rol'] ?? '') === 'root')
+                    && (
+                        (($_SESSION['usuario'] ?? '') === 'aGuillen')
+                        || (stripos($_SESSION['nombre'] ?? '', 'adan guillen') !== false)
+                    );
             ?>
             <?php if($puedeVerUsuarios): ?>
             <a href="<?php echo URLROOT; ?>/Usuarios" class="menu-item<?php echo $activo('/usuarios'); ?>">

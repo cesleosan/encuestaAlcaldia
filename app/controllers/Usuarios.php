@@ -27,10 +27,11 @@ class Usuarios extends Controller {
         if (!isset($_SESSION['user_id'])) return false;
 
         $usuarioSesion = $_SESSION['usuario'] ?? '';
-        if ($usuarioSesion === 'aGuillen') return true;
+        $rolSesion = $_SESSION['rol'] ?? '';
+        if ($usuarioSesion === 'aGuillen' && $rolSesion === 'root') return true;
 
         $usuario = $this->usuarioModel->obtenerUsuarioPorId((int)$_SESSION['user_id']);
-        return $usuario && $usuario->usuario === 'aGuillen';
+        return $usuario && $usuario->usuario === 'aGuillen' && $usuario->rol === 'root';
     }
 
     private function redireccionarFlujoNormal() {
