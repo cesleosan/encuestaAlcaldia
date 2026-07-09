@@ -10,6 +10,28 @@ require_once __DIR__ . '/../app/config/config.php';
 // Usamos APPPATH que ya definiste en tu config
 require_once APPPATH . '/libraries/Database.php';
 
+if (!empty($_SESSION['user_id'])) {
+    try {
+        $activityDb = new Database();
+        $activityDb->query("SHOW TABLES LIKE 'usuario_sesiones'");
+        if ($activityDb->single()) {
+            $activityDb->query("
+                UPDATE usuario_sesiones
+                SET ultima_actividad = NOW()
+                WHERE usuario_id = :usuario_id
+                  AND session_id = :session_id
+                  AND cierre IS NULL
+                  AND estado = 'activa'
+            ");
+            $activityDb->bind(':usuario_id', (int)$_SESSION['user_id']);
+            $activityDb->bind(':session_id', session_id());
+            $activityDb->execute();
+        }
+    } catch (Exception $e) {
+        // El monitoreo de sesiones no debe bloquear el sistema.
+    }
+}
+
 // 3. Cargar el núcleo (Core y Controller)
 require_once APPPATH . '/core/Controller.php';
 require_once APPPATH . '/core/Core.php';

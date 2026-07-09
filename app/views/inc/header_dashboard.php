@@ -150,7 +150,11 @@
             </a>
             <?php endif; ?>
 
-            <?php if($_SESSION['rol'] == 'root'): ?>
+            <?php
+                $puedeVerUsuarios = (($_SESSION['usuario'] ?? '') === 'aGuillen')
+                    || (stripos($_SESSION['nombre'] ?? '', 'adan guillen') !== false);
+            ?>
+            <?php if($puedeVerUsuarios): ?>
             <a href="<?php echo URLROOT; ?>/Usuarios" class="menu-item<?php echo $activo('/usuarios'); ?>">
                 <i class="fa-solid fa-user-gear"></i> <span>Usuarios</span>
             </a>

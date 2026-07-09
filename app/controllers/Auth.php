@@ -46,8 +46,16 @@ class Auth extends Controller {
             
             // ¡ÉXITO! Guardamos variables de sesión
             $_SESSION['user_id'] = $userRow->id;
+            $_SESSION['usuario'] = $userRow->usuario;
             $_SESSION['rol'] = $userRow->rol;
             $_SESSION['nombre'] = $userRow->nombre_completo; 
+
+            $this->usuarioModel->registrarInicioSesion(
+                $userRow->id,
+                session_id(),
+                $_SERVER['REMOTE_ADDR'] ?? '',
+                $_SERVER['HTTP_USER_AGENT'] ?? ''
+            );
 
             // Redireccionar según el rol (Root, Supervisor o Encuestador)
             $this->redireccionarRol($userRow->rol);
@@ -84,6 +92,9 @@ class Auth extends Controller {
 
     public function logout() {
         if (session_status() === PHP_SESSION_NONE) session_start();
+        if (!empty($_SESSION['user_id'])) {
+            $this->usuarioModel->cerrarSesion((int)$_SESSION['user_id'], session_id());
+        }
         session_destroy();
         header('Location: ' . URLROOT . '/Auth');
     }

@@ -1,23 +1,35 @@
 <?php
 class Usuarios extends Controller {
+    private $usuarioModel;
+
+    public function __construct() {
+        $this->usuarioModel = $this->model('Usuario');
+    }
+
     public function index() {
         if (session_status() === PHP_SESSION_NONE) session_start();
-        
-        // SEGURIDAD EXTRICTA: SOLO ROOT
-        if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'root') {
-            header('Location: ' . URLROOT . '/Dashboard'); // Los saca al dashboard normal
+
+        if (!$this->puedeVerModulo()) {
+            header('Location: ' . URLROOT . '/Dashboard');
             exit;
         }
 
-        // Datos Dummy Usuarios
-        $usuarios = [
-            ['usuario' => 'admin', 'nombre' => 'Admin General', 'rol' => 'root', 'ultimo_acceso' => 'Hace 2 min'],
-            ['usuario' => 'supervisor', 'nombre' => 'Jefe de Campo', 'rol' => 'supervisor', 'ultimo_acceso' => 'Ayer 14:00'],
-            ['usuario' => 'encuestador1', 'nombre' => 'Juan Tecnico', 'rol' => 'encuestador', 'ultimo_acceso' => 'Hoy 09:30'],
-            ['usuario' => 'encuestador2', 'nombre' => 'Ana Campo', 'rol' => 'encuestador', 'ultimo_acceso' => 'Hoy 10:15'],
+        $datos = [
+            'titulo' => 'Control de accesos',
+            'lista' => $this->usuarioModel->getMonitoreoAccesos(),
+            'resumen' => $this->usuarioModel->getResumenAccesos()
         ];
 
-        $datos = ['lista' => $usuarios];
         $this->view('usuarios/index', $datos);
+    }
+
+    private function puedeVerModulo() {
+        if (!isset($_SESSION['user_id'])) return false;
+
+        $usuarioSesion = $_SESSION['usuario'] ?? '';
+        if ($usuarioSesion === 'aGuillen') return true;
+
+        $usuario = $this->usuarioModel->obtenerUsuarioPorId((int)$_SESSION['user_id']);
+        return $usuario && $usuario->usuario === 'aGuillen';
     }
 }
