@@ -168,7 +168,8 @@ class EncuestaModelo {
         $sql = "SELECT
                             e.*, 
                             u.nombre_completo as encuestador,
-                            IFNULL(ev.total_fotos, 0) as total_fotos
+                            IFNULL(ev.total_fotos, 0) as total_fotos,
+                            IFNULL(ft.total_formatos_tecnicos, 0) as total_formatos_tecnicos
                         FROM encuestas e
                         LEFT JOIN usuarios u ON e.usuario_id = u.id
                         LEFT JOIN (
@@ -176,7 +177,13 @@ class EncuestaModelo {
                             FROM encuesta_evidencias
                             WHERE tipo_evidencia = 'VERIFICACION_CAMPO'
                             GROUP BY encuesta_id
-                        ) ev ON ev.encuesta_id = e.id";
+                        ) ev ON ev.encuesta_id = e.id
+                        LEFT JOIN (
+                            SELECT encuesta_id, COUNT(*) as total_formatos_tecnicos
+                            FROM encuesta_evidencias
+                            WHERE tipo_evidencia = 'FORMATOS_TECNICOS'
+                            GROUP BY encuesta_id
+                        ) ft ON ft.encuesta_id = e.id";
         if ($faseProceso !== null) {
             $sql .= " WHERE e.fase_proceso = :fase_proceso";
         }

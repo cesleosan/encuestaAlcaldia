@@ -707,7 +707,7 @@ function badgeComite() {
 
 function actualizarKpis(registrosBase) {
     document.getElementById('kpiCasos').textContent = registrosBase.length;
-    document.getElementById('kpiEvidencias').textContent = registrosBase.filter(reg => Number(reg.total_fotos || 0) > 0 || Number(reg.check_formatos_tecnicos || 0) === 1).length;
+    document.getElementById('kpiEvidencias').textContent = registrosBase.filter(reg => Number(reg.total_formatos_tecnicos || 0) > 0 || Number(reg.check_formatos_tecnicos || 0) === 1).length;
     document.getElementById('kpiCoordenadas').textContent = registrosBase.filter(tieneCoordenadas).length;
 }
 
@@ -722,7 +722,7 @@ function renderConsulta(registros) {
         registros.forEach(reg => {
             const productor = nombreCompleto(reg);
             const superficie = Number(reg.superficie_total || 0);
-            const imagenes = Number(reg.total_fotos || 0) + (Number(reg.check_formatos_tecnicos || 0) === 1 ? 1 : 0);
+            const formatos = Number(reg.total_formatos_tecnicos || 0) || (Number(reg.check_formatos_tecnicos || 0) === 1 ? 1 : 0);
 
             body.insertAdjacentHTML('beforeend', `
                 <tr>
@@ -739,7 +739,7 @@ function renderConsulta(registros) {
                     <td class="text-center">${escapar(fechaCorta(reg.fecha_inicio))}</td>
                     <td class="text-center">${badgeComite()}</td>
                     <td class="text-center">
-                        <span class="badge text-bg-light border"><i class="fas fa-shield-halved me-1"></i>${imagenes}</span>
+                        <span class="badge text-bg-light border"><i class="fas fa-file-image me-1"></i>${formatos}</span>
                     </td>
                     <td class="text-center">
                         <button class="btn btn-sm btn-outline-secondary" type="button" onclick="abrirDetalle(${Number(reg.id)})">
@@ -955,22 +955,6 @@ function renderGrupoImagenes(titulo, fotos, icono) {
     </section>`;
 }
 
-function renderGrupoProtegido(titulo, total, icono) {
-    return `<section class="mb-4">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="fw-bold text-guinda mb-0"><i class="fas ${icono} me-2"></i>${titulo}</h6>
-            <span class="badge text-bg-light border">${Number(total || 0)}</span>
-        </div>
-        <div class="protected-card">
-            <div class="protected-icon"><i class="fas fa-shield-halved"></i></div>
-            <div class="fw-bold">Documento cargado, visualización protegida</div>
-            <div class="small text-muted mt-1">
-                Este archivo puede contener CURP, RFC, teléfonos, INE o información personal. Comité solo ve el indicador de existencia.
-            </div>
-        </div>
-    </section>`;
-}
-
 function cargarImagenes(id) {
     const contenido = document.getElementById('visorImagenesContenido');
     const status = document.getElementById('modalImagenesStatus');
@@ -985,12 +969,8 @@ function cargarImagenes(id) {
         .then(data => {
             const formatos = data.formatos_tecnicos || [];
             const formatosTotal = Number(data.formatos_tecnicos_total || formatos.length || 0);
-            const verificacion = data.verificacion || [];
-            status.textContent = `${verificacion.length} imagen(es) visible(s), ${formatosTotal} documento(s) protegido(s)`;
-            contenido.innerHTML = [
-                renderGrupoProtegido('Formatos técnicos', formatosTotal, 'fa-file-shield'),
-                renderGrupoImagenes('Evidencias de campo', verificacion, 'fa-camera')
-            ].join('');
+            status.textContent = `${formatosTotal} formato(s) técnico(s)`;
+            contenido.innerHTML = renderGrupoImagenes('Formatos técnicos', formatos, 'fa-file-image');
         })
         .catch(() => {
             status.textContent = 'Error';

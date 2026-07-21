@@ -426,10 +426,10 @@ public function getEvidenciasConsulta($id) {
 
     echo json_encode([
         'status' => 'success',
-        'verificacion' => $convertir($this->encuestaModel->getEvidencias($registro->id, 'VERIFICACION_CAMPO')),
-        'formatos_tecnicos' => [],
+        'verificacion' => [],
+        'formatos_tecnicos' => $convertir($formatosTecnicos),
         'formatos_tecnicos_total' => count($formatosTecnicos),
-        'formatos_tecnicos_protegidos' => true,
+        'formatos_tecnicos_protegidos' => false,
         'documentos_sensibles_protegidos' => true
     ], JSON_UNESCAPED_UNICODE);
     exit;
