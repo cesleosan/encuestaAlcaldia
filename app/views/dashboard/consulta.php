@@ -707,7 +707,11 @@ function badgeComite() {
 
 function actualizarKpis(registrosBase) {
     document.getElementById('kpiCasos').textContent = registrosBase.length;
-    document.getElementById('kpiEvidencias').textContent = registrosBase.filter(reg => Number(reg.total_formatos_tecnicos || 0) > 0 || Number(reg.check_formatos_tecnicos || 0) === 1).length;
+    document.getElementById('kpiEvidencias').textContent = registrosBase.filter(reg => {
+        const fotos = Number(reg.total_fotos || 0);
+        const formatos = Number(reg.total_formatos_tecnicos || 0) || (Number(reg.check_formatos_tecnicos || 0) === 1 ? 1 : 0);
+        return fotos + formatos > 0;
+    }).length;
     document.getElementById('kpiCoordenadas').textContent = registrosBase.filter(tieneCoordenadas).length;
 }
 
@@ -723,6 +727,7 @@ function renderConsulta(registros) {
             const productor = nombreCompleto(reg);
             const superficie = Number(reg.superficie_total || 0);
             const formatos = Number(reg.total_formatos_tecnicos || 0) || (Number(reg.check_formatos_tecnicos || 0) === 1 ? 1 : 0);
+            const imagenes = Number(reg.total_fotos || 0) + formatos;
 
             body.insertAdjacentHTML('beforeend', `
                 <tr>
@@ -739,7 +744,7 @@ function renderConsulta(registros) {
                     <td class="text-center">${escapar(fechaCorta(reg.fecha_inicio))}</td>
                     <td class="text-center">${badgeComite()}</td>
                     <td class="text-center">
-                        <span class="badge text-bg-light border"><i class="fas fa-file-image me-1"></i>${formatos}</span>
+                        <span class="badge text-bg-light border"><i class="fas fa-images me-1"></i>${imagenes}</span>
                     </td>
                     <td class="text-center">
                         <button class="btn btn-sm btn-outline-secondary" type="button" onclick="abrirDetalle(${Number(reg.id)})">
@@ -967,10 +972,14 @@ function cargarImagenes(id) {
             return res.json();
         })
         .then(data => {
+            const verificacion = data.verificacion || [];
             const formatos = data.formatos_tecnicos || [];
             const formatosTotal = Number(data.formatos_tecnicos_total || formatos.length || 0);
-            status.textContent = `${formatosTotal} formato(s) técnico(s)`;
-            contenido.innerHTML = renderGrupoImagenes('Formatos técnicos', formatos, 'fa-file-image');
+            status.textContent = `${verificacion.length} foto(s), ${formatosTotal} formato(s) técnico(s)`;
+            contenido.innerHTML = [
+                renderGrupoImagenes('Fotos de verificación', verificacion, 'fa-camera'),
+                renderGrupoImagenes('Formatos técnicos', formatos, 'fa-file-image')
+            ].join('');
         })
         .catch(() => {
             status.textContent = 'Error';

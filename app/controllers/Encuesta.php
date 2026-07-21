@@ -422,11 +422,12 @@ public function getEvidenciasConsulta($id) {
         }, $evidencias ?: []);
     };
 
+    $verificacion = $this->encuestaModel->getEvidencias($registro->id, 'VERIFICACION_CAMPO') ?: [];
     $formatosTecnicos = $this->encuestaModel->getEvidencias($registro->id, 'FORMATOS_TECNICOS') ?: [];
 
     echo json_encode([
         'status' => 'success',
-        'verificacion' => [],
+        'verificacion' => $convertir($verificacion),
         'formatos_tecnicos' => $convertir($formatosTecnicos),
         'formatos_tecnicos_total' => count($formatosTecnicos),
         'formatos_tecnicos_protegidos' => false,
