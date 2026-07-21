@@ -744,7 +744,7 @@ function renderConsulta(registros) {
                     <td class="text-center">${escapar(fechaCorta(reg.fecha_inicio))}</td>
                     <td class="text-center">${badgeComite()}</td>
                     <td class="text-center">
-                        <span class="badge text-bg-light border"><i class="fas fa-images me-1"></i>${imagenes}</span>
+                        <span class="badge text-bg-light border"><i class="fas fa-shield-halved me-1"></i>${imagenes}</span>
                     </td>
                     <td class="text-center">
                         <button class="btn btn-sm btn-outline-secondary" type="button" onclick="abrirDetalle(${Number(reg.id)})">
@@ -941,21 +941,18 @@ function renderDetalleCaso(reg) {
     ].join('');
 }
 
-function renderGrupoImagenes(titulo, fotos, icono) {
+function renderGrupoProtegido(titulo, total, icono) {
     return `<section class="mb-4">
         <div class="d-flex justify-content-between align-items-center mb-2">
             <h6 class="fw-bold text-guinda mb-0"><i class="fas ${icono} me-2"></i>${titulo}</h6>
-            <span class="badge text-bg-light border">${fotos.length}</span>
+            <span class="badge text-bg-light border">${Number(total || 0)}</span>
         </div>
-        <div class="row g-3">
-            ${fotos.length ? fotos.map((foto, index) => `
-                <div class="col-6 col-md-4 col-lg-3">
-                    <a href="${escapar(foto.url)}" target="_blank" class="image-card">
-                        <img src="${escapar(foto.url)}" alt="${escapar(titulo)} ${index + 1}">
-                        <span><i class="fas fa-up-right-from-square me-1"></i>Abrir imagen ${index + 1}</span>
-                    </a>
-                </div>
-            `).join('') : '<div class="col-12 text-muted small">Sin imágenes disponibles.</div>'}
+        <div class="protected-card">
+            <div class="protected-icon"><i class="fas fa-shield-halved"></i></div>
+            <div class="fw-bold">Archivo cargado, visualización protegida</div>
+            <div class="small text-muted mt-1">
+                Este contenido puede mostrar datos personales o documentos del expediente. Comité solo ve el indicador de existencia.
+            </div>
         </div>
     </section>`;
 }
@@ -972,13 +969,12 @@ function cargarImagenes(id) {
             return res.json();
         })
         .then(data => {
-            const verificacion = data.verificacion || [];
-            const formatos = data.formatos_tecnicos || [];
-            const formatosTotal = Number(data.formatos_tecnicos_total || formatos.length || 0);
-            status.textContent = `${verificacion.length} foto(s), ${formatosTotal} formato(s) técnico(s)`;
+            const verificacionTotal = Number(data.verificacion_total || 0);
+            const formatosTotal = Number(data.formatos_tecnicos_total || 0);
+            status.textContent = `${verificacionTotal} foto(s), ${formatosTotal} formato(s) técnico(s) protegidos`;
             contenido.innerHTML = [
-                renderGrupoImagenes('Fotos de verificación', verificacion, 'fa-camera'),
-                renderGrupoImagenes('Formatos técnicos', formatos, 'fa-file-image')
+                renderGrupoProtegido('Fotos de verificación', verificacionTotal, 'fa-camera'),
+                renderGrupoProtegido('Formatos técnicos', formatosTotal, 'fa-file-shield')
             ].join('');
         })
         .catch(() => {

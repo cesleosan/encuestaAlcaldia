@@ -413,24 +413,17 @@ public function getEvidenciasConsulta($id) {
         exit;
     }
 
-    $convertir = function($evidencias) {
-        return array_map(function($foto) {
-            return [
-                'id' => $foto->id,
-                'url' => URLROOT . '/ArchivoSeguro/evidencia/' . (int)$foto->id
-            ];
-        }, $evidencias ?: []);
-    };
-
     $verificacion = $this->encuestaModel->getEvidencias($registro->id, 'VERIFICACION_CAMPO') ?: [];
     $formatosTecnicos = $this->encuestaModel->getEvidencias($registro->id, 'FORMATOS_TECNICOS') ?: [];
 
     echo json_encode([
         'status' => 'success',
-        'verificacion' => $convertir($verificacion),
-        'formatos_tecnicos' => $convertir($formatosTecnicos),
+        'verificacion' => [],
+        'verificacion_total' => count($verificacion),
+        'verificacion_protegida' => true,
+        'formatos_tecnicos' => [],
         'formatos_tecnicos_total' => count($formatosTecnicos),
-        'formatos_tecnicos_protegidos' => false,
+        'formatos_tecnicos_protegidos' => true,
         'documentos_sensibles_protegidos' => true
     ], JSON_UNESCAPED_UNICODE);
     exit;

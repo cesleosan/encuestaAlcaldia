@@ -28,9 +28,7 @@ class ArchivoSeguro extends Controller {
                 return $this->denegar(404, 'Archivo no disponible para Comite.');
             }
 
-            if (!in_array($tipo, ['VERIFICACION_CAMPO', 'FORMATOS_TECNICOS'], true)) {
-                return $this->denegar(403, 'Documento protegido para el perfil Comite.');
-            }
+            return $this->denegar(403, 'Documento protegido para el perfil Comite.');
         } elseif (!in_array($rol, ['root', 'supervisor', 'capturista', 'admin'], true)) {
             return $this->denegar(403, 'Archivo no autorizado para este perfil.');
         }
