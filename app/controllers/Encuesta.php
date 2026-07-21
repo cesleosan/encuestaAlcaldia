@@ -194,9 +194,10 @@ public function getEstadisticas() {
     }
 
     if (($_SESSION['rol'] ?? '') === 'consulta') {
+        $maestroComite = $this->sanitizarRegistrosConsulta($this->encuestaModel->getListadoMaestro('COMITE'));
         echo json_encode([
             'status' => 'success',
-            'maestro' => $this->encuestaModel->getListadoMaestro('COMITE')
+            'maestro' => $maestroComite
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
@@ -213,6 +214,93 @@ public function getEstadisticas() {
 
     echo json_encode($datos);
     exit;
+}
+
+private function sanitizarRegistrosConsulta($registros) {
+    $camposSensibles = [
+        'curp',
+        'rfc',
+        'tel_particular',
+        'tel_casa',
+        'tel_familiar',
+        'tel_recados',
+        'telefono',
+        'numero_id'
+    ];
+
+    foreach (($registros ?: []) as $registro) {
+        foreach ($camposSensibles as $campo) {
+            if (property_exists($registro, $campo) && trim((string)($registro->{$campo} ?? '')) !== '') {
+                $registro->{$campo} = 'DATO PROTEGIDO';
+            }
+        }
+
+        if (property_exists($registro, 'respuestas_json')) {
+            $registro->respuestas_json = $this->sanitizarRespuestasJsonConsulta($registro->respuestas_json);
+        }
+
+        $registro->datos_sensibles_protegidos = 1;
+        $registro->documentos_sensibles_protegidos = 1;
+    }
+
+    return $registros;
+}
+
+private function sanitizarRespuestasJsonConsulta($json) {
+    if (empty($json)) return null;
+
+    $data = is_string($json) ? json_decode($json, true) : $json;
+    if (!is_array($data)) return null;
+
+    $this->sanitizarNodoRespuestaConsulta($data);
+    return json_encode($data, JSON_UNESCAPED_UNICODE);
+}
+
+private function sanitizarNodoRespuestaConsulta(&$nodo) {
+    if (!is_array($nodo)) return;
+
+    $identificador = strtolower((string)($nodo['name'] ?? $nodo['id'] ?? $nodo['label'] ?? $nodo['question'] ?? ''));
+    $identificador = strtr($identificador, [
+        'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'ñ' => 'n',
+        'Á' => 'a', 'É' => 'e', 'Í' => 'i', 'Ó' => 'o', 'Ú' => 'u', 'Ü' => 'u', 'Ñ' => 'n'
+    ]);
+
+    $esSensible = false;
+    foreach (['curp', 'rfc', 'tel', 'telefono', 'celular', 'phone', 'numero_id', 'identificacion', 'ine'] as $patron) {
+        if (strpos($identificador, $patron) !== false) {
+            $esSensible = true;
+            break;
+        }
+    }
+
+    if ($esSensible && array_key_exists('value', $nodo) && trim((string)($nodo['value'] ?? '')) !== '') {
+        $nodo['value'] = 'DATO PROTEGIDO';
+    }
+
+    foreach ($nodo as $clave => &$valor) {
+        $claveNormalizada = strtolower((string)$clave);
+        $claveNormalizada = strtr($claveNormalizada, [
+            'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'ñ' => 'n',
+            'Á' => 'a', 'É' => 'e', 'Í' => 'i', 'Ó' => 'o', 'Ú' => 'u', 'Ü' => 'u', 'Ñ' => 'n'
+        ]);
+
+        $claveSensible = false;
+        foreach (['curp', 'rfc', 'tel', 'telefono', 'celular', 'phone', 'numero_id', 'identificacion', 'ine'] as $patron) {
+            if (strpos($claveNormalizada, $patron) !== false) {
+                $claveSensible = true;
+                break;
+            }
+        }
+
+        if ($claveSensible && !is_array($valor) && trim((string)($valor ?? '')) !== '') {
+            $valor = 'DATO PROTEGIDO';
+            continue;
+        }
+
+        if (is_array($valor)) {
+            $this->sanitizarNodoRespuestaConsulta($valor);
+        }
+    }
 }
 
 public function cambiarFaseVerificacion() {
@@ -329,15 +417,20 @@ public function getEvidenciasConsulta($id) {
         return array_map(function($foto) {
             return [
                 'id' => $foto->id,
-                'url' => URLROOT . '/' . $foto->ruta_archivo
+                'url' => URLROOT . '/ArchivoSeguro/evidencia/' . (int)$foto->id
             ];
         }, $evidencias ?: []);
     };
 
+    $formatosTecnicos = $this->encuestaModel->getEvidencias($registro->id, 'FORMATOS_TECNICOS') ?: [];
+
     echo json_encode([
         'status' => 'success',
         'verificacion' => $convertir($this->encuestaModel->getEvidencias($registro->id, 'VERIFICACION_CAMPO')),
-        'formatos_tecnicos' => $convertir($this->encuestaModel->getEvidencias($registro->id, 'FORMATOS_TECNICOS'))
+        'formatos_tecnicos' => [],
+        'formatos_tecnicos_total' => count($formatosTecnicos),
+        'formatos_tecnicos_protegidos' => true,
+        'documentos_sensibles_protegidos' => true
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

@@ -49,6 +49,18 @@ class Expediente extends Controller {
     }
 
     public function imprimirSolicitud($id) {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            die('Sesion expirada.');
+        }
+
+        if (($_SESSION['rol'] ?? '') === 'consulta') {
+            http_response_code(403);
+            die('Documento protegido para el perfil Comite.');
+        }
+
         // Limpiar cualquier salida previa para evitar corrupción del PDF
         if (ob_get_level()) ob_end_clean();
 

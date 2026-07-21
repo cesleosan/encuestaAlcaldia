@@ -323,6 +323,24 @@
             font-weight: 700;
         }
 
+        .protected-card {
+            border: 1px dashed #d8b8c8;
+            border-radius: 16px;
+            background: #fff8fb;
+            padding: 18px;
+            color: var(--tc-primary);
+        }
+
+        .protected-card .protected-icon {
+            width: 44px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            border-radius: 14px;
+            background: var(--tc-primary-soft);
+            margin-bottom: 10px;
+        }
+
         @media (prefers-color-scheme: dark) {
             body,
             .consulta-hero,
@@ -386,7 +404,7 @@
             <div>
                 <span class="consulta-pill mb-2"><i class="fas fa-shield-halved"></i> Sin editar c&eacute;dula</span>
                 <h1>Bandeja de Comit&eacute;</h1>
-                <p>Consulta de folios enviados por Captura a Comit&eacute;. Revisa datos, documentos e im&aacute;genes sin modificar la c&eacute;dula ni el estatus.</p>
+                <p>Consulta de folios enviados por Captura a Comit&eacute;. Los datos sensibles y documentos personales se muestran protegidos.</p>
             </div>
         </div>
         <div class="d-flex gap-2 flex-wrap">
@@ -455,7 +473,7 @@
             <div class="consulta-toolbar-controls">
                 <div class="consulta-search">
                     <i class="fas fa-magnifying-glass"></i>
-                    <input id="buscarConsulta" class="form-control" placeholder="Buscar folio, productor, CURP, colonia o actividad">
+                    <input id="buscarConsulta" class="form-control" placeholder="Buscar folio, productor, colonia o actividad">
                 </div>
                 <select id="filtroEstatusConsulta" class="form-select" style="max-width:230px;">
                     <option value="COMITE">Estatus: Comit&eacute;</option>
@@ -472,19 +490,18 @@
                     <tr>
                         <th class="ps-3">Folio</th>
                         <th>Productor</th>
-                        <th>CURP</th>
                         <th>Colonia / Pueblo</th>
                         <th>Actividad</th>
                         <th class="text-center">Superficie</th>
                         <th class="text-center">Fecha</th>
                         <th class="text-center">Estatus</th>
-                        <th class="text-center">Im&aacute;genes</th>
+                        <th class="text-center">Indicadores</th>
                         <th class="text-center">Acci&oacute;n</th>
                     </tr>
                 </thead>
                 <tbody id="consultaBody">
                     <tr>
-                        <td colspan="10">
+                        <td colspan="9">
                             <div class="tc-empty-state">
                                 <div class="tc-empty-state-icon"><i class="fas fa-spinner fa-spin"></i></div>
                                 <div class="fw-semibold">Cargando folios de Comit&eacute;...</div>
@@ -523,14 +540,14 @@
                     <div class="card-body">
                         <div class="alert alert-light border mb-0">
                             <div class="fw-bold text-guinda mb-1">Este expediente fue enviado a Comit&eacute; por el perfil de Captura.</div>
-                            <div class="small text-muted">El perfil Comit&eacute; revisa la informaci&oacute;n, documentos e im&aacute;genes, pero no aprueba ni cambia estatus.</div>
+                            <div class="small text-muted">El perfil Comit&eacute; revisa datos operativos. CURP, RFC, tel&eacute;fonos y documentos con datos personales permanecen ocultos.</div>
                         </div>
                     </div>
                 </div>
 
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                        <h6 class="m-0 fw-bold text-guinda"><i class="fas fa-images me-2"></i>Im&aacute;genes del expediente</h6>
+                        <h6 class="m-0 fw-bold text-guinda"><i class="fas fa-images me-2"></i>Evidencias visibles e indicadores documentales</h6>
                         <small class="text-muted" id="modalImagenesStatus">Consultando...</small>
                     </div>
                     <div class="card-body" id="visorImagenesContenido">
@@ -603,7 +620,7 @@ function tieneCoordenadas(reg) {
 }
 
 function estadoVacio(mensaje, ayuda = 'Cuando Captura env&iacute;e un expediente a Comit&eacute; aparecer&aacute; aqu&iacute;.', icono = 'fa-folder-open') {
-    return `<tr><td colspan="10"><div class="tc-empty-state">
+    return `<tr><td colspan="9"><div class="tc-empty-state">
         <div class="tc-empty-state-icon"><i class="fas ${icono}"></i></div>
         <div class="fw-semibold">${mensaje}</div>
         <small>${ayuda}</small>
@@ -642,14 +659,13 @@ function renderConsulta(registros) {
                         <div class="case-title">${escapar(productor)}</div>
                         <div class="case-subtitle">Captur&oacute;: ${escapar(reg.encuestador || 'Sin dato')}</div>
                     </td>
-                    <td><span class="font-monospace">${escapar(reg.curp || 'Sin dato')}</span></td>
                     <td>${escapar(valorCorto(reg.colonia_nombre))}</td>
                     <td>${escapar(valorCorto(reg.actividad_principal || reg.linea_ayuda))}</td>
                     <td class="text-center">${Number.isFinite(superficie) ? superficie.toFixed(2) : '0.00'} ha</td>
                     <td class="text-center">${escapar(fechaCorta(reg.fecha_inicio))}</td>
                     <td class="text-center">${badgeComite()}</td>
                     <td class="text-center">
-                        <span class="badge text-bg-light border"><i class="fas fa-images me-1"></i>${imagenes}</span>
+                        <span class="badge text-bg-light border"><i class="fas fa-shield-halved me-1"></i>${imagenes}</span>
                     </td>
                     <td class="text-center">
                         <button class="btn btn-sm btn-outline-secondary" type="button" onclick="abrirDetalle(${Number(reg.id)})">
@@ -671,7 +687,6 @@ function aplicarFiltrosConsulta() {
         const busqueda = normalizar([
             reg.folio,
             nombreCompleto(reg),
-            reg.curp,
             reg.colonia_nombre,
             reg.actividad_principal,
             reg.linea_ayuda,
@@ -750,6 +765,10 @@ function siNo(valor) {
     return Number(valor || 0) === 1 ? 'SI' : 'NO';
 }
 
+function docProtegido(valor) {
+    return Number(valor || 0) === 1 ? 'Cargado - protegido' : 'No cargado';
+}
+
 function detalleSeccion(titulo, icono, items) {
     return `<section class="cedula-section">
         <div class="cedula-section-title"><i class="fas ${icono}"></i>${titulo}</div>
@@ -771,17 +790,13 @@ function renderDetalleCaso(reg) {
         detalleSeccion('Identidad del solicitante', 'fa-id-card', [
             ['Folio', reg.folio],
             ['Productor', nombreCompleto(reg)],
-            ['CURP', reg.curp],
-            ['RFC', pick(reg, plano, ['rfc'])],
+            ['Datos sensibles', 'CURP y RFC protegidos'],
             ['Tipo de identificaci&oacute;n', pick(reg, plano, ['tipo_id'])],
-            ['N&uacute;mero de identificaci&oacute;n', pick(reg, plano, ['numero_id'])],
             ['Fecha de nacimiento', pick(reg, plano, ['fecha_nacimiento'])],
             ['Sexo', pick(reg, plano, ['sexo'])]
         ]),
         detalleSeccion('Contacto y ubicaci&oacute;n', 'fa-location-dot', [
-            ['Tel&eacute;fono particular', pick(reg, plano, ['tel_particular'])],
-            ['Tel&eacute;fono de casa', pick(reg, plano, ['tel_casa'])],
-            ['Tel&eacute;fono familiar/recados', pick(reg, plano, ['tel_familiar', 'tel_recados'])],
+            ['Tel&eacute;fonos', 'Protegidos para Comit&eacute;'],
             ['Calle y n&uacute;mero', pick(reg, plano, ['calle', 'calle_numero'])],
             ['N&uacute;mero exterior', pick(reg, plano, ['numero_exterior'])],
             ['N&uacute;mero interior', pick(reg, plano, ['numero_interior'])],
@@ -820,16 +835,16 @@ function renderDetalleCaso(reg) {
             ['Pueblo / colonia UP', pick(reg, plano, ['pueblo_colonia_up'])],
             ['Parajes', pick(reg, plano, ['parajes'])],
             ['Tenencia de tierra', pick(reg, plano, ['tenencia_tierra'])],
-            ['Solicitud', siNo(reg.check_solicitud)],
-            ['Identidad', siNo(reg.check_identidad)],
-            ['Domicilio', siNo(reg.check_domicilio)],
-            ['CURP doc.', siNo(reg.check_curp_doc)],
-            ['RFC doc.', siNo(reg.check_rfc_doc)],
-            ['Manifiesto', siNo(reg.check_manifiesto)],
-            ['Propiedad', siNo(reg.check_propiedad)],
-            ['Finiquito', siNo(reg.check_finiquito)],
-            ['SINIIGA doc.', siNo(reg.check_siniiga_doc)],
-            ['Formatos t&eacute;cnicos', siNo(reg.check_formatos_tecnicos)]
+            ['Solicitud', docProtegido(reg.check_solicitud)],
+            ['Identidad / INE', docProtegido(reg.check_identidad)],
+            ['Domicilio', docProtegido(reg.check_domicilio)],
+            ['CURP doc.', docProtegido(reg.check_curp_doc)],
+            ['RFC doc.', docProtegido(reg.check_rfc_doc)],
+            ['Manifiesto', docProtegido(reg.check_manifiesto)],
+            ['Propiedad', docProtegido(reg.check_propiedad)],
+            ['Finiquito', docProtegido(reg.check_finiquito)],
+            ['SINIIGA doc.', docProtegido(reg.check_siniiga_doc)],
+            ['Formatos t&eacute;cnicos', docProtegido(reg.check_formatos_tecnicos)]
         ]),
         detalleSeccion('Proceso y verificaci&oacute;n', 'fa-clipboard-check', [
             ['Capturista / T&eacute;cnico', reg.encuestador],
@@ -864,6 +879,22 @@ function renderGrupoImagenes(titulo, fotos, icono) {
     </section>`;
 }
 
+function renderGrupoProtegido(titulo, total, icono) {
+    return `<section class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold text-guinda mb-0"><i class="fas ${icono} me-2"></i>${titulo}</h6>
+            <span class="badge text-bg-light border">${Number(total || 0)}</span>
+        </div>
+        <div class="protected-card">
+            <div class="protected-icon"><i class="fas fa-shield-halved"></i></div>
+            <div class="fw-bold">Documento cargado, visualizaci&oacute;n protegida</div>
+            <div class="small text-muted mt-1">
+                Este archivo puede contener CURP, RFC, tel&eacute;fonos, INE o informaci&oacute;n personal. Comit&eacute; solo ve el indicador de existencia.
+            </div>
+        </div>
+    </section>`;
+}
+
 function cargarImagenes(id) {
     const contenido = document.getElementById('visorImagenesContenido');
     const status = document.getElementById('modalImagenesStatus');
@@ -877,10 +908,11 @@ function cargarImagenes(id) {
         })
         .then(data => {
             const formatos = data.formatos_tecnicos || [];
+            const formatosTotal = Number(data.formatos_tecnicos_total || formatos.length || 0);
             const verificacion = data.verificacion || [];
-            status.textContent = `${formatos.length + verificacion.length} imagen(es)`;
+            status.textContent = `${verificacion.length} imagen(es) visible(s), ${formatosTotal} documento(s) protegido(s)`;
             contenido.innerHTML = [
-                renderGrupoImagenes('Formatos t&eacute;cnicos', formatos, 'fa-file-image'),
+                renderGrupoProtegido('Formatos t&eacute;cnicos', formatosTotal, 'fa-file-shield'),
                 renderGrupoImagenes('Evidencias de campo', verificacion, 'fa-camera')
             ].join('');
         })

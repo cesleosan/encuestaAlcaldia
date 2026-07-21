@@ -364,6 +364,24 @@ public function getEvidenciaById($id) {
     return $this->db->single();
 }
 
+public function getEvidenciaCompletaById($id) {
+    $this->db->query("
+        SELECT ev.id, ev.encuesta_id, ev.ruta_archivo, ev.tipo_evidencia, e.fase_proceso, e.folio
+        FROM encuesta_evidencias ev
+        INNER JOIN encuestas e ON e.id = ev.encuesta_id
+        WHERE ev.id = :id
+        LIMIT 1
+    ");
+    $this->db->bind(':id', $id);
+    return $this->db->single();
+}
+
+public function getEncuestaPorFolio($folio) {
+    $this->db->query("SELECT * FROM encuestas WHERE folio = :folio LIMIT 1");
+    $this->db->bind(':folio', $folio);
+    return $this->db->single();
+}
+
 // Borrar el registro de la tabla
 public function eliminarEvidenciaRow($id) {
     $this->db->query("DELETE FROM encuesta_evidencias WHERE id = :id");

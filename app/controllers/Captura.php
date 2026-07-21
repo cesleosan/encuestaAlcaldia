@@ -284,7 +284,7 @@ public function verificarArchivos($id) {
                 if (!isset($porTipo[$tipo]) || $mtime > $porTipo[$tipo]['mtime']) {
                     $porTipo[$tipo] = [
                         'tipo' => $tipo,
-                        'url'  => URLROOT . '/uploads/expedientes/' . $folioCarpeta . '/' . rawurlencode($f) . '?v=' . $mtime,
+                        'url'  => URLROOT . '/ArchivoSeguro/expediente/' . rawurlencode($folioCarpeta) . '/' . rawurlencode($f) . '?v=' . $mtime,
                         'mtime' => $mtime
                     ];
                 }
@@ -319,7 +319,7 @@ public function getFotosEvidencia($id) {
                 // Construir la URL completa
                 $data[] = [
                     'id' => $f->id,
-                    'url' => URLROOT . '/' . $f->ruta_archivo
+                    'url' => URLROOT . '/ArchivoSeguro/evidencia/' . (int)$f->id
                 ];
             }
         }
@@ -382,7 +382,7 @@ public function getFormatosTecnicos($id) {
         foreach ($fotos as $f) {
             $data[] = [
                 'id' => $f->id,
-                'url' => URLROOT . '/' . $f->ruta_archivo
+                'url' => URLROOT . '/ArchivoSeguro/evidencia/' . (int)$f->id
             ];
         }
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
