@@ -155,6 +155,29 @@
             background: #fff8fb !important;
         }
 
+        .consulta-board tbody tr {
+            border-left: 4px solid transparent;
+            transition: background .16s ease, border-color .16s ease;
+        }
+
+        .consulta-board tbody tr:hover {
+            border-left-color: var(--tc-primary);
+        }
+
+        .consulta-board .btn-outline-secondary {
+            border-radius: 14px;
+            font-weight: 800;
+            border-color: #d5dce6;
+            color: #526173;
+            background: #fff;
+        }
+
+        .consulta-board .btn-outline-secondary:hover {
+            background: var(--tc-primary-soft);
+            border-color: #d8b8c8;
+            color: var(--tc-primary);
+        }
+
         .consulta-toolbar {
             display: flex;
             justify-content: space-between;
@@ -208,6 +231,11 @@
         }
 
         .badge-comite {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            white-space: nowrap;
             background: var(--tc-primary-soft);
             color: var(--tc-primary);
             border: 1px solid #e2c8d5;
@@ -219,6 +247,10 @@
         }
 
         .badge-readonly {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
             background: #eef6ff;
             color: #0b5ed7;
             border: 1px solid #cde4ff;
@@ -244,6 +276,18 @@
             background: #fff;
             border-radius: 16px;
             padding: 13px;
+            transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+        }
+
+        .detalle-pill:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(20, 32, 54, .06);
+        }
+
+        .detalle-pill.is-protected {
+            border: 1px dashed #d9b6c7;
+            background:
+                linear-gradient(135deg, rgba(248, 237, 243, .96), rgba(255, 255, 255, .98));
         }
 
         .detalle-pill .label {
@@ -262,12 +306,25 @@
             word-break: break-word;
         }
 
+        .detalle-pill.is-protected .value {
+            color: var(--tc-primary);
+            display: flex;
+            align-items: flex-start;
+            gap: 7px;
+        }
+
+        .detalle-pill.is-protected .value i {
+            margin-top: 3px;
+            flex: 0 0 auto;
+        }
+
         .cedula-section {
             border: 1px solid #eef0f4;
             border-radius: 18px;
             background: #fff;
             padding: 16px;
             margin-bottom: 16px;
+            box-shadow: 0 8px 20px rgba(20, 32, 54, .035);
         }
 
         .cedula-section-title {
@@ -324,11 +381,28 @@
         }
 
         .protected-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
             border: 1px dashed #d8b8c8;
-            border-radius: 16px;
-            background: #fff8fb;
-            padding: 18px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #fff8fb, #ffffff);
+            padding: 16px;
             color: var(--tc-primary);
+        }
+
+        #detalleConsultaModal .modal-dialog {
+            max-width: min(1260px, calc(100vw - 28px));
+        }
+
+        #detalleConsultaModal .modal-body {
+            background:
+                radial-gradient(circle at top right, rgba(119, 51, 87, .05), transparent 28rem),
+                #f6f8fb !important;
+        }
+
+        #detalleConsultaModal .modal-footer {
+            box-shadow: 0 -8px 24px rgba(20, 32, 54, .04);
         }
 
         .protected-card .protected-icon {
@@ -338,7 +412,7 @@
             place-items: center;
             border-radius: 14px;
             background: var(--tc-primary-soft);
-            margin-bottom: 10px;
+            flex: 0 0 auto;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -619,7 +693,7 @@ function tieneCoordenadas(reg) {
     return Boolean((reg.latitud_verif && reg.longitud_verif) || (reg.latitud && reg.longitud));
 }
 
-function estadoVacio(mensaje, ayuda = 'Cuando Captura env&iacute;e un expediente a Comit&eacute; aparecer&aacute; aqu&iacute;.', icono = 'fa-folder-open') {
+function estadoVacio(mensaje, ayuda = 'Cuando Captura envíe un expediente a Comité aparecerá aquí.', icono = 'fa-folder-open') {
     return `<tr><td colspan="9"><div class="tc-empty-state">
         <div class="tc-empty-state-icon"><i class="fas ${icono}"></i></div>
         <div class="fw-semibold">${mensaje}</div>
@@ -628,7 +702,7 @@ function estadoVacio(mensaje, ayuda = 'Cuando Captura env&iacute;e un expediente
 }
 
 function badgeComite() {
-    return '<span class="badge-comite"><i class="fas fa-people-group me-1"></i>COMIT&Eacute;</span>';
+    return '<span class="badge-comite"><i class="fas fa-people-group me-1"></i>COMITÉ</span>';
 }
 
 function actualizarKpis(registrosBase) {
@@ -657,7 +731,7 @@ function renderConsulta(registros) {
                     </td>
                     <td>
                         <div class="case-title">${escapar(productor)}</div>
-                        <div class="case-subtitle">Captur&oacute;: ${escapar(reg.encuestador || 'Sin dato')}</div>
+                        <div class="case-subtitle">Capturó: ${escapar(reg.encuestador || 'Sin dato')}</div>
                     </td>
                     <td>${escapar(valorCorto(reg.colonia_nombre))}</td>
                     <td>${escapar(valorCorto(reg.actividad_principal || reg.linea_ayuda))}</td>
@@ -711,16 +785,18 @@ function cargarRegistrosConsulta() {
             renderConsulta(registrosConsulta);
         })
         .catch(() => {
-            document.getElementById('consultaBody').innerHTML = estadoVacio('No fue posible cargar los folios', 'Revisa la sesi&oacute;n o intenta actualizar la pantalla.', 'fa-triangle-exclamation');
-            document.getElementById('consultaConteo').innerHTML = '<i class="fas fa-circle-exclamation me-1"></i>Sin conexi&oacute;n';
+            document.getElementById('consultaBody').innerHTML = estadoVacio('No fue posible cargar los folios', 'Revisa la sesión o intenta actualizar la pantalla.', 'fa-triangle-exclamation');
+            document.getElementById('consultaConteo').innerHTML = '<i class="fas fa-circle-exclamation me-1"></i>Sin conexión';
         });
 }
 
 function detalleItem(label, value) {
+    const valor = valorCorto(value);
+    const protegido = normalizar(valor).includes('protegido');
     return `<div class="col-md-4 col-xl-3">
-        <div class="detalle-pill">
+        <div class="detalle-pill${protegido ? ' is-protected' : ''}">
             <div class="label">${label}</div>
-            <div class="value">${escapar(valorCorto(value))}</div>
+            <div class="value">${protegido ? '<i class="fas fa-shield-halved"></i>' : ''}${escapar(valor)}</div>
         </div>
     </div>`;
 }
@@ -791,45 +867,45 @@ function renderDetalleCaso(reg) {
             ['Folio', reg.folio],
             ['Productor', nombreCompleto(reg)],
             ['Datos sensibles', 'CURP y RFC protegidos'],
-            ['Tipo de identificaci&oacute;n', pick(reg, plano, ['tipo_id'])],
+            ['Tipo de identificación', pick(reg, plano, ['tipo_id'])],
             ['Fecha de nacimiento', pick(reg, plano, ['fecha_nacimiento'])],
             ['Sexo', pick(reg, plano, ['sexo'])]
         ]),
-        detalleSeccion('Contacto y ubicaci&oacute;n', 'fa-location-dot', [
-            ['Tel&eacute;fonos', 'Protegidos para Comit&eacute;'],
-            ['Calle y n&uacute;mero', pick(reg, plano, ['calle', 'calle_numero'])],
-            ['N&uacute;mero exterior', pick(reg, plano, ['numero_exterior'])],
-            ['N&uacute;mero interior', pick(reg, plano, ['numero_interior'])],
+        detalleSeccion('Contacto y ubicación', 'fa-location-dot', [
+            ['Teléfonos', 'Protegidos para Comité'],
+            ['Calle y número', pick(reg, plano, ['calle', 'calle_numero'])],
+            ['Número exterior', pick(reg, plano, ['numero_exterior'])],
+            ['Número interior', pick(reg, plano, ['numero_interior'])],
             ['Colonia / Pueblo', pick(reg, plano, ['colonia_nombre', 'pueblo_colonia'])],
-            ['C&oacute;digo postal', pick(reg, plano, ['codigo_postal', 'cp'])],
+            ['Código postal', pick(reg, plano, ['codigo_postal', 'cp'])],
             ['Referencia', pick(reg, plano, ['referencia'])],
             ['Latitud original', pick(reg, plano, ['latitud'])],
             ['Longitud original', pick(reg, plano, ['longitud'])],
-            ['Precisi&oacute;n GPS', pick(reg, plano, ['precision_gps'])]
+            ['Precisión GPS', pick(reg, plano, ['precision_gps'])]
         ]),
         detalleSeccion('Perfil social', 'fa-user-group', [
             ['Estado civil', pick(reg, plano, ['estado_civil'])],
             ['Escolaridad', pick(reg, plano, ['escolaridad', 'grado_estudios'])],
-            ['Ocupaci&oacute;n', pick(reg, plano, ['ocupacion'])],
-            ['Grupo &eacute;tnico', pick(reg, plano, ['grupo_etnico'])],
-            ['Grupo &eacute;tnico - cu&aacute;l', pick(reg, plano, ['grupo_etnico_cual'])],
+            ['Ocupación', pick(reg, plano, ['ocupacion'])],
+            ['Grupo étnico', pick(reg, plano, ['grupo_etnico'])],
+            ['Grupo étnico - cuál', pick(reg, plano, ['grupo_etnico_cual'])],
             ['Tiene discapacidad', pick(reg, plano, ['tiene_discapacidad'])],
-            ['Discapacidad - cu&aacute;l', pick(reg, plano, ['cual_discapacidad'])],
+            ['Discapacidad - cuál', pick(reg, plano, ['cual_discapacidad'])],
             ['Residencia en Tlalpan', pick(reg, plano, ['tiempo_residencia_tlalpan', 'tiempo_residencia'])],
             ['Residencia en CDMX', pick(reg, plano, ['tiempo_residencia_cdmx'])]
         ]),
-        detalleSeccion('Producci&oacute;n y unidad productiva', 'fa-seedling', [
-            ['L&iacute;nea de ayuda', pick(reg, plano, ['linea_ayuda', 'tipo_produccion'])],
+        detalleSeccion('Producción y unidad productiva', 'fa-seedling', [
+            ['Línea de ayuda', pick(reg, plano, ['linea_ayuda', 'tipo_produccion'])],
             ['Actividad principal', pick(reg, plano, ['actividad_principal'])],
             ['Cultivo / especie principal', pick(reg, plano, ['especie_cultivo_principal', 'cultivo_principal'])],
             ['Superficie productiva', Number.isFinite(superficie) ? `${superficie.toFixed(2)} ha` : pick(reg, plano, ['superficie_total', 'superficie_prod'])],
-            ['Volumen de producci&oacute;n', Number.isFinite(volumen) ? volumen.toFixed(2) : pick(reg, plano, ['volumen_total', 'volumen_prod'])],
+            ['Volumen de producción', Number.isFinite(volumen) ? volumen.toFixed(2) : pick(reg, plano, ['volumen_total', 'volumen_prod'])],
             ['Unidad de medida', pick(reg, plano, ['unidad_medida'])],
-            ['N&uacute;mero de animales / colmenas', pick(reg, plano, ['numero_cabezas_colmenas', 'num_animales'])],
+            ['Número de animales / colmenas', pick(reg, plano, ['numero_cabezas_colmenas', 'num_animales'])],
             ['Registro SINIIGA', pick(reg, plano, ['registro_siniiga', 'siniiga_status'])],
             ['Total de predios', pick(reg, plano, ['num_total_predios'])]
         ]),
-        detalleSeccion('Tierra y documentaci&oacute;n', 'fa-file-signature', [
+        detalleSeccion('Tierra y documentación', 'fa-file-signature', [
             ['Tipo documento propiedad', pick(reg, plano, ['tipo_documento_propiedad', 'tipo_documento_prop'])],
             ['Superficie documental', Number.isFinite(superficieDoc) ? `${superficieDoc.toFixed(4)} ha` : pick(reg, plano, ['superficie_documental'])],
             ['Pueblo / colonia UP', pick(reg, plano, ['pueblo_colonia_up'])],
@@ -844,17 +920,17 @@ function renderDetalleCaso(reg) {
             ['Propiedad', docProtegido(reg.check_propiedad)],
             ['Finiquito', docProtegido(reg.check_finiquito)],
             ['SINIIGA doc.', docProtegido(reg.check_siniiga_doc)],
-            ['Formatos t&eacute;cnicos', docProtegido(reg.check_formatos_tecnicos)]
+            ['Formatos técnicos', docProtegido(reg.check_formatos_tecnicos)]
         ]),
-        detalleSeccion('Proceso y verificaci&oacute;n', 'fa-clipboard-check', [
-            ['Capturista / T&eacute;cnico', reg.encuestador],
+        detalleSeccion('Proceso y verificación', 'fa-clipboard-check', [
+            ['Capturista / Técnico', reg.encuestador],
             ['Fecha de captura', fechaCorta(reg.fecha_inicio)],
-            ['Fecha conclusi&oacute;n', fechaCorta(reg.fecha_conclusion)],
+            ['Fecha conclusión', fechaCorta(reg.fecha_conclusion)],
             ['Fase actual', 'COMITE'],
             ['Estatus operativo', reg.estatus || 'Comite'],
             ['Latitud verificada', pick(reg, plano, ['latitud_verif'])],
             ['Longitud verificada', pick(reg, plano, ['longitud_verif'])],
-            ['Fotos de verificaci&oacute;n', reg.total_fotos || 0],
+            ['Fotos de verificación', reg.total_fotos || 0],
             ['Observaciones capturista', pick(reg, plano, ['observaciones_capturista'])]
         ])
     ].join('');
@@ -874,7 +950,7 @@ function renderGrupoImagenes(titulo, fotos, icono) {
                         <span><i class="fas fa-up-right-from-square me-1"></i>Abrir imagen ${index + 1}</span>
                     </a>
                 </div>
-            `).join('') : '<div class="col-12 text-muted small">Sin im&aacute;genes disponibles.</div>'}
+            `).join('') : '<div class="col-12 text-muted small">Sin imágenes disponibles.</div>'}
         </div>
     </section>`;
 }
@@ -887,9 +963,9 @@ function renderGrupoProtegido(titulo, total, icono) {
         </div>
         <div class="protected-card">
             <div class="protected-icon"><i class="fas fa-shield-halved"></i></div>
-            <div class="fw-bold">Documento cargado, visualizaci&oacute;n protegida</div>
+            <div class="fw-bold">Documento cargado, visualización protegida</div>
             <div class="small text-muted mt-1">
-                Este archivo puede contener CURP, RFC, tel&eacute;fonos, INE o informaci&oacute;n personal. Comit&eacute; solo ve el indicador de existencia.
+                Este archivo puede contener CURP, RFC, teléfonos, INE o información personal. Comité solo ve el indicador de existencia.
             </div>
         </div>
     </section>`;
@@ -898,7 +974,7 @@ function renderGrupoProtegido(titulo, total, icono) {
 function cargarImagenes(id) {
     const contenido = document.getElementById('visorImagenesContenido');
     const status = document.getElementById('modalImagenesStatus');
-    contenido.innerHTML = '<div class="tc-empty-state"><div class="tc-empty-state-icon"><i class="fas fa-spinner fa-spin"></i></div>Cargando im&aacute;genes...</div>';
+    contenido.innerHTML = '<div class="tc-empty-state"><div class="tc-empty-state-icon"><i class="fas fa-spinner fa-spin"></i></div>Cargando imágenes...</div>';
     status.textContent = 'Consultando...';
 
     fetch(`${URLROOT_CONSULTA}/Encuesta/getEvidenciasConsulta/${id}`, { cache: 'no-store' })
@@ -912,13 +988,13 @@ function cargarImagenes(id) {
             const verificacion = data.verificacion || [];
             status.textContent = `${verificacion.length} imagen(es) visible(s), ${formatosTotal} documento(s) protegido(s)`;
             contenido.innerHTML = [
-                renderGrupoProtegido('Formatos t&eacute;cnicos', formatosTotal, 'fa-file-shield'),
+                renderGrupoProtegido('Formatos técnicos', formatosTotal, 'fa-file-shield'),
                 renderGrupoImagenes('Evidencias de campo', verificacion, 'fa-camera')
             ].join('');
         })
         .catch(() => {
             status.textContent = 'Error';
-            contenido.innerHTML = '<div class="alert alert-danger mb-0">No fue posible cargar las im&aacute;genes del expediente.</div>';
+            contenido.innerHTML = '<div class="alert alert-danger mb-0">No fue posible cargar las imágenes del expediente.</div>';
         });
 }
 
