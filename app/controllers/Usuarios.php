@@ -14,10 +14,12 @@ class Usuarios extends Controller {
             exit;
         }
 
+        $listaTierra = $this->filtrarUsuariosTierra($this->usuarioModel->getMonitoreoAccesos());
+
         $datos = [
             'titulo' => 'Control de accesos',
-            'lista' => $this->usuarioModel->getMonitoreoAccesos(),
-            'resumen' => $this->usuarioModel->getResumenAccesos()
+            'lista' => $listaTierra,
+            'resumen' => $this->resumenUsuarios($listaTierra)
         ];
 
         $this->view('usuarios/index', $datos);
@@ -49,6 +51,10 @@ class Usuarios extends Controller {
             return $this->jsonResponse(['ok' => false, 'mensaje' => 'Usuario no encontrado'], 404);
         }
 
+        if (strtoupper((string)($usuarioActual->modulo ?? '')) !== 'TIERRA') {
+            return $this->jsonResponse(['ok' => false, 'mensaje' => 'Este módulo solo administra usuarios de Tierra con Corazón'], 403);
+        }
+
         if ($id === (int)($_SESSION['user_id'] ?? 0)) {
             $rol = strtolower(trim((string)($_POST['rol'] ?? $usuarioActual->rol)));
             if ($estadoSolicitado !== 'activo' || $rol !== strtolower((string)($usuarioActual->rol ?? ''))) {
@@ -60,7 +66,7 @@ class Usuarios extends Controller {
             'nombre_completo' => $_POST['nombre_completo'] ?? '',
             'telefono' => $_POST['telefono'] ?? '',
             'rol' => $_POST['rol'] ?? '',
-            'modulo' => $_POST['modulo'] ?? '',
+            'modulo' => 'TIERRA',
             'estado_acceso' => $estadoSolicitado
         ]);
 
@@ -87,6 +93,15 @@ class Usuarios extends Controller {
 
         if ($id <= 0 || !in_array($estado, ['activo', 'pausado', 'inactivo'], true)) {
             return $this->jsonResponse(['ok' => false, 'mensaje' => 'Datos inválidos'], 422);
+        }
+
+        $usuarioActual = $this->usuarioModel->obtenerUsuarioPorId($id);
+        if (!$usuarioActual) {
+            return $this->jsonResponse(['ok' => false, 'mensaje' => 'Usuario no encontrado'], 404);
+        }
+
+        if (strtoupper((string)($usuarioActual->modulo ?? '')) !== 'TIERRA') {
+            return $this->jsonResponse(['ok' => false, 'mensaje' => 'Este módulo solo administra usuarios de Tierra con Corazón'], 403);
         }
 
         if ($id === (int)($_SESSION['user_id'] ?? 0) && $estado !== 'activo') {
@@ -132,6 +147,34 @@ class Usuarios extends Controller {
                 header('Location: ' . URLROOT . '/Dashboard/index');
                 break;
         }
+    }
+
+    private function filtrarUsuariosTierra($usuarios) {
+        return array_values(array_filter($usuarios ?: [], function($usuario) {
+            return strtoupper((string)($usuario->modulo ?? '')) === 'TIERRA';
+        }));
+    }
+
+    private function resumenUsuarios($usuarios) {
+        $resumen = [
+            'total' => count($usuarios ?: []),
+            'online' => 0,
+            'tierra' => 0,
+            'activos' => 0,
+            'pausados' => 0,
+            'inactivos' => 0
+        ];
+
+        foreach ($usuarios ?: [] as $usuario) {
+            $estado = strtolower((string)($usuario->estado_acceso ?? (((int)($usuario->activo ?? 0) === 1) ? 'activo' : 'inactivo')));
+            if ((int)($usuario->sesiones_activas ?? 0) > 0) $resumen['online']++;
+            if (strtoupper((string)($usuario->modulo ?? '')) === 'TIERRA') $resumen['tierra']++;
+            if ($estado === 'activo') $resumen['activos']++;
+            if ($estado === 'pausado') $resumen['pausados']++;
+            if ($estado === 'inactivo') $resumen['inactivos']++;
+        }
+
+        return $resumen;
     }
 
     private function jsonResponse($payload, $status = 200) {

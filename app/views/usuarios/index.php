@@ -47,6 +47,7 @@
 </header>
 
 <?php require APPROOT . '/views/inc/superuser_nav.php'; ?>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <section class="row g-3 mb-4">
     <div class="col-xl-3 col-md-6">
@@ -87,9 +88,7 @@
                 <input id="buscarUsuario" class="form-control ps-5" placeholder="Buscar usuario, nombre, rol, módulo o IP">
             </div>
             <select id="filtroModulo" class="form-select" style="max-width:180px;">
-                <option value="">Todos los módulos</option>
-                <option value="TIERRA">TIERRA</option>
-                <option value="VUT">VUT</option>
+                <option value="TIERRA" selected>TIERRA</option>
             </select>
             <select id="filtroEstado" class="form-select" style="max-width:170px;">
                 <option value="">Todos</option>
@@ -244,8 +243,8 @@
                         <label class="form-label fw-semibold">Módulo</label>
                         <select class="form-select" name="modulo" id="editarModulo" required>
                             <option value="TIERRA">TIERRA</option>
-                            <option value="VUT">VUT</option>
                         </select>
+                        <small class="text-muted">Este panel solo administra Tierra con Corazón.</small>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">Estado</label>
@@ -319,18 +318,56 @@ function getModalEditarUsuario() {
 }
 
 function notificarUsuario(mensaje, ok = true) {
-    if (window.Swal) {
-        Swal.fire({
-            icon: ok ? 'success' : 'error',
-            title: ok ? 'Listo' : 'Atención',
-            text: mensaje,
-            timer: ok ? 1400 : undefined,
-            showConfirmButton: !ok
-        });
+    if (!window.Swal) {
+        console.warn(mensaje);
         return;
     }
 
-    alert(mensaje);
+    Swal.fire({
+        icon: ok ? 'success' : 'error',
+        title: ok ? 'Listo' : 'Atención',
+        text: mensaje,
+        timer: ok ? 1500 : undefined,
+        showConfirmButton: !ok,
+        confirmButtonColor: '#9F2241',
+        background: '#ffffff',
+        color: '#1f2937'
+    });
+}
+
+function confirmarUsuario(opciones) {
+    if (!window.Swal) {
+        return Promise.resolve({ isConfirmed: true });
+    }
+
+    return Swal.fire({
+        icon: opciones.icon || 'question',
+        title: opciones.title || 'Confirmar acción',
+        text: opciones.text || '',
+        showCancelButton: true,
+        confirmButtonText: opciones.confirmButtonText || 'Sí, continuar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#9F2241',
+        cancelButtonColor: '#64748b',
+        reverseButtons: true,
+        background: '#ffffff',
+        color: '#1f2937'
+    });
+}
+
+function mostrarGuardandoUsuario(titulo = 'Guardando cambios...') {
+    if (!window.Swal) return;
+
+    Swal.fire({
+        title: titulo,
+        text: 'Espera un momento, estamos actualizando la información.',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        background: '#ffffff',
+        color: '#1f2937',
+        didOpen: () => Swal.showLoading()
+    });
 }
 
 function enviarUsuario(url, formData) {
@@ -517,23 +554,41 @@ document.querySelectorAll('.estado-acceso-select').forEach(select => {
     select.addEventListener('change', function() {
         const fila = this.closest('tr');
         const nuevoEstado = this.value;
-        const formData = new FormData();
-        formData.append('id', this.dataset.id);
-        formData.append('estado_acceso', nuevoEstado);
-        this.disabled = true;
+        const estadoAnterior = this.dataset.valorAnterior || fila.dataset.estadoAcceso || 'inactivo';
+        const meta = estadoAccesoUi[nuevoEstado] || estadoAccesoUi.inactivo;
 
-        enviarUsuario(`${URLROOT_USUARIOS}/Usuarios/estado`, formData)
-            .then(data => {
-                notificarUsuario(data.mensaje || 'Estado actualizado');
-                pintarEstadoFila(fila, data.estado_acceso || nuevoEstado);
-            })
-            .catch(error => {
-                this.value = this.dataset.valorAnterior || this.value;
-                notificarUsuario(error.message, false);
-            })
-            .finally(() => {
-                this.disabled = false;
-            });
+        confirmarUsuario({
+            icon: nuevoEstado === 'activo' ? 'question' : 'warning',
+            title: `Cambiar estado a ${meta.label}`,
+            text: `El usuario ${fila.dataset.usuario || ''} quedará en estado ${meta.label}.`,
+            confirmButtonText: 'Sí, cambiar'
+        }).then(resultado => {
+            if (!resultado.isConfirmed) {
+                this.value = estadoAnterior;
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('id', this.dataset.id);
+            formData.append('estado_acceso', nuevoEstado);
+            this.disabled = true;
+            mostrarGuardandoUsuario('Actualizando estado...');
+
+            enviarUsuario(`${URLROOT_USUARIOS}/Usuarios/estado`, formData)
+                .then(data => {
+                    if (window.Swal) Swal.close();
+                    pintarEstadoFila(fila, data.estado_acceso || nuevoEstado);
+                    notificarUsuario(data.mensaje || 'Estado actualizado');
+                })
+                .catch(error => {
+                    if (window.Swal) Swal.close();
+                    this.value = estadoAnterior;
+                    notificarUsuario(error.message, false);
+                })
+                .finally(() => {
+                    this.disabled = false;
+                });
+        });
     });
 });
 
@@ -554,27 +609,40 @@ document.querySelectorAll('.btn-editar-usuario').forEach(btn => {
 formEditarUsuario.addEventListener('submit', function(e) {
     e.preventDefault();
     const submit = this.querySelector('button[type="submit"]');
-    submit.disabled = true;
 
-    enviarUsuario(`${URLROOT_USUARIOS}/Usuarios/actualizar`, new FormData(this))
-        .then(data => {
-            const id = document.getElementById('editarUsuarioId').value;
-            const fila = filasUsuarios.find(item => item.dataset.id === id);
+    confirmarUsuario({
+        icon: 'question',
+        title: 'Guardar cambios',
+        text: 'Se actualizará la información del usuario de Tierra con Corazón.',
+        confirmButtonText: 'Sí, guardar'
+    }).then(resultado => {
+        if (!resultado.isConfirmed) return;
 
-            if (fila) {
-                actualizarFilaEditada(fila);
-                pintarEstadoFila(fila, data.estado_acceso || document.getElementById('editarEstado').value);
-            }
+        submit.disabled = true;
+        mostrarGuardandoUsuario('Guardando usuario...');
 
-            getModalEditarUsuario().hide();
-            notificarUsuario(data.mensaje || 'Usuario actualizado');
-        })
-        .catch(error => {
-            notificarUsuario(error.message, false);
-        })
-        .finally(() => {
-            submit.disabled = false;
-        });
+        enviarUsuario(`${URLROOT_USUARIOS}/Usuarios/actualizar`, new FormData(this))
+            .then(data => {
+                const id = document.getElementById('editarUsuarioId').value;
+                const fila = filasUsuarios.find(item => item.dataset.id === id);
+
+                if (fila) {
+                    actualizarFilaEditada(fila);
+                    pintarEstadoFila(fila, data.estado_acceso || document.getElementById('editarEstado').value);
+                }
+
+                if (window.Swal) Swal.close();
+                getModalEditarUsuario().hide();
+                notificarUsuario(data.mensaje || 'Usuario actualizado');
+            })
+            .catch(error => {
+                if (window.Swal) Swal.close();
+                notificarUsuario(error.message, false);
+            })
+            .finally(() => {
+                submit.disabled = false;
+            });
+    });
 });
 
 filtrarUsuarios();
