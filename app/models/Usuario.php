@@ -1,6 +1,7 @@
 <?php
 class Usuario {
     private $db;
+    private $tieneEstadoAcceso = null;
 
     public function __construct() {
         // Instancia la clase Database de tu núcleo MVC
@@ -13,7 +14,11 @@ class Usuario {
      */
     public function obtenerUsuarioPorNombre($usuario) {
         // Buscamos al usuario que esté activo
-        $this->db->query('SELECT * FROM usuarios WHERE usuario = :usuario AND activo = 1');
+        if ($this->existeColumnaUsuarios('estado_acceso')) {
+            $this->db->query("SELECT * FROM usuarios WHERE usuario = :usuario AND activo = 1 AND estado_acceso = 'activo'");
+        } else {
+            $this->db->query('SELECT * FROM usuarios WHERE usuario = :usuario AND activo = 1');
+        }
         $this->db->bind(':usuario', $usuario);
         
         // Retorna el objeto usuario (incluyendo el hash en $row->password)
@@ -46,6 +51,74 @@ class Usuario {
         $this->db->query('SELECT * FROM usuarios WHERE id = :id');
         $this->db->bind(':id', $id);
         return $this->db->single();
+    }
+
+    public function actualizarUsuarioAdmin($id, $data) {
+        $rolesPermitidos = ['root', 'supervisor', 'consulta', 'encuestador', 'capturista'];
+        $estado = $this->normalizarEstadoAcceso($data['estado_acceso'] ?? 'activo');
+        $rol = strtolower(trim((string)($data['rol'] ?? 'encuestador')));
+        $modulo = strtoupper(trim((string)($data['modulo'] ?? 'TIERRA')));
+        $nombre = trim((string)($data['nombre_completo'] ?? ''));
+        $telefono = trim((string)($data['telefono'] ?? ''));
+
+        if ($nombre === '') return false;
+        if (!in_array($rol, $rolesPermitidos, true)) return false;
+        if ($modulo === '') $modulo = 'TIERRA';
+
+        $activo = $estado === 'activo' ? 1 : 0;
+
+        if ($this->existeColumnaUsuarios('estado_acceso')) {
+            $this->db->query("
+                UPDATE usuarios
+                SET nombre_completo = :nombre_completo,
+                    telefono = :telefono,
+                    rol = :rol,
+                    modulo = :modulo,
+                    estado_acceso = :estado_acceso,
+                    activo = :activo
+                WHERE id = :id
+            ");
+            $this->db->bind(':estado_acceso', $estado);
+        } else {
+            $this->db->query("
+                UPDATE usuarios
+                SET nombre_completo = :nombre_completo,
+                    telefono = :telefono,
+                    rol = :rol,
+                    modulo = :modulo,
+                    activo = :activo
+                WHERE id = :id
+            ");
+        }
+
+        $this->db->bind(':id', (int)$id);
+        $this->db->bind(':nombre_completo', $nombre);
+        $this->db->bind(':telefono', $telefono !== '' ? $telefono : null);
+        $this->db->bind(':rol', $rol);
+        $this->db->bind(':modulo', $modulo);
+        $this->db->bind(':activo', $activo);
+        return $this->db->execute();
+    }
+
+    public function actualizarEstadoAcceso($id, $estado) {
+        $estado = $this->normalizarEstadoAcceso($estado);
+        $activo = $estado === 'activo' ? 1 : 0;
+
+        if ($this->existeColumnaUsuarios('estado_acceso')) {
+            $this->db->query("
+                UPDATE usuarios
+                SET estado_acceso = :estado_acceso,
+                    activo = :activo
+                WHERE id = :id
+            ");
+            $this->db->bind(':estado_acceso', $estado);
+        } else {
+            $this->db->query("UPDATE usuarios SET activo = :activo WHERE id = :id");
+        }
+
+        $this->db->bind(':id', (int)$id);
+        $this->db->bind(':activo', $activo);
+        return $this->db->execute();
     }
 
     public function registrarInicioSesion($usuarioId, $sessionId, $ip, $userAgent) {
@@ -92,6 +165,8 @@ class Usuario {
     }
 
     public function getMonitoreoAccesos() {
+        $estadoSelect = $this->selectEstadoAcceso('u');
+
         if ($this->existeTablaSesiones()) {
             try {
                 $this->db->query("
@@ -99,9 +174,11 @@ class Usuario {
                         u.id,
                         u.usuario,
                         u.nombre_completo,
+                        u.telefono,
                         u.rol,
                         u.modulo,
                         u.activo,
+                        {$estadoSelect} AS estado_acceso,
                         u.ultimo_acceso,
                         (
                             SELECT us.inicio
@@ -166,14 +243,18 @@ class Usuario {
     }
 
     private function getMonitoreoBasico() {
+        $estadoSelect = $this->selectEstadoAcceso('u');
+
         $this->db->query("
             SELECT
                 u.id,
                 u.usuario,
                 u.nombre_completo,
+                u.telefono,
                 u.rol,
                 u.modulo,
                 u.activo,
+                {$estadoSelect} AS estado_acceso,
                 u.ultimo_acceso,
                 u.ultimo_acceso AS ultimo_inicio,
                 u.ultimo_acceso AS ultima_actividad,
@@ -194,13 +275,18 @@ class Usuario {
             'total' => count($usuarios),
             'online' => 0,
             'tierra' => 0,
-            'activos' => 0
+            'activos' => 0,
+            'pausados' => 0,
+            'inactivos' => 0
         ];
 
         foreach ($usuarios as $usuario) {
+            $estado = $this->normalizarEstadoAcceso($usuario->estado_acceso ?? (((int)($usuario->activo ?? 0) === 1) ? 'activo' : 'inactivo'));
             if ((int)($usuario->sesiones_activas ?? 0) > 0) $resumen['online']++;
             if (($usuario->modulo ?? '') === 'TIERRA') $resumen['tierra']++;
-            if ((int)($usuario->activo ?? 0) === 1) $resumen['activos']++;
+            if ($estado === 'activo') $resumen['activos']++;
+            if ($estado === 'pausado') $resumen['pausados']++;
+            if ($estado === 'inactivo') $resumen['inactivos']++;
         }
 
         return $resumen;
@@ -213,5 +299,41 @@ class Usuario {
         } catch (Exception $e) {
             return false;
         }
+    }
+
+    private function existeColumnaUsuarios($columna) {
+        if ($columna === 'estado_acceso' && $this->tieneEstadoAcceso !== null) {
+            return $this->tieneEstadoAcceso;
+        }
+
+        try {
+            $this->db->query("SHOW COLUMNS FROM usuarios LIKE :columna");
+            $this->db->bind(':columna', $columna);
+            $existe = (bool)$this->db->single();
+
+            if ($columna === 'estado_acceso') {
+                $this->tieneEstadoAcceso = $existe;
+            }
+
+            return $existe;
+        } catch (Exception $e) {
+            if ($columna === 'estado_acceso') {
+                $this->tieneEstadoAcceso = false;
+            }
+            return false;
+        }
+    }
+
+    private function selectEstadoAcceso($alias = 'u') {
+        if ($this->existeColumnaUsuarios('estado_acceso')) {
+            return "COALESCE(NULLIF({$alias}.estado_acceso, ''), IF({$alias}.activo = 1, 'activo', 'inactivo'))";
+        }
+
+        return "IF({$alias}.activo = 1, 'activo', 'inactivo')";
+    }
+
+    private function normalizarEstadoAcceso($estado) {
+        $estado = strtolower(trim((string)$estado));
+        return in_array($estado, ['activo', 'pausado', 'inactivo'], true) ? $estado : 'inactivo';
     }
 }

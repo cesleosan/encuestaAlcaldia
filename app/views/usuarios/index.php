@@ -1,7 +1,7 @@
 <?php require_once APPROOT . '/views/inc/header_dashboard.php'; ?>
 <?php
     $usuarios = $data['lista'] ?? [];
-    $resumen = $data['resumen'] ?? ['total' => 0, 'online' => 0, 'tierra' => 0, 'activos' => 0];
+    $resumen = $data['resumen'] ?? ['total' => 0, 'online' => 0, 'tierra' => 0, 'activos' => 0, 'pausados' => 0, 'inactivos' => 0];
 
     $esc = function($valor) {
         return htmlspecialchars((string)($valor ?? ''), ENT_QUOTES, 'UTF-8');
@@ -19,6 +19,16 @@
         if (strpos($ua, 'mobile') !== false || strpos($ua, 'android') !== false || strpos($ua, 'iphone') !== false) return 'Movil';
         if (strpos($ua, 'tablet') !== false || strpos($ua, 'ipad') !== false) return 'Tablet';
         return 'Escritorio';
+    };
+
+    $estadoMeta = function($estado, $activo = 0) {
+        $estado = strtolower(trim((string)($estado ?: (((int)$activo === 1) ? 'activo' : 'inactivo'))));
+        $mapa = [
+            'activo' => ['label' => 'Activo', 'class' => 'success', 'icon' => 'fa-user-check'],
+            'pausado' => ['label' => 'Pausado', 'class' => 'warning', 'icon' => 'fa-user-clock'],
+            'inactivo' => ['label' => 'Inactivo', 'class' => 'danger', 'icon' => 'fa-user-slash']
+        ];
+        return $mapa[$estado] ?? $mapa['inactivo'];
     };
 
 ?>
@@ -86,13 +96,14 @@
                 <option value="online">Online</option>
                 <option value="offline">Offline</option>
                 <option value="activo">Activo</option>
+                <option value="pausado">Pausado</option>
                 <option value="inactivo">Inactivo</option>
             </select>
         </div>
     </div>
 
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" id="tablaUsuarios" style="min-width:1180px;">
+        <table class="table table-hover align-middle mb-0" id="tablaUsuarios" style="min-width:1320px;">
             <thead>
                 <tr>
                     <th class="ps-3">Estado</th>
@@ -104,7 +115,8 @@
                     <th>Ultima actividad</th>
                     <th>IP</th>
                     <th>Dispositivo</th>
-                    <th class="text-center">Activo</th>
+                    <th class="text-center">Acceso</th>
+                    <th class="text-center">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -113,8 +125,9 @@
                         $online = ((int)($u->sesiones_activas ?? 0) > 0);
                         $activo = ((int)($u->activo ?? 0) === 1);
                         $modulo = strtoupper((string)($u->modulo ?? ''));
+                        $estadoAcceso = strtolower((string)($u->estado_acceso ?? ($activo ? 'activo' : 'inactivo')));
+                        $estadoAccesoMeta = $estadoMeta($estadoAcceso, $u->activo ?? 0);
                         $estadoTexto = $online ? 'online' : 'offline';
-                        $activoTexto = $activo ? 'activo' : 'inactivo';
                         $textoBusqueda = strtolower(implode(' ', [
                             $u->usuario ?? '',
                             $u->nombre_completo ?? '',
@@ -122,14 +135,21 @@
                             $u->modulo ?? '',
                             $u->ip ?? '',
                             $estadoTexto,
-                            $activoTexto
+                            $estadoAcceso,
+                            $estadoAccesoMeta['label']
                         ]));
                     ?>
                     <tr
                         data-search="<?php echo $esc($textoBusqueda); ?>"
                         data-modulo="<?php echo $esc($modulo); ?>"
                         data-estado="<?php echo $esc($estadoTexto); ?>"
-                        data-activo="<?php echo $esc($activoTexto); ?>"
+                        data-activo="<?php echo $esc($estadoAcceso); ?>"
+                        data-id="<?php echo (int)($u->id ?? 0); ?>"
+                        data-usuario="<?php echo $esc($u->usuario ?? ''); ?>"
+                        data-nombre="<?php echo $esc($u->nombre_completo ?? ''); ?>"
+                        data-telefono="<?php echo $esc($u->telefono ?? ''); ?>"
+                        data-rol="<?php echo $esc($u->rol ?? ''); ?>"
+                        data-estado-acceso="<?php echo $esc($estadoAcceso); ?>"
                     >
                         <td class="ps-3">
                             <?php if($online): ?>
@@ -155,11 +175,21 @@
                         <td><span class="font-monospace small"><?php echo $esc($u->ip ?: 'Sin dato'); ?></span></td>
                         <td><?php echo $esc($dispositivo($u->user_agent ?? '')); ?></td>
                         <td class="text-center">
-                            <?php if($activo): ?>
-                                <span class="badge text-bg-success">Activo</span>
-                            <?php else: ?>
-                                <span class="badge text-bg-danger">Inactivo</span>
-                            <?php endif; ?>
+                            <div class="d-flex align-items-center justify-content-center gap-2">
+                                <span class="badge text-bg-<?php echo $esc($estadoAccesoMeta['class']); ?>">
+                                    <i class="fa-solid <?php echo $esc($estadoAccesoMeta['icon']); ?> me-1"></i><?php echo $esc($estadoAccesoMeta['label']); ?>
+                                </span>
+                                <select class="form-select form-select-sm estado-acceso-select" style="width:128px;" data-id="<?php echo (int)($u->id ?? 0); ?>" aria-label="Cambiar estado de acceso">
+                                    <option value="activo" <?php echo $estadoAcceso === 'activo' ? 'selected' : ''; ?>>Activo</option>
+                                    <option value="pausado" <?php echo $estadoAcceso === 'pausado' ? 'selected' : ''; ?>>Pausado</option>
+                                    <option value="inactivo" <?php echo $estadoAcceso === 'inactivo' ? 'selected' : ''; ?>>Inactivo</option>
+                                </select>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-outline-secondary btn-editar-usuario">
+                                <i class="fa-solid fa-pen-to-square me-1"></i>Editar
+                            </button>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -170,7 +200,7 @@
     <footer class="tc-table-footer d-flex justify-content-between align-items-center gap-3 flex-wrap">
         <span id="usuariosInfo"><?php echo count($usuarios); ?> usuario(s) visibles</span>
         <div class="d-flex align-items-center gap-2 flex-wrap">
-            <small class="text-muted"><i class="fa-solid fa-lock me-1"></i>Consulta operativa sin botones de edicion.</small>
+            <small class="text-muted"><i class="fa-solid fa-lock me-1"></i>Edicion limitada para aGuillen.</small>
             <nav aria-label="Paginacion usuarios">
                 <ul class="pagination pagination-sm mb-0" id="usuariosPaginacion"></ul>
             </nav>
@@ -178,7 +208,70 @@
     </footer>
 </section>
 
+<div class="modal fade" id="modalEditarUsuario" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" id="formEditarUsuario">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title fw-bold text-guinda mb-0"><i class="fa-solid fa-user-gear me-2"></i>Editar usuario</h5>
+                    <small class="text-muted" id="editarUsuarioSubtitulo">Actualiza los datos de acceso</small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="id" id="editarUsuarioId">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Nombre completo</label>
+                    <input type="text" class="form-control" name="nombre_completo" id="editarNombre" required maxlength="150">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Telefono</label>
+                    <input type="text" class="form-control" name="telefono" id="editarTelefono" maxlength="15" placeholder="Opcional">
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Rol</label>
+                        <select class="form-select" name="rol" id="editarRol" required>
+                            <option value="root">Root</option>
+                            <option value="supervisor">Supervisor</option>
+                            <option value="consulta">Consulta</option>
+                            <option value="capturista">Capturista</option>
+                            <option value="encuestador">Encuestador</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Modulo</label>
+                        <select class="form-select" name="modulo" id="editarModulo" required>
+                            <option value="TIERRA">TIERRA</option>
+                            <option value="VUT">VUT</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Estado</label>
+                        <select class="form-select" name="estado_acceso" id="editarEstado" required>
+                            <option value="activo">Activo</option>
+                            <option value="pausado">Pausado</option>
+                            <option value="inactivo">Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="alert alert-light border small mt-3 mb-0">
+                    <i class="fa-solid fa-circle-info me-1 text-guinda"></i>
+                    Activo permite iniciar sesion. Pausado e Inactivo bloquean el acceso sin borrar el registro.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-floppy-disk me-1"></i>Guardar cambios
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+const URLROOT_USUARIOS = '<?php echo URLROOT; ?>';
 const inputUsuario = document.getElementById('buscarUsuario');
 const filtroModulo = document.getElementById('filtroModulo');
 const filtroEstado = document.getElementById('filtroEstado');
@@ -187,6 +280,38 @@ const usuariosInfo = document.getElementById('usuariosInfo');
 const usuariosPaginacion = document.getElementById('usuariosPaginacion');
 const pageSizeUsuarios = 10;
 let paginaUsuarios = 1;
+const modalEditarUsuarioEl = document.getElementById('modalEditarUsuario');
+const modalEditarUsuario = bootstrap.Modal.getOrCreateInstance(modalEditarUsuarioEl);
+const formEditarUsuario = document.getElementById('formEditarUsuario');
+
+function notificarUsuario(mensaje, ok = true) {
+    if (window.Swal) {
+        Swal.fire({
+            icon: ok ? 'success' : 'error',
+            title: ok ? 'Listo' : 'Atencion',
+            text: mensaje,
+            timer: ok ? 1400 : undefined,
+            showConfirmButton: !ok
+        });
+        return;
+    }
+
+    alert(mensaje);
+}
+
+function enviarUsuario(url, formData) {
+    return fetch(url, {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin'
+    }).then(async response => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.ok === false) {
+            throw new Error(data.mensaje || 'No fue posible guardar los cambios');
+        }
+        return data;
+    });
+}
 
 function filtrarUsuarios() {
     const texto = inputUsuario.value.toLowerCase().trim();
@@ -278,6 +403,66 @@ function reiniciarFiltroUsuarios() {
 inputUsuario.addEventListener('input', reiniciarFiltroUsuarios);
 filtroModulo.addEventListener('change', reiniciarFiltroUsuarios);
 filtroEstado.addEventListener('change', reiniciarFiltroUsuarios);
+
+document.querySelectorAll('.estado-acceso-select').forEach(select => {
+    select.addEventListener('focus', function() {
+        this.dataset.valorAnterior = this.value;
+    });
+
+    select.addEventListener('change', function() {
+        const formData = new FormData();
+        formData.append('id', this.dataset.id);
+        formData.append('estado_acceso', this.value);
+        this.disabled = true;
+
+        enviarUsuario(`${URLROOT_USUARIOS}/Usuarios/estado`, formData)
+            .then(data => {
+                notificarUsuario(data.mensaje || 'Estado actualizado');
+                setTimeout(() => location.reload(), 650);
+            })
+            .catch(error => {
+                this.value = this.dataset.valorAnterior || this.value;
+                notificarUsuario(error.message, false);
+            })
+            .finally(() => {
+                this.disabled = false;
+            });
+    });
+});
+
+document.querySelectorAll('.btn-editar-usuario').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const fila = this.closest('tr');
+        document.getElementById('editarUsuarioId').value = fila.dataset.id || '';
+        document.getElementById('editarUsuarioSubtitulo').textContent = `${fila.dataset.usuario || ''} · ID ${fila.dataset.id || ''}`;
+        document.getElementById('editarNombre').value = fila.dataset.nombre || '';
+        document.getElementById('editarTelefono').value = fila.dataset.telefono || '';
+        document.getElementById('editarRol').value = fila.dataset.rol || 'encuestador';
+        document.getElementById('editarModulo').value = fila.dataset.modulo || 'TIERRA';
+        document.getElementById('editarEstado').value = fila.dataset.estadoAcceso || 'inactivo';
+        modalEditarUsuario.show();
+    });
+});
+
+formEditarUsuario.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const submit = this.querySelector('button[type="submit"]');
+    submit.disabled = true;
+
+    enviarUsuario(`${URLROOT_USUARIOS}/Usuarios/actualizar`, new FormData(this))
+        .then(data => {
+            modalEditarUsuario.hide();
+            notificarUsuario(data.mensaje || 'Usuario actualizado');
+            setTimeout(() => location.reload(), 650);
+        })
+        .catch(error => {
+            notificarUsuario(error.message, false);
+        })
+        .finally(() => {
+            submit.disabled = false;
+        });
+});
+
 filtrarUsuarios();
 </script>
 
