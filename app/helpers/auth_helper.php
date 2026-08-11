@@ -16,11 +16,20 @@ if (!function_exists('tc_usuario_actual_bd')) {
 
         try {
             $db = new Database();
+
+            $db->query("SHOW COLUMNS FROM usuarios LIKE 'estado_acceso'");
+            $tieneEstadoAcceso = (bool)$db->single();
+
+            $condicionEstado = $tieneEstadoAcceso
+                ? "AND estado_acceso = 'activo'"
+                : "";
+
             $db->query("
                 SELECT id, usuario, nombre_completo, rol, modulo, activo
                 FROM usuarios
                 WHERE id = :id
                   AND activo = 1
+                  {$condicionEstado}
                 LIMIT 1
             ");
             $db->bind(':id', (int)$_SESSION['user_id']);

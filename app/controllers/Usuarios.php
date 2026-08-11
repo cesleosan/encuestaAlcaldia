@@ -31,12 +31,17 @@ class Usuarios extends Controller {
         }
 
         if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-            return $this->jsonResponse(['ok' => false, 'mensaje' => 'Metodo no permitido'], 405);
+            return $this->jsonResponse(['ok' => false, 'mensaje' => 'Método no permitido'], 405);
         }
 
         $id = (int)($_POST['id'] ?? 0);
         if ($id <= 0) {
-            return $this->jsonResponse(['ok' => false, 'mensaje' => 'Usuario invalido'], 422);
+            return $this->jsonResponse(['ok' => false, 'mensaje' => 'Usuario inválido'], 422);
+        }
+
+        $estadoSolicitado = strtolower(trim((string)($_POST['estado_acceso'] ?? '')));
+        if (!in_array($estadoSolicitado, ['activo', 'pausado', 'inactivo'], true)) {
+            return $this->jsonResponse(['ok' => false, 'mensaje' => 'Estado inválido'], 422);
         }
 
         $usuarioActual = $this->usuarioModel->obtenerUsuarioPorId($id);
@@ -45,10 +50,9 @@ class Usuarios extends Controller {
         }
 
         if ($id === (int)($_SESSION['user_id'] ?? 0)) {
-            $estado = strtolower(trim((string)($_POST['estado_acceso'] ?? 'activo')));
             $rol = strtolower(trim((string)($_POST['rol'] ?? $usuarioActual->rol)));
-            if ($estado !== 'activo' || $rol !== ($usuarioActual->rol ?? '')) {
-                return $this->jsonResponse(['ok' => false, 'mensaje' => 'No puedes cambiar tu propio rol o estado desde este modulo'], 422);
+            if ($estadoSolicitado !== 'activo' || $rol !== strtolower((string)($usuarioActual->rol ?? ''))) {
+                return $this->jsonResponse(['ok' => false, 'mensaje' => 'No puedes cambiar tu propio rol o estado desde este módulo'], 422);
             }
         }
 
@@ -57,12 +61,13 @@ class Usuarios extends Controller {
             'telefono' => $_POST['telefono'] ?? '',
             'rol' => $_POST['rol'] ?? '',
             'modulo' => $_POST['modulo'] ?? '',
-            'estado_acceso' => $_POST['estado_acceso'] ?? ''
+            'estado_acceso' => $estadoSolicitado
         ]);
 
         return $this->jsonResponse([
             'ok' => (bool)$ok,
-            'mensaje' => $ok ? 'Usuario actualizado correctamente' : 'No fue posible actualizar el usuario'
+            'mensaje' => $ok ? 'Usuario actualizado correctamente' : 'No fue posible actualizar el usuario',
+            'estado_acceso' => $estadoSolicitado
         ], $ok ? 200 : 422);
     }
 
@@ -74,14 +79,14 @@ class Usuarios extends Controller {
         }
 
         if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-            return $this->jsonResponse(['ok' => false, 'mensaje' => 'Metodo no permitido'], 405);
+            return $this->jsonResponse(['ok' => false, 'mensaje' => 'Método no permitido'], 405);
         }
 
         $id = (int)($_POST['id'] ?? 0);
         $estado = strtolower(trim((string)($_POST['estado_acceso'] ?? '')));
 
         if ($id <= 0 || !in_array($estado, ['activo', 'pausado', 'inactivo'], true)) {
-            return $this->jsonResponse(['ok' => false, 'mensaje' => 'Datos invalidos'], 422);
+            return $this->jsonResponse(['ok' => false, 'mensaje' => 'Datos inválidos'], 422);
         }
 
         if ($id === (int)($_SESSION['user_id'] ?? 0) && $estado !== 'activo') {
@@ -92,7 +97,8 @@ class Usuarios extends Controller {
 
         return $this->jsonResponse([
             'ok' => (bool)$ok,
-            'mensaje' => $ok ? 'Estado actualizado correctamente' : 'No fue posible cambiar el estado'
+            'mensaje' => $ok ? 'Estado actualizado correctamente' : 'No fue posible cambiar el estado',
+            'estado_acceso' => $estado
         ], $ok ? 200 : 422);
     }
 
