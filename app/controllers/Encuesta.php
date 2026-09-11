@@ -189,7 +189,16 @@ public function getEstadisticas() {
 
     if (!isset($_SESSION['user_id'])) {
         http_response_code(401);
-        echo json_encode(['status' => 'error', 'msg' => 'Sesion expirada']);
+        echo json_encode([
+            'status' => 'error',
+            'msg' => 'Sesión expirada',
+            'debug' => [
+                'session_id' => session_id(),
+                'has_cookie' => isset($_COOKIE[session_name()]),
+                'cookie_name' => session_name(),
+                'session_keys' => array_keys($_SESSION ?? [])
+            ]
+        ], JSON_UNESCAPED_UNICODE);
         exit;
     }
 

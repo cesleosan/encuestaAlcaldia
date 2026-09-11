@@ -17,9 +17,11 @@ class Auth extends Controller {
         }
 
         $motivo = $_GET['motivo'] ?? '';
-        $error = $motivo === 'sin_sesion_dashboard'
-            ? 'Diagnóstico: el acceso llegó al Dashboard sin sesión activa. Intenta iniciar sesión de nuevo; si se repite, revisa cookies/sesión del servidor.'
-            : '';
+        $mensajesMotivo = [
+            'sin_sesion_dashboard' => 'Diagnóstico: el acceso llegó al Dashboard sin sesión activa. Intenta iniciar sesión de nuevo; si se repite, revisa cookies/sesión del servidor.',
+            'ajax_401_dashboard' => 'Diagnóstico: el Dashboard abrió, pero la carga de datos no recibió la sesión activa. Revisa cookies/sesión del servidor.'
+        ];
+        $error = $mensajesMotivo[$motivo] ?? '';
 
         $data = ['error' => $error];
         $this->view('auth/login', $data);

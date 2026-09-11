@@ -736,8 +736,30 @@ $(document).ready(function() {
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
 
     // 2. Carga Maestra de Datos
-    fetch('<?php echo URLROOT; ?>/Encuesta/getEstadisticas')
-        .then(res => res.json())
+    fetch('<?php echo URLROOT; ?>/Encuesta/getEstadisticas', { credentials: 'same-origin', cache: 'no-store' })
+        .then(async res => {
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || data.status === 'error') {
+                const mensaje = data.msg || 'No fue posible cargar la información del dashboard.';
+                if (res.status === 401) {
+                    console.warn('Diagnóstico sesión getEstadisticas:', data.debug || {});
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Sesión no disponible',
+                            text: 'El servidor no recibió la sesión activa. Te enviaremos al login para iniciar nuevamente.',
+                            confirmButtonColor: '#773357'
+                        }).then(() => {
+                            window.location.href = '<?php echo URLROOT; ?>/Auth?motivo=ajax_401_dashboard';
+                        });
+                    } else {
+                        window.location.href = '<?php echo URLROOT; ?>/Auth?motivo=ajax_401_dashboard';
+                    }
+                }
+                throw new Error(mensaje);
+            }
+            return data;
+        })
         .then(data => {
             
             // A. Llenar KPIs
