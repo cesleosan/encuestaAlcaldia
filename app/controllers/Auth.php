@@ -46,7 +46,9 @@ class Auth extends Controller {
         // Paso B: Verificamos si el usuario existe y si el hash coincide con lo escrito
         if ($userRow && password_verify($passwordInput, $userRow->password)) {
             if (!$captchaValido) {
-                error_log('[Auth] Captcha no coincidio, se permite acceso por credenciales validas para usuario: ' . $usuario);
+                $data = ['error' => 'El código de seguridad es incorrecto'];
+                $this->view('auth/login', $data);
+                return;
             }
             
             // ¡ÉXITO! Guardamos variables de sesión
