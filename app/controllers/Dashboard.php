@@ -6,7 +6,7 @@ class Dashboard extends Controller {
 
         // Seguridad
         if (!isset($_SESSION['user_id'])) {
-            header('Location: ' . URLROOT . '/Auth');
+            header('Location: ' . URLROOT . '/Auth?motivo=sin_sesion_dashboard');
             exit;
         }
 

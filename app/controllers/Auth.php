@@ -16,7 +16,12 @@ class Auth extends Controller {
             return;
         }
 
-        $data = ['error' => ''];
+        $motivo = $_GET['motivo'] ?? '';
+        $error = $motivo === 'sin_sesion_dashboard'
+            ? 'Diagnóstico: el acceso llegó al Dashboard sin sesión activa. Intenta iniciar sesión de nuevo; si se repite, revisa cookies/sesión del servidor.'
+            : '';
+
+        $data = ['error' => $error];
         $this->view('auth/login', $data);
     }
 
@@ -47,6 +52,7 @@ class Auth extends Controller {
             $_SESSION['usuario'] = $userRow->usuario;
             $_SESSION['rol'] = $userRow->rol;
             $_SESSION['nombre'] = $userRow->nombre_completo; 
+            $_SESSION['modulo'] = $userRow->modulo ?? 'TIERRA';
 
             $this->usuarioModel->registrarInicioSesion(
                 $userRow->id,
@@ -56,6 +62,7 @@ class Auth extends Controller {
             );
 
             // Redireccionar según el rol (Root, Supervisor o Encuestador)
+            session_write_close();
             $this->redireccionarRol($userRow->rol);
             exit;
 
