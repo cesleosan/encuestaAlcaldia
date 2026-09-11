@@ -274,7 +274,7 @@
 
             <div class="captcha-wrapper">
                 <label class="label-input" for="captcha_input" style="margin-left:0;text-align:center;">
-                    Verificación de seguridad
+                    Verificación de seguridad <span style="font-weight:500;color:#888;text-transform:none;">(opcional)</span>
                 </label>
                 <div class="captcha-container">
                     <div class="captcha-img-wrapper" onclick="recargarCaptcha()" title="Generar otro código">
@@ -291,7 +291,6 @@
                         autocapitalize="characters"
                         maxlength="5"
                         inputmode="latin"
-                        required
                     >
                 </div>
             </div>

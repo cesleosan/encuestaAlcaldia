@@ -23,15 +23,10 @@ class Auth extends Controller {
     public function validar() {
         if (session_status() === PHP_SESSION_NONE) session_start();
         
-        // --- 1. VALIDACIÓN CAPTCHA ---
+        // --- 1. LECTURA CAPTCHA ---
         $captcha_user = $this->normalizarCaptcha($_POST['captcha_input'] ?? '');
         $captcha_real = $this->normalizarCaptcha($_SESSION['captcha_real'] ?? '');
-
-        if ($captcha_real === '' || $captcha_user !== $captcha_real) {
-            $data = ['error' => 'El código de seguridad es incorrecto'];
-            $this->view('auth/login', $data);
-            return;
-        }
+        $captchaValido = ($captcha_real !== '' && $captcha_user === $captcha_real);
 
         // --- 2. VALIDACIÓN BASE DE DATOS (NUEVA LÓGICA DE HASH) ---
         $usuario = trim($_POST['usuario'] ?? '');
@@ -43,6 +38,9 @@ class Auth extends Controller {
 
         // Paso B: Verificamos si el usuario existe y si el hash coincide con lo escrito
         if ($userRow && password_verify($passwordInput, $userRow->password)) {
+            if (!$captchaValido) {
+                error_log('[Auth] Captcha no coincidio, se permite acceso por credenciales validas para usuario: ' . $usuario);
+            }
             
             // ¡ÉXITO! Guardamos variables de sesión
             $_SESSION['user_id'] = $userRow->id;
