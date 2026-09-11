@@ -24,10 +24,10 @@ class Auth extends Controller {
         if (session_status() === PHP_SESSION_NONE) session_start();
         
         // --- 1. VALIDACIÓN CAPTCHA ---
-        $captcha_user = strtoupper($_POST['captcha_input'] ?? '');
-        $captcha_real = strtoupper($_SESSION['captcha_real'] ?? '');
+        $captcha_user = $this->normalizarCaptcha($_POST['captcha_input'] ?? '');
+        $captcha_real = $this->normalizarCaptcha($_SESSION['captcha_real'] ?? '');
 
-        if ($captcha_user !== $captcha_real) {
+        if ($captcha_real === '' || $captcha_user !== $captcha_real) {
             $data = ['error' => 'El código de seguridad es incorrecto'];
             $this->view('auth/login', $data);
             return;
@@ -88,6 +88,11 @@ class Auth extends Controller {
                 header('Location: ' . URLROOT . '/Encuesta/index');
                 break;
         }
+    }
+
+    private function normalizarCaptcha($valor) {
+        $valor = strtoupper(trim((string)$valor));
+        return preg_replace('/[^A-Z0-9]/', '', $valor);
     }
 
     public function logout() {

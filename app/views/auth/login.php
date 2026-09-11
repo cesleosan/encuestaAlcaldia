@@ -278,7 +278,7 @@
                 </label>
                 <div class="captcha-container">
                     <div class="captcha-img-wrapper" onclick="recargarCaptcha()" title="Generar otro código">
-                        <img src="<?php echo URLROOT; ?>/Captcha/index" id="captcha-img" alt="Código de seguridad">
+                        <img src="<?php echo URLROOT; ?>/Captcha/index?v=<?php echo time(); ?>" id="captcha-img" alt="Código de seguridad">
                         <div class="reload-icon">↻</div>
                     </div>
                     <input
@@ -288,6 +288,9 @@
                         class="input-redondo captcha-code"
                         placeholder="Código"
                         autocomplete="off"
+                        autocapitalize="characters"
+                        maxlength="5"
+                        inputmode="latin"
                         required
                     >
                 </div>
@@ -302,6 +305,14 @@
             document.getElementById('captcha-img').src =
                 '<?php echo URLROOT; ?>/Captcha/index?' + Date.now();
         }
+
+        const captchaInput = document.getElementById('captcha_input');
+        captchaInput.addEventListener('input', function() {
+            this.value = this.value
+                .toUpperCase()
+                .replace(/[^A-Z0-9]/g, '')
+                .substring(0, 5);
+        });
     </script>
 </body>
 </html>

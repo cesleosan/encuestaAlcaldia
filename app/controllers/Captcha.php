@@ -12,8 +12,12 @@ class Captcha extends Controller {
             session_start();
         }
 
-        // Generar código aleatorio
-        $codigo = substr(md5(uniqid(rand(), true)), 0, 5);
+        // Generar código aleatorio legible, evitando caracteres ambiguos como O/0/I/1.
+        $alfabeto = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        $codigo = '';
+        for ($i = 0; $i < 5; $i++) {
+            $codigo .= $alfabeto[random_int(0, strlen($alfabeto) - 1)];
+        }
         $_SESSION['captcha_real'] = strtoupper($codigo);
 
         // Dimensiones del lienzo
@@ -56,6 +60,7 @@ class Captcha extends Controller {
         header('Content-Type: image/png');
         header('Cache-Control: no-store, no-cache, must-revalidate');
         header('Pragma: no-cache');
+        header('Expires: 0');
 
         imagepng($imagen);
         imagedestroy($imagen);
