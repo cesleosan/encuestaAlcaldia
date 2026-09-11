@@ -21,7 +21,7 @@ if (!function_exists('tc_usuario_actual_bd')) {
             $tieneEstadoAcceso = (bool)$db->single();
 
             $condicionEstado = $tieneEstadoAcceso
-                ? "AND estado_acceso = 'activo'"
+                ? "AND COALESCE(NULLIF(estado_acceso, ''), 'activo') = 'activo'"
                 : "";
 
             $db->query("

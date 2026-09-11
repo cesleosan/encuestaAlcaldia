@@ -102,6 +102,65 @@ class Auth extends Controller {
         return preg_replace('/[^A-Z0-9]/', '', $valor);
     }
 
+    public function diagnosticoSesion() {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+
+        $_SESSION['diagnostico_probe'] = (int)($_SESSION['diagnostico_probe'] ?? 0) + 1;
+
+        $savePath = session_save_path();
+        if ($savePath === '') {
+            $savePath = sys_get_temp_dir();
+        }
+
+        $usuarios = [];
+        try {
+            $db = new Database();
+            $db->query("SHOW COLUMNS FROM usuarios LIKE 'estado_acceso'");
+            $tieneEstadoAcceso = (bool)$db->single();
+
+            $estadoSelect = $tieneEstadoAcceso
+                ? "COALESCE(NULLIF(estado_acceso, ''), IF(activo = 1, 'activo', 'inactivo'))"
+                : "IF(activo = 1, 'activo', 'inactivo')";
+
+            $db->query("
+                SELECT id, usuario, rol, modulo, activo, {$estadoSelect} AS estado_acceso, ultimo_acceso
+                FROM usuarios
+                WHERE usuario IN ('fernando.romero', 'edgar.zavala', 'aGuillen', 'aguillen')
+                   OR LOWER(usuario) = 'aguillen'
+                ORDER BY usuario
+            ");
+            $usuarios = $db->resultSet();
+        } catch (Exception $e) {
+            $usuarios = ['error' => $e->getMessage()];
+        }
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'status' => 'ok',
+            'session' => [
+                'name' => session_name(),
+                'id' => session_id(),
+                'cookie_recibida' => isset($_COOKIE[session_name()]),
+                'probe_counter' => $_SESSION['diagnostico_probe'],
+                'keys' => array_keys($_SESSION),
+                'user_id' => $_SESSION['user_id'] ?? null,
+                'usuario' => $_SESSION['usuario'] ?? null,
+                'rol' => $_SESSION['rol'] ?? null,
+                'modulo' => $_SESSION['modulo'] ?? null
+            ],
+            'server' => [
+                'https' => $_SERVER['HTTPS'] ?? null,
+                'forwarded_proto' => $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? null,
+                'host' => $_SERVER['HTTP_HOST'] ?? null,
+                'request_uri' => $_SERVER['REQUEST_URI'] ?? null,
+                'save_path' => $savePath,
+                'save_path_writable' => is_writable($savePath)
+            ],
+            'usuarios_clave' => $usuarios
+        ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        exit;
+    }
+
     public function logout() {
         if (session_status() === PHP_SESSION_NONE) session_start();
         if (!empty($_SESSION['user_id'])) {

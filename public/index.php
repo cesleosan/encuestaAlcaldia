@@ -2,6 +2,24 @@
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
+
+if (session_status() === PHP_SESSION_NONE) {
+    $httpsActivo = (
+        (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')
+    );
+
+    session_name('TC_CORAZON_SESION');
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'domain' => '',
+        'secure' => $httpsActivo,
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+}
+
 session_start();
 // 1. Cargar la configuración primero
 require_once __DIR__ . '/../app/config/config.php';

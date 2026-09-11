@@ -15,7 +15,13 @@ class Usuario {
     public function obtenerUsuarioPorNombre($usuario) {
         // Buscamos al usuario que esté activo
         if ($this->existeColumnaUsuarios('estado_acceso')) {
-            $this->db->query("SELECT * FROM usuarios WHERE usuario = :usuario AND activo = 1 AND estado_acceso = 'activo'");
+            $this->db->query("
+                SELECT *
+                FROM usuarios
+                WHERE usuario = :usuario
+                  AND activo = 1
+                  AND COALESCE(NULLIF(estado_acceso, ''), 'activo') = 'activo'
+            ");
         } else {
             $this->db->query('SELECT * FROM usuarios WHERE usuario = :usuario AND activo = 1');
         }
